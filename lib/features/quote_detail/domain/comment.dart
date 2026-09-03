@@ -1,4 +1,4 @@
-abstract class Comment {
+class Comment {
   final String id;
   final String quoteId;
   final String author;
@@ -16,7 +16,7 @@ abstract class Comment {
   });
 
   factory Comment.fromMap(Map<String, dynamic> map) {
-    return Comment._internal(
+    return Comment(
       id: map['id'] ?? '',
       quoteId: map['quoteId'] ?? '',
       author: map['author'] ?? '',
@@ -45,7 +45,7 @@ abstract class Comment {
     int? likes,
     DateTime? createdAt,
   }) {
-    return Comment._internal(
+    return Comment(
       id: id ?? this.id,
       quoteId: quoteId ?? this.quoteId,
       author: author ?? this.author,
@@ -54,26 +54,4 @@ abstract class Comment {
       createdAt: createdAt ?? this.createdAt,
     );
   }
-}
-
-class Comment._internal({
-  required String id,
-  required String quoteId,
-  required String author,
-  required String text,
-  required int likes,
-  required DateTime createdAt,
-}) implements Comment {
-  @override
-  final String id;
-  @override
-  final String quoteId;
-  @override
-  final String author;
-  @override
-  final String text;
-  @override
-  final int likes;
-  @override
-  final DateTime createdAt;
 }

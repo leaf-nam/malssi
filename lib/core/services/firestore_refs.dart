@@ -1,21 +1,19 @@
-import 'package:firebase/firebase.dart';
+import 'package:malssi/core/constants/collection_names.dart';
 
+/// Firestore collection path holder.
+///
+/// Holds document-path helpers only (no Firebase SDK types) until the
+/// Firestore backend is connected. Always use [CollectionNames] constants;
+/// do not hard-code collection strings elsewhere.
 class FirestoreRefs {
-  // Auth collection
-  final Collection auth = collection('auth');
+  const FirestoreRefs();
 
-  // Quotes collection
-  final Collection quotes = collection('quotes');
+  static const String authPath = CollectionNames.auth;
+  static const String quotesPath = CollectionNames.quotes;
+  static const String commentsPath = CollectionNames.comments;
+  static const String categoriesPath = CollectionNames.categories;
+  static const String submissionsPath = CollectionNames.submissions;
+  static const String usersPath = CollectionNames.users;
 
-  // Comments collection
-  final Collection comments = collection('comments');
-
-  // Categories collection
-  final Collection categories = collection('categories');
-
-  // Submissions collection
-  final Collection submissions = collection('submissions');
-
-  // Users collection
-  final Collection users = collection('users');
+  static String docPath(String collectionPath, String docId) => '$collectionPath/$docId';
 }

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:malssi/features/home/providers/home_providers.dart';
 import 'package:malssi/core/services/notification_service.dart';
+import 'package:malssi/features/home/providers/home_providers.dart';
+import 'package:malssi/features/quote.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final quoteAsync = context.watch<randomQuoteProvider>;
-    final quotes = context.watch<likedQuotesStreamProvider>;
+    final quoteState = context.watch<QuoteProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -18,10 +18,9 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
-              // Notification service example
               final notif = context.read<NotificationService>();
               notif.scheduleNotification(
-                id: DateTime.now().millisecondsSinceEpoch,
+                id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
                 title: '새로운 명언!',
                 body: '오늘의 명언을 확인해보세요',
                 scheduleTime: DateTime.now().add(const Duration(seconds: 5)),
@@ -30,29 +29,29 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: quoteAsync.when(
-          data: (quote) => _buildQuoteCard(quote),
-          loading: () => const CircularProgressIndicator(),
-          error: (err, stack) => Text('Error: $err'),
-        ),
-      ),
-      floatingActionButton: quoteAsync.when(
-        data: (_) => FloatingActionButton(
-          onPressed: () => context.read<QuoteNotifier>().likeCurrentQuote(),
-          child: const Icon(Icons.favorite),
-        ),
-        loading: () => const CircularProgressIndicator(),
-        error: (_) => const SizedBox.shrink(),
+      body: Center(child: _buildBody(quoteState)),
+      floatingActionButton: FloatingActionButton(
+        onPressed: quoteState.currentQuote == null ? null : () => context.read<QuoteProvider>().likeCurrentQuote(),
+        child: const Icon(Icons.favorite),
       ),
     );
+  }
+
+  Widget _buildBody(QuoteProvider quoteState) {
+    if (quoteState.isLoading && quoteState.currentQuote == null) {
+      return const CircularProgressIndicator();
+    }
+    if (quoteState.errorMessage != null && quoteState.currentQuote == null) {
+      return Text('Error: ${quoteState.errorMessage}');
+    }
+    return _buildQuoteCard(quoteState.currentQuote);
   }
 
   Widget _buildQuoteCard(Quote? quote) {
     if (quote == null) {
       return const Text('명언을 불러올 수 없습니다.');
     }
-    
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -77,7 +76,7 @@ class HomeScreen extends StatelessWidget {
                 fontSize: 14,
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [

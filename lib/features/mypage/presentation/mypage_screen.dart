@@ -7,20 +7,24 @@ class MyPageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userAsync = context.watch<UserProfileProvider>();
+    final userState = context.watch<UserProfileProvider>();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('내 정보'),
       ),
-      body: Center(
-        child: userAsync.when(
-          data: (profile) => _buildProfile(profile),
-          loading: () => const CircularProgressIndicator(),
-          error: (err, stack) => Text('Error: $err'),
-        ),
-      ),
+      body: Center(child: _buildBody(userState)),
     );
+  }
+
+  Widget _buildBody(UserProfileProvider userState) {
+    if (userState.isLoading && userState.profile == null) {
+      return const CircularProgressIndicator();
+    }
+    if (userState.errorMessage != null && userState.profile == null) {
+      return Text('Error: ${userState.errorMessage}');
+    }
+    return _buildProfile(userState.profile ?? {});
   }
 
   Widget _buildProfile(Map<String, dynamic> profile) {
