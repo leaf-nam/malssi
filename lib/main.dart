@@ -4,6 +4,11 @@ import 'package:malssi/core/services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.instance.init();
+  // Notification init must never block app startup: on failure, log and continue.
+  try {
+    await NotificationService.instance.init();
+  } catch (e) {
+    debugPrint('NotificationService init failed: $e');
+  }
   runApp(const AppShell());
 }
