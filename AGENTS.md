@@ -27,6 +27,9 @@
 *   **개발 워크플로우**: `docs/workflow/development_flow.md`
     *   **내용**: 이슈 기반 개발 사이클(브랜치/TDD/`flutter test`·`flutter analyze`/PR 검토·승인),
         브랜치 네이밍, 커밋 메시지, 푸시/PR 절차. `battern` 프로젝트 패턴과 일치.
+*   **주요 기능 명세서**: `docs/features/feature_spec.md`
+    *   **내용**: 오늘의 명언(랜덤 1개 + 교체 시 광고)/내 명언(관리자 승인)/명언 댓글(베스트 3개)/
+        카테고리(해시태그)/좋아요·추천/공유(딥링크)/하루 1회 알림의 요구·구현 상태·관련 코드·향후 과제.
 *   **코드 컨벤션**: `docs/conventions/convention.md`
     *   **내용**: Dart/Flutter 스타일, 네이밍 컨벤션, 상태 관리(`provider` + `riverpod`
         혼용 현황 및 지향점), 테마(`AppTheme`), 에러/로딩 처리 패턴.
