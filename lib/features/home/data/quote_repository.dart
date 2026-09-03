@@ -22,24 +22,35 @@ class InMemoryQuoteRepository implements QuoteRepository {
   static final List<Quote> _defaultSeed = [
     Quote(
       id: 'seed-1',
-      text: '시작이 반이다.',
-      author: '한국 속담',
-      likes: 0,
+      text: '멀리 가려면 함께 가라.',
+      author: '아프리카 속담',
+      likes: 128,
       createdAt: DateTime(2026, 1, 1),
+      tags: const ['협력', '관계'],
     ),
     Quote(
       id: 'seed-2',
       text: '천 리 길도 한 걸음부터.',
       author: '노자',
-      likes: 0,
+      likes: 96,
       createdAt: DateTime(2026, 1, 2),
+      tags: const ['도전', '인내'],
     ),
     Quote(
       id: 'seed-3',
       text: '어두울 때 별이 빛난다.',
       author: '랄프 왈도 에머슨',
-      likes: 0,
+      likes: 74,
       createdAt: DateTime(2026, 1, 3),
+      tags: const ['위로', '성장'],
+    ),
+    Quote(
+      id: 'seed-4',
+      text: '시작이 반이다.',
+      author: '한국 속담',
+      likes: 61,
+      createdAt: DateTime(2026, 1, 4),
+      tags: const ['도전'],
     ),
   ];
 

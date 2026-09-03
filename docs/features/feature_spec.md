@@ -9,7 +9,7 @@
 ## 1. 오늘의 명언 (랜덤 1개 + 교체 시 광고 시청)
 
 - **요구**: 명언 DB에서 1개를 가져와 보여준다. 명언을 바꿀 때마다 광고를 시청한다.
-- **구현 상태**: 부분 구현 (광고 연동 없음).
+- **구현 상태**: MVP 구현됨 (인메모리 시드 4건, 광고 다이얼로그 후 다음 명언, 연속 읽음, 공유 연결). Firebase 연동·실제 광고 SDK는 후속 과제.
 - **관련 코드**:
   - 조회: `QuoteRepository.getRandomQuote()` (`lib/features/home/data/quote_repository.dart`) —
     추상 선언만 존재, `QuoteRepositoryImpl` 미구현.
@@ -28,7 +28,7 @@
 ## 2. 내 명언 (사용자 작성 → DB 등록, 관리자 승인 후 노출)
 
 - **요구**: 내가 명언을 작성해서 DB에 올린다. 관리자 승인 후 노출된다.
-- **구현 상태**: Repository 추상만 존재 (화면/Provider 미구현).
+- **구현 상태**: MVP 구현됨 (`WriteScreen` + `WriteProvider` + `InMemorySubmissionRepository`, 상태 목록 포함). 관리자 승인 화면·`quotes` 반영은 후속 과제.
 - **관련 코드**:
   - 제출: `SubmissionRepository.submitQuote({text, author, category})`,
     상태 변경: `updateSubmissionStatus({submissionId, status})`,
@@ -46,7 +46,7 @@
 ## 3. 명언 댓글 (오늘의 명언에 댓글, 베스트 댓글 3개 노출)
 
 - **요구**: 오늘의 명언에 댓글을 단다. 베스트 댓글 3개를 노출한다.
-- **구현 상태**: 모델만 존재 (화면은 플레이스홀더, 베스트 로직 미구현).
+- **구현 상태**: MVP 구현됨 (`CommentScreen` + `CommentProvider` + `InMemoryCommentRepository`, 베스트 3·최근·등록·좋아요).
 - **관련 코드**:
   - 모델: `Comment` (`lib/features/quote_detail/domain/comment.dart`) —
     `id`/`quoteId`/`author`/`text`/`likes`/`createdAt`, `fromMap`/`toMap`/`copyWith` 완비.
@@ -64,7 +64,7 @@
 ## 4. 카테고리 (해시태그로 명언 분류)
 
 - **요구**: 해시태그로 명언을 분류한다.
-- **구현 상태**: Repository 추상 + 모델 필드만 존재.
+- **구현 상태**: MVP 구현됨 (`CategoryScreen` + `CategoryProvider` + `InMemoryHashtagRepository`, 인기 그리드·전체 목록). 태그별 명언 목록 연결은 후속 과제.
 - **관련 코드**:
   - `HashtagRepository` (`lib/features/category/data/hashtag_repository.dart`) —
     `getHashtagsStream()` / `addHashtag()` / `removeHashtag()` (추상, `String` 기반).
@@ -80,7 +80,7 @@
 ## 5. 좋아요 + 해시태그 기반 유사 명언 추천
 
 - **요구**: 좋아요 기능 + 해시태그 기반 유사한 명언 추천.
-- **구현 상태**: 좋아요 카운트/단일 업데이트만 부분 존재. 추천 로직 미구현.
+- **구현 상태**: 좋아요 MVP 구현됨 (FAB/하트, `LikedScreen` 목록). 해시태그 기반 추천 로직은 미구현(후속 과제).
 - **관련 코드**:
   - 카운트: `Quote.likes`, `Comment.likes` (모델 필드).
   - 업데이트: `QuoteRepository.updateLike(quoteId)` (추상),
@@ -98,7 +98,7 @@
 ## 6. 공유 (명언 링크로 보내기)
 
 - **요구**: 명언을 링크로 보낸다 (딥링크 공유).
-- **구현 상태**: 미구현 (관련 코드 없음).
+- **구현 상태**: MVP 구현됨 (`share_plus` 텍스트+링크 공유). 딥링크 수신 처리는 후속 과제.
 - **관련 코드**: 없음. 공유 패키지(`share_plus` 등) 미도입.
   딥링크 수신처 후보는 `/quote-detail/:quoteId` (이미 라우트 존재).
 - **동작 플로우 (목표)**:
@@ -110,7 +110,7 @@
 ## 7. 하루 1회 알림
 
 - **요구**: 하루 1회 명언 알림을 보낸다.
-- **구현 상태**: 서비스 + 수동 발송 예시만 존재 (하루 1회 스케줄 미구현).
+- **구현 상태**: MVP 구현됨 (마이페이지 토글·시간 설정 UI + 홈 알림 예약). 매일 반복 스케줄·탭 이동·FCM은 후속 과제.
 - **관련 코드**:
   - `NotificationService` (`lib/core/services/notification_service.dart`) —
     `init()`, `scheduleNotification({id, title, body, scheduleTime})`,
@@ -126,10 +126,10 @@
 
 | # | 기능 | 컬렉션 | 모델 | Repository | 화면/Provider | 상태 |
 |---|------|--------|------|------------|---------------|------|
-| 1 | 오늘의 명언 | `quotes` | `Quote`, `HomeQuote` | `QuoteRepository` (추상) | `HomeScreen`, `QuoteNotifier` | 부분 구현 |
-| 2 | 내 명언 | `submissions` | (Map, 모델 없음) | `SubmissionRepository` (추상) | 없음 | 추상만 존재 |
-| 3 | 명언 댓글 | `comments` | `Comment` | 없음 | `CommentScreen` (플레이스홀더) | 모델만 존재 |
-| 4 | 카테고리 | `categories` | (`String` 기반) | `HashtagRepository` (추상) | 없음 | 추상만 존재 |
-| 5 | 좋아요·추천 | `quotes` | `likes` 필드 | `QuoteRepository.updateLike` (추상) | FAB + `likeCurrentQuote` | 좋아요 부분 / 추천 미구현 |
-| 6 | 공유 | — | — | — | — | 미구현 |
-| 7 | 하루 1회 알림 | — | — | — | `NotificationService` + 예시 호출 | 서비스만 존재 |
+| 1 | 오늘의 명언 | `quotes` | `Quote`(+`tags`), `HomeQuote` | `InMemoryQuoteRepository` | `HomeScreen`, `QuoteProvider` | MVP 구현 |
+| 2 | 내 명언 | `submissions` | `Submission`+`SubmissionStatus` | `InMemorySubmissionRepository` | `WriteScreen`, `WriteProvider` | MVP 구현 |
+| 3 | 명언 댓글 | `comments` | `Comment` | `InMemoryCommentRepository` | `CommentScreen`, `CommentProvider` | MVP 구현 |
+| 4 | 카테고리 | `categories` | `HashtagCount` | `InMemoryHashtagRepository` | `CategoryScreen`, `CategoryProvider` | MVP 구현 |
+| 5 | 좋아요·추천 | `quotes` | `likes` 필드 | `InMemoryQuoteRepository.updateLike` | 홈 하트 + `LikedScreen` | 좋아요 MVP / 추천 미구현 |
+| 6 | 공유 | — | — | — | `share_plus` 공유 | MVP 구현 |
+| 7 | 하루 1회 알림 | — | — | — | `NotificationService` + 마이페이지 토글·시간 설정 | MVP 구현 |

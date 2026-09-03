@@ -20,6 +20,14 @@ class QuoteProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  final Set<String> _likedQuoteIds = {};
+  bool isLiked(String quoteId) => _likedQuoteIds.contains(quoteId);
+
+  List<String> get likedQuoteIds => List.unmodifiable(_likedQuoteIds);
+
+  final int _streakDays = 7;
+  int get streakDays => _streakDays;
+
   Future<void> fetchRandomQuote() async {
     _isLoading = true;
     _errorMessage = null;
@@ -39,6 +47,7 @@ class QuoteProvider extends ChangeNotifier {
     if (quote == null) return;
     try {
       _currentQuote = await _repository.updateLike(quote.id);
+      _likedQuoteIds.add(quote.id);
       notifyListeners();
     } catch (e) {
       _errorMessage = '$e';
