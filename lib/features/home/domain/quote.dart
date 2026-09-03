@@ -14,8 +14,7 @@ class HomeQuote extends Quote {
     required this.isFeatured,
   });
 
-  factory HomeQuote.fromMap(Map<String, dynamic> map) {
-    return HomeQuote(
+  factory HomeQuote.fromMap(Map<String, dynamic> map) {    return HomeQuote(
       id: map['id'] ?? '',
       text: map['text'] ?? '',
       author: map['author'] ?? '',
@@ -24,6 +23,15 @@ class HomeQuote extends Quote {
       category: map['category'] ?? '',
       isFeatured: map['isFeatured'] ?? false,
     );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      ...super.toMap(),
+      'category': category,
+      'isFeatured': isFeatured,
+    };
   }
 
   @override

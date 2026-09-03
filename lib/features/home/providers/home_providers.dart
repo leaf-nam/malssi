@@ -1,32 +1,48 @@
-import 'package:riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
-import 'package:malssi/features/home/domain/quote.dart';
+import 'package:malssi/features/quote.dart';
 
-// Provider for random quote
-final randomQuoteProvider = StateNotifierProvider<QuoteNotifier, Quote?>((ref) {
-  final repo = QuoteRepositoryImpl();
-  return QuoteNotifier(repository: repo)..fetchRandomQuote();
-});
+/// Minimal [ChangeNotifier]-based state for the home screen.
+///
+/// Uses the `provider` package (see `AppShell`) instead of riverpod until
+/// the state-management direction in `docs/conventions/convention.md` is settled.
+class QuoteProvider extends ChangeNotifier {
+  QuoteProvider({required this._repository});
 
-// Notifier for quote state
-class QuoteNotifier extends StateNotifier<Quote?> {
   final QuoteRepository _repository;
-  
-  QuoteNotifier({required QuoteRepository repository}) : _repository = repository, super(null);
+
+  Quote? _currentQuote;
+  Quote? get currentQuote => _currentQuote;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
 
   Future<void> fetchRandomQuote() async {
-    state = await _repository.getRandomQuote();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _currentQuote = await _repository.getRandomQuote();
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> likeCurrentQuote() async {
-    if (state != null) {
-      state = await _repository.updateLike(state!.id);
+    final quote = _currentQuote;
+    if (quote == null) return;
+    try {
+      _currentQuote = await _repository.updateLike(quote.id);
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = '$e';
+      notifyListeners();
     }
   }
 }
-
-// Provider for liked quotes stream
-final likedQuotesStreamProvider = StreamProvider<List<Quote>>((ref) {
-  final repo = QuoteRepositoryImpl();
-  return repo.getQuotesStream();
-});

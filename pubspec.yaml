@@ -13,10 +13,12 @@ dependencies:
   go_router: ^13.2.0
   firebase_core: ^2.24.2
   flutter_local_notifications: ^16.1.0
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^5.0.0
   riverpod: ^2.4.9
   build_runner: ^2.4.6
 

@@ -1,4 +1,4 @@
-abstract class Quote {
+class Quote {
   final String id;
   final String text;
   final String author;
@@ -14,7 +14,7 @@ abstract class Quote {
   });
 
   factory Quote.fromMap(Map<String, dynamic> map) {
-    return Quote._internal(
+    return Quote(
       id: map['id'] ?? '',
       text: map['text'] ?? '',
       author: map['author'] ?? '',
@@ -40,7 +40,7 @@ abstract class Quote {
     int? likes,
     DateTime? createdAt,
   }) {
-    return Quote._internal(
+    return Quote(
       id: id ?? this.id,
       text: text ?? this.text,
       author: author ?? this.author,
@@ -48,23 +48,4 @@ abstract class Quote {
       createdAt: createdAt ?? this.createdAt,
     );
   }
-}
-
-class Quote._internal({
-  required String id,
-  required String text,
-  required String author,
-  required int likes,
-  required DateTime createdAt,
-}) implements Quote {
-  @override
-  final String id;
-  @override
-  final String text;
-  @override
-  final String author;
-  @override
-  final int likes;
-  @override
-  final DateTime createdAt;
 }
