@@ -4,6 +4,7 @@ class Quote {
   final String author;
   final int likes;
   final DateTime createdAt;
+  final List<String> tags;
 
   const Quote({
     required this.id,
@@ -11,6 +12,7 @@ class Quote {
     required this.author,
     required this.likes,
     required this.createdAt,
+    this.tags = const [],
   });
 
   factory Quote.fromMap(Map<String, dynamic> map) {
@@ -20,6 +22,7 @@ class Quote {
       author: map['author'] ?? '',
       likes: map['likes'] ?? 0,
       createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
+      tags: List<String>.from(map['tags'] ?? const []),
     );
   }
 
@@ -30,6 +33,7 @@ class Quote {
       'author': author,
       'likes': likes,
       'createdAt': createdAt,
+      'tags': tags,
     };
   }
 
@@ -39,6 +43,7 @@ class Quote {
     String? author,
     int? likes,
     DateTime? createdAt,
+    List<String>? tags,
   }) {
     return Quote(
       id: id ?? this.id,
@@ -46,6 +51,7 @@ class Quote {
       author: author ?? this.author,
       likes: likes ?? this.likes,
       createdAt: createdAt ?? this.createdAt,
+      tags: tags ?? this.tags,
     );
   }
 }

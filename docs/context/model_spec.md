@@ -59,8 +59,9 @@ class CollectionNames {
 | id        | `String`   | `id`         | `''`                       |
 | text      | `String`   | `text`       | `''`                       |
 | author    | `String`   | `author`     | `''`                       |
-| likes     | `int`      | `likes`      | `0`                        |
-| createdAt | `DateTime` | `createdAt`  | `DateTime.now()`           |
+| likes | `int` | `likes` | `0` |
+| createdAt | `DateTime` | `createdAt` | `DateTime.now()` |
+| tags | `List<String>` | `tags` | `[]` (MVP, `#협력` 등 해시태그) |
 
 - **직렬화**: `fromMap` 팩토리, `toMap()`, `copyWith({id, text, author, likes, createdAt})` 제공.
   `Quote._internal` 클래스가 `implements Quote`로 실제 저장소 역할을 합니다.
@@ -76,9 +77,8 @@ class CollectionNames {
 | category   | `String` | `category`   | `''`    |
 | isFeatured | `bool`   | `isFeatured` | `false` |
 
-- **직렬화**: `fromMap` 팩토리 및 오버라이드된 `copyWith` 제공.
-  `toMap()`은 현재 `Quote.toMap()`을 상속하므로 `category`/`isFeatured`가
-  직렬화에 누락됩니다 — 사용처에서 확정되면 `toMap()` 오버라이드 이슈로 분리하십시오.
+- **직렬화**: `fromMap` 팩토리, `toMap()` 오버라이드(`category`/`isFeatured` 포함),
+  `copyWith` 제공. `const` 생성자 (MVP에서 `super.tags` 기본값 포함).
 - **용도**: 홈 화면 피드/추천 명언. `QuoteRepository.getRandomQuote()`,
   `getQuotesStream()`의 요소 타입.
 

@@ -8,5 +8,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('오늘의 명언'), findsOneWidget);
+    expect(find.text('광고 보고 다음 명언 받기'), findsOneWidget);
   });
 }
