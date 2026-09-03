@@ -59,7 +59,6 @@
     분리하여 논의하십시오 (현재 `pubspec.yaml`에서 `riverpod`는 `dev_dependencies`에 있음).
 5.  **테스트 필수**: 수정 후 반드시 `flutter analyze`와 `flutter test`를 실행하여
     회귀가 없는지 확인하십시오. PR 생성의 필수 조건입니다.
-    (`test/widget_test.dart`는 현재 기본 카운터 템플릿이므로, 도메인 단위 테스트 보강이 필요합니다.)
 
 ---
 
@@ -97,6 +96,11 @@
 
 ## 작업 완료 후
 - 모든 변경사항을 커밋하고 원격에 푸시한 뒤에 작업 완료를 알릴 것
+
+## 일일 작업 기록
+- 매일 첫 작업 전 가장 최근의 `docs/progress/YYYY-MM-DD.md`부터 역순으로 읽고 이전 상태를 파악할 것
+- 날짜가 지난(또는 당일 종료 시) 기록 파일은 반드시 커밋·푸시할 것
+- 상세: `docs/workflow/development_flow.md` §5
 
 ---
 
