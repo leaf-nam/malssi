@@ -207,5 +207,23 @@ void main() {
       expect(find.text('성장 씨앗이 도착했어요'), findsOneWidget);
       expect(find.byType(Image), findsOneWidget);
     });
+
+    testWidgets('opened quote is minimal: no tags, header, or guide',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 깨기'));
+      await tester.pumpAndSettle();
+
+      // 성장 테마 명언(seed-2)은 태그를 갖고 있지만 화면에 노출하지 않는다.
+      expect(find.textContaining('#'), findsNothing);
+      expect(find.textContaining('열매'), findsNothing);
+      expect(find.textContaining('보관 탭에서'), findsNothing);
+      expect(find.text('— 노자'), findsOneWidget);
+    });
   });
 }

@@ -70,18 +70,18 @@ class _LockedSeed extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 160,
-              height: 160,
+              width: 112,
+              height: 112,
               decoration: BoxDecoration(
                 color: AppTheme.ink800,
                 border: Border.all(color: AppTheme.line),
-                borderRadius: BorderRadius.circular(80),
+                borderRadius: BorderRadius.circular(56),
               ),
               child: Center(
                 child: _ThemeImage(
                   path: ThemeAssets.seedImage(theme),
-                  size: 96,
-                  fallbackFontSize: 72,
+                  size: 64,
+                  fallbackFontSize: 48,
                 ),
               ),
             ),
@@ -99,11 +99,6 @@ class _LockedSeed extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 color: AppTheme.paper,
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '씨앗을 깨면 오늘의 명언이 열립니다',
-              style: TextStyle(fontSize: 12, color: AppTheme.muted),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -135,87 +130,30 @@ class _OpenedQuote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
-          child: Row(
-            children: [
-              _ThemeImage(
-                path: ThemeAssets.fruitImage(quote.theme),
-                size: 32,
-                fallbackFontSize: 24,
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 48, 32, 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '"${quote.text}"',
+              textAlign: TextAlign.center,
+              style: AppTheme.quoteTextStyle(fontSize: 26),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '— ${quote.author}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.paper,
               ),
-              const SizedBox(width: 8),
-              Text(
-                '${ThemeAssets.labelOf(quote.theme)} 열매',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.gold,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-        Container(
-          margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          padding: const EdgeInsets.fromLTRB(22, 30, 22, 24),
-          decoration: BoxDecoration(
-            color: AppTheme.ink800,
-            border: Border.all(color: AppTheme.line),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('"${quote.text}"', style: AppTheme.quoteTextStyle()),
-              const SizedBox(height: 18),
-              Text(
-                '— ${quote.author}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.gold,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (quote.tags.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final tag in quote.tags)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                              color: const Color(0xFF3A4A40)),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          '#$tag',
-                          style: const TextStyle(
-                              fontSize: 11, color: AppTheme.sage),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.only(top: 16, bottom: 24),
-          child: Text(
-            '🌱 오늘의 열매를 수확했어요 · 보관 탭에서 확인하세요',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11.5, color: AppTheme.muted),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

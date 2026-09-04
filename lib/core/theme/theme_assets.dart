@@ -42,25 +42,25 @@ abstract class ThemeAssets {
   /// 한글 테마명. 미등록 테마는 `'오늘의 씨앗'`.
   static String labelOf(String theme) => labels[theme] ?? '오늘의 씨앗';
 
-  /// 잔디 그리드 셀 색상. 미등록 테마는 회색.
+  /// 잔디 그리드 셀 색상. 다크톤 7종 (#39). 미등록 테마는 회색.
   static Color cellColor(String theme) {
     switch (theme) {
       case SeedTheme.vitality:
-        return const Color(0xFFE5484D);
+        return const Color(0xFFA03236);
       case SeedTheme.happiness:
-        return const Color(0xFFF59E0B);
+        return const Color(0xFFAC6F08);
       case SeedTheme.growth:
-        return const Color(0xFFEAB308);
+        return const Color(0xFFA47D06);
       case SeedTheme.health:
-        return const Color(0xFF22C55E);
+        return const Color(0xFF188A42);
       case SeedTheme.peace:
-        return const Color(0xFF3B82F6);
+        return const Color(0xFF295BAC);
       case SeedTheme.relationship:
-        return const Color(0xFF6366F1);
+        return const Color(0xFF4547A9);
       case SeedTheme.wisdom:
-        return const Color(0xFFEC4899);
+        return const Color(0xFFA5326B);
       default:
-        return const Color(0xFF9AA0B4);
+        return const Color(0xFF6C707E);
     }
   }
 }
