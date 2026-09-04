@@ -3,8 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
+import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
+import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
+import 'package:malssi/features/seed/providers/seed_providers.dart';
 
 /// Firestore `Timestamp` 흉내 (`fromMap`의 `.toDate()` 호출용).
 class _FakeTimestamp {
@@ -109,6 +112,70 @@ void main() {
       final fruit = await repo.harvestFromSeed(seed: seed, quote: quote);
 
       expect(fruit.theme, SeedTheme.health);
+    });
+  });
+
+  group('theme selection (random)', () {
+    test('getTodaySeed assigns the picker theme', () async {
+      final repo = InMemorySeedRepository(
+        clock: () => DateTime(2026, 9, 4, 12),
+        themePicker: () => SeedTheme.growth,
+      );
+
+      final seed = await repo.getTodaySeed();
+
+      expect(seed.theme, SeedTheme.growth);
+    });
+
+    test('default picker assigns a valid theme', () async {
+      final repo = InMemorySeedRepository(
+        clock: () => DateTime(2026, 9, 4, 12),
+      );
+
+      final seed = await repo.getTodaySeed();
+
+      expect(SeedTheme.isValid(seed.theme), isTrue);
+    });
+
+    test('getRandomQuoteByTheme returns a matching quote', () async {
+      final repo = InMemoryQuoteRepository();
+
+      final quote = await repo.getRandomQuoteByTheme(SeedTheme.growth);
+
+      expect(quote.theme, SeedTheme.growth);
+    });
+
+    test('getRandomQuoteByTheme falls back when the theme is missing',
+        () async {
+      final repo = InMemoryQuoteRepository();
+
+      // 시드 데이터에 없는 테마 → 전체 랜덤 폴백.
+      final quote =
+          await repo.getRandomQuoteByTheme(SeedTheme.happiness);
+
+      expect(quote.id, isNotEmpty);
+    });
+
+    test('openSeed reveals a quote of the seed theme', () async {
+      final seedRepository = InMemorySeedRepository(
+        clock: () => DateTime(2026, 9, 4, 12),
+        themePicker: () => SeedTheme.growth,
+      );
+      final fruitRepository = InMemoryFruitRepository(
+        clock: () => DateTime(2026, 9, 4, 12),
+      );
+      final provider = SeedProvider(
+        seedRepository: seedRepository,
+        quoteRepository: InMemoryQuoteRepository(),
+        fruitRepository: fruitRepository,
+      );
+
+      await provider.ensureTodaySeed();
+      await provider.openSeed();
+
+      expect(provider.revealedQuote!.theme, SeedTheme.growth);
+      final fruits = await fruitRepository.getFruits();
+      expect(fruits.single.theme, SeedTheme.growth);
     });
   });
 }

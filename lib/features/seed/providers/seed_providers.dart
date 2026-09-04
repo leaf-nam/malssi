@@ -68,7 +68,10 @@ class SeedProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      final quote = await _quoteRepository.getRandomQuote();
+      // 씨앗과 같은 테마의 명언을 선택한다.
+      // 해당 테마 명언이 없으면 전체에서 랜덤 (저장소 폴백).
+      final quote =
+          await _quoteRepository.getRandomQuoteByTheme(seed.theme);
       _todaySeed =
           await _seedRepository.openSeed(seedId: seed.id, quote: quote);
       await _fruitRepository.harvestFromSeed(seed: _todaySeed!, quote: quote);
