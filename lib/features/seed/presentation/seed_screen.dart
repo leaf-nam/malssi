@@ -165,7 +165,59 @@ class _LockedSeed extends StatelessWidget {
   }
 }
 
-/// 성장 중 화면. 명언을 먼저 보여주고 (#46) 그 아래 단계 이미지 + 진행 표시.
+/// 명언 + 저자 블록. 성장/완성 화면에서 재사용한다.
+/// 잠금 상태 명언 노출(후속)에도 그대로 얹을 수 있도록 분리했다 (#51).
+class _QuoteBlock extends StatelessWidget {
+  const _QuoteBlock({required this.quote});
+
+  final Quote quote;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          '"${quote.text}"',
+          textAlign: TextAlign.center,
+          style: AppTheme.quoteTextStyle(fontSize: 26),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          '— ${quote.author}',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppTheme.paper,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 영역에 맞춰 들어가는 테마 이미지. 에셋이 없거나 로드에 실패하면 🌱를 보여준다.
+class _ContainImage extends StatelessWidget {
+  const _ContainImage({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    if (path.isEmpty) {
+      return const Text('🌱', style: TextStyle(fontSize: 64));
+    }
+    return Image.asset(
+      path,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) =>
+          const Text('🌱', style: TextStyle(fontSize: 64)),
+    );
+  }
+}
+
+/// 성장 중 화면 (#51). 명언 + 저자가 2/3, 성장 에셋이 1/3을 차지한다.
 /// 디버그에서만 빨리감기 버튼.
 class _GrowingSeed extends StatelessWidget {
   const _GrowingSeed({
@@ -183,87 +235,86 @@ class _GrowingSeed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final quote = this.quote;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(32, 40, 32, 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (quote != null) ...[
-              Text(
-                '"${quote.text}"',
-                textAlign: TextAlign.center,
-                style: AppTheme.quoteTextStyle(fontSize: 26),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 명언 + 저자: 나머지 2/3.
+        Expanded(
+          flex: 2,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: quote == null
+                  ? const SizedBox.shrink()
+                  : _QuoteBlock(quote: quote),
+            ),
+          ),
+        ),
+        // 성장 에셋: 화면의 1/3.
+        Expanded(
+          flex: 1,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: _ContainImage(
+                  path: ThemeAssets.growthImage(
+                      seed.theme, seed.growthStage),
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
-                '— ${quote.author}',
+                '${seed.growthStage}단계 성장 중',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                   color: AppTheme.paper,
                 ),
               ),
-              const SizedBox(height: 32),
-            ],
-            Center(
-              child: _ThemeImage(
-                path: ThemeAssets.growthImage(seed.theme, seed.growthStage),
-                size: 120,
-                fallbackFontSize: 72,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              '${seed.growthStage}단계 성장 중',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.paper,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var i = 0; i < Seed.totalStages; i++)
-                  Container(
-                    width: 10,
-                    height: 10,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: i <= seed.growthStage
-                          ? AppTheme.gold
-                          : AppTheme.line,
+              const SizedBox(height: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 0; i < Seed.totalStages; i++)
+                    Container(
+                      width: 10,
+                      height: 10,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: i <= seed.growthStage
+                            ? AppTheme.gold
+                            : AppTheme.line,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '2시간마다 한 단계씩 자라요',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppTheme.muted),
-            ),
-            if (kDebugMode) ...[
-              const SizedBox(height: 24),
-              Center(
-                child: OutlinedButton(
-                  onPressed: isBusy
-                      ? null
-                      : () =>
-                          context.read<SeedProvider>().debugAdvanceGrowth(),
-                  child: const Text('디버그: +2시간'),
-                ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '2시간마다 한 단계씩 자라요',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppTheme.muted),
               ),
             ],
-          ],
+          ),
         ),
-      ),
+        if (kDebugMode) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Center(
+              child: OutlinedButton(
+                onPressed: isBusy
+                    ? null
+                    : () =>
+                        context.read<SeedProvider>().debugAdvanceGrowth(),
+                child: const Text('디버그: +2시간'),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -280,40 +331,43 @@ class _OpenedQuote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fruit = this.fruit;
     return GestureDetector(
       onTap: onTapReview,
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(32, 48, 32, 48),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                '"${quote.text}"',
-                textAlign: TextAlign.center,
-                style: AppTheme.quoteTextStyle(fontSize: 26),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 명언 + 저자: 나머지 2/3.
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: _QuoteBlock(quote: quote),
               ),
-              const SizedBox(height: 16),
-              Text(
-                '— ${quote.author}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppTheme.paper,
-                ),
-              ),
-              if (onTapReview != null) ...[
-                const SizedBox(height: 24),
-                const Text(
-                  '눌러서 오늘의 리뷰 남기기',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: AppTheme.muted),
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
+          // 완성 열매: 화면의 1/3 (#51).
+          if (fruit != null)
+            Expanded(
+              flex: 1,
+              child: Center(
+                child: _ContainImage(
+                  path: ThemeAssets.fruitImage(fruit.theme),
+                ),
+              ),
+            ),
+          if (onTapReview != null) ...[
+            const Padding(
+              padding: EdgeInsets.only(top: 8, bottom: 20),
+              child: Text(
+                '눌러서 오늘의 리뷰 남기기',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: AppTheme.muted),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
