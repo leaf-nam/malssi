@@ -142,6 +142,13 @@ void main() {
       expect(ThemeAssets.seedImage('nope'), isEmpty);
       expect(ThemeAssets.labelOf(''), '오늘의 씨앗');
     });
+
+    test('cellColor covers all 7 themes plus fallback', () {
+      for (final key in SeedTheme.values) {
+        expect(ThemeAssets.cellColor(key), isNotNull);
+      }
+      expect(ThemeAssets.cellColor(''), isNotNull);
+    });
   });
 
   group('theme selection (random)', () {

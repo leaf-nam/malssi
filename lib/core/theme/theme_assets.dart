@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:malssi/core/constants/seed_themes.dart';
 
 /// 테마별 표시 요소 (에셋 경로·한글명) 매핑.
@@ -40,4 +41,26 @@ abstract class ThemeAssets {
 
   /// 한글 테마명. 미등록 테마는 `'오늘의 씨앗'`.
   static String labelOf(String theme) => labels[theme] ?? '오늘의 씨앗';
+
+  /// 잔디 그리드 셀 색상. 미등록 테마는 회색.
+  static Color cellColor(String theme) {
+    switch (theme) {
+      case SeedTheme.vitality:
+        return const Color(0xFFE5484D);
+      case SeedTheme.happiness:
+        return const Color(0xFFF59E0B);
+      case SeedTheme.growth:
+        return const Color(0xFFEAB308);
+      case SeedTheme.health:
+        return const Color(0xFF22C55E);
+      case SeedTheme.peace:
+        return const Color(0xFF3B82F6);
+      case SeedTheme.relationship:
+        return const Color(0xFF6366F1);
+      case SeedTheme.wisdom:
+        return const Color(0xFFEC4899);
+      default:
+        return const Color(0xFF9AA0B4);
+    }
+  }
 }

@@ -10,6 +10,13 @@ abstract class FruitRepository {
 
   /// 수확일 내림차순 스트림.
   Stream<List<Fruit>> getFruitsStream();
+
+  /// 후기·점수를 저장한다. 점수는 0~5 (`0` = 미평가), 범위를 벗어나면 [ArgumentError].
+  Future<Fruit> updateReview({
+    required String fruitId,
+    required String memo,
+    required int fidelityScore,
+  });
 }
 
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
@@ -47,4 +54,24 @@ class InMemoryFruitRepository implements FruitRepository {
 
   @override
   Stream<List<Fruit>> getFruitsStream() => Stream.value(_sortedDesc());
+
+  @override
+  Future<Fruit> updateReview({
+    required String fruitId,
+    required String memo,
+    required int fidelityScore,
+  }) async {
+    if (fidelityScore < 0 || fidelityScore > 5) {
+      throw ArgumentError(
+          'fidelityScore must be 0..5: $fidelityScore');
+    }
+    final index = _fruits.indexWhere((f) => f.id == fruitId);
+    if (index == -1) {
+      throw StateError('Fruit not found: $fruitId');
+    }
+    final updated = _fruits[index]
+        .copyWith(memo: memo, fidelityScore: fidelityScore);
+    _fruits[index] = updated;
+    return updated;
+  }
 }

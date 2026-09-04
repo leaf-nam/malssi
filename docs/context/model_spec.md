@@ -199,12 +199,14 @@ class CollectionNames {
 | author      | `String`   | `author`     | `''` (명언 스냅샷)         |
 | harvestedAt | `DateTime` | `harvestedAt`| `DateTime.now()`           |
 | theme       | `String`   | `theme`      | `''` (수확 시점 `Quote.theme` 스냅샷 — §4.11) |
+| memo        | `String`   | `memo`       | `''` (그날의 후기, 미작성) |
+| fidelityScore | `int`    | `fidelityScore` | `0` (그날의 점수 0~5, `0` = 미평가) |
 
-- **스냅샷 규칙**: `text`/`author`는 수확 시점의 `Quote` 복사본이다.
+- **스냅샷 규칙**: `text`/`author`/`theme`은 수확 시점의 `Quote` 복사본이다.
   원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
+  `memo`/`fidelityScore`는 수확 후 상세 카드에서 작성한다 (#31).
 - **컬렉션**: `fruits` (`CollectionNames.fruits`).
-- **향후 과제 (후속 이슈로 분리)**: 충실도 기록 필드
-  (`fidelityScore` (`int?`), `memo` (`String?`)), 성장 단계 필드 추가 시 본 스펙 개정.
+- **향후 과제 (후속 이슈로 분리)**: 성장 단계 필드 추가 시 본 스펙 개정.
 
 ### 4.10 `AppSettings` — 앱 설정 (3탭 개편 신규, 2026-09-04)
 
@@ -262,7 +264,7 @@ class CollectionNames {
 | `HashtagRepository` (제거됨, #19) | — | 구 `category` 화면과 함께 제거 |
 | `SubmissionRepository` (제거됨, #19) | — | 구 `my_quote` 화면과 함께 제거 |
 | `SeedRepository` (신규) | `lib/features/seed/data/` (예정)                      | `getTodaySeed`, `getSeedsStream`, `openSeed`                                   |
-| `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순)                         |
+| `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순), `updateReview` (후기·점수 저장) |
 | `SettingsRepository` (신규) | `lib/features/settings/data/` (예정)              | `getSettingsStream`, `updateSeedTime`, `setNotifyEnabled`                      |
 
 > `home_providers.dart`는 `QuoteRepositoryImpl()`을 참조하지만 해당 구현체가

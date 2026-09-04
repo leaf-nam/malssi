@@ -38,20 +38,23 @@
 
 ## 2. 보관 탭 (`/archive`)
 
-- **요구**: 지금까지 수확한 열매들을 기록한다. 1차 범위(MVP)는 날짜+명언만.
-  열매는 씨앗과 같은 테마를 가지며, 보관 목록에서 테마별 열매 이미지(§4 참조)로 표시한다.
-- **구현 상태**: 미구현 (신규).
-- **관련 코드 (예정)**:
-  - 모델: `Fruit` (`model_spec.md` §4.9 참조).
-  - 저장소: `FruitRepository.getFruitsStream()` (날짜 내림차순)
-    (`lib/features/archive/data/` 예정).
-  - 화면: `ArchiveScreen` (`lib/features/archive/presentation/archive_screen.dart` 예정).
-  - 상태: `ArchiveProvider` (`lib/features/archive/providers/` 예정).
+- **요구**: 지금까지 수확한 열매들을 기록한다.
+  GitHub 잔디 스타일로 **최근 1년을 그리드**로 보여주고, 각 칸은 해당 날짜 열매의
+  **테마 색깔로만** 표시한다. 칸을 터치하면 확대되면서 **열매 + 그날의 후기 및 점수 카드**가 나온다.
+- **구현 상태**: 잔디 그리드 + 상세 카드 + 후기·점수 저장 구현됨 (#31).
+  기존 목록형 MVP는 본 형태로 대체되었다.
+- **관련 코드**:
+  - 모델: `Fruit` (`model_spec.md` §4.9 참조) — `memo`/`fidelityScore`(0~5, `0`=미평가) 포함.
+  - 저장소: `FruitRepository.getFruitsStream()` (날짜 내림차순),
+    `updateReview({fruitId, memo, fidelityScore})` (0~5 범위 외는 `ArgumentError`).
+  - 화면: `ArchiveScreen` (`lib/features/archive/presentation/archive_screen.dart`) —
+    `_GrassGrid`(53주 × 7일, 가로 스크롤) + `_FruitDetailSheet`(열매 이미지·명언·별점·후기 입력·저장).
+  - 상태: `ArchiveProvider` (`load()`, `fruitsByDateKey`, `updateReview()`).
+  - 셀 색상: `ThemeAssets.cellColor(theme)` (`lib/core/theme/theme_assets.dart`).
 - **동작 플로우 (목표)**:
-  1. 씨앗 개봉 시 생성된 `Fruit`가 보관 목록에 추가된다.
-  2. 목록은 수확일 내림차순으로 노출 (날짜 + 명언 텍스트 + 저자).
-- **향후 과제 (후속 이슈로 분리)**: 열매 상세 (충실도 점수/메모, 성장 단계 표시),
-  기존 공유하기의 열매 상세 편입 여부 결정.
+  1. 씨앗 개봉 시 생성된 `Fruit`가 잔디의 해당 날짜 칸에 테마 색으로 표시된다.
+  2. 칸 터치 → 상세 카드 (열매 이미지 + 명언 + 별점 1~5 + 후기 입력 + `후기 저장하기`).
+- **향후 과제 (후속 이슈로 분리)**: 1년 이전 데이터 페이징, 열매 상세에 기존 공유하기 편입 여부.
 
 ## 3. 설정 탭 (`/settings`)
 
