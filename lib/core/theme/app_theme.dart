@@ -8,8 +8,9 @@ class AppTheme {
   static const String fontFamily = 'Galmuri11';
 
   // 다크 팔레트 (씨앗 탭 고정 + 다크모드).
-  static const Color ink900 = Color(0xFF171B24);
-  static const Color ink850 = Color(0xFF1C202B);
+  /// 말씨 탭 전용 니어블랙 (#59 — 기본 다크보다 더 어둡게).
+  static const Color abyss = Color(0xFF0A0C11);
+  static const Color ink900 = Color(0xFF171B24);  static const Color ink850 = Color(0xFF1C202B);
   static const Color ink800 = Color(0xFF20242F);
   static const Color ink700 = Color(0xFF2A2F3D);
   static const Color paper = Color(0xFFEFE9DD);
@@ -103,8 +104,8 @@ class AppTheme {
         backgroundColor: ink900,
         selectedItemColor: gold,
         unselectedItemColor: muted,
-        selectedLabelStyle: TextStyle(fontSize: 9.5),
-        unselectedLabelStyle: TextStyle(fontSize: 9.5),
+        selectedLabelStyle: TextStyle(fontSize: 12.5),
+        unselectedLabelStyle: TextStyle(fontSize: 12.5),
       ),
     );
   }
@@ -176,8 +177,8 @@ class AppTheme {
         backgroundColor: cream,
         selectedItemColor: goldDeep,
         unselectedItemColor: cocoaMuted,
-        selectedLabelStyle: TextStyle(fontSize: 9.5),
-        unselectedLabelStyle: TextStyle(fontSize: 9.5),
+        selectedLabelStyle: TextStyle(fontSize: 12.5),
+        unselectedLabelStyle: TextStyle(fontSize: 12.5),
       ),
     );
   }

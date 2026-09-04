@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
@@ -216,6 +217,9 @@ void main() {
 
       expect(find.text('말씨'), findsOneWidget);
       expect(find.text('씨앗 심기'), findsOneWidget);
+      // #59: 말씨 탭 배경은 니어블랙 고정.
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+      expect(scaffold.backgroundColor, AppTheme.abyss);
     });
 
     testWidgets('plant reveals the quote at once with growth below',

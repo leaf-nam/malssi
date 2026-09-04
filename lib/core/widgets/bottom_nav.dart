@@ -12,17 +12,22 @@ class MainBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      selectedFontSize: 9.5,
-      unselectedFontSize: 9.5,
-      currentIndex: currentIndex,
-      onTap: (index) => context.go(_paths[index]),
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.eco), label: '말씨'),
-        BottomNavigationBarItem(icon: Icon(Icons.grass), label: '정원'),
-        BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
-      ],
+    // #60: 바·글씨·아이콘 확대. 상단 패딩으로 전체 높이를 키운다.
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        iconSize: 30,
+        selectedFontSize: 12.5,
+        unselectedFontSize: 12.5,
+        currentIndex: currentIndex,
+        onTap: (index) => context.go(_paths[index]),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.eco), label: '말씨'),
+          BottomNavigationBarItem(icon: Icon(Icons.grass), label: '정원'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
+        ],
+      ),
     );
   }
 }

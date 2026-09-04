@@ -19,8 +19,8 @@ class SeedScreen extends StatelessWidget {
     final state = context.watch<SeedProvider>();
 
     return Scaffold(
-      // 씨앗 탭(메인)은 모드와 무관하게 항상 다크 고정.
-      backgroundColor: AppTheme.ink900,
+      // 씨앗 탭(메인)은 모드와 무관하게 항상 니어블랙 고정 (#59).
+      backgroundColor: AppTheme.abyss,
       body: SafeArea(child: _buildBody(context, state)),
       bottomNavigationBar: const MainBottomNav(currentIndex: 0),
     );
