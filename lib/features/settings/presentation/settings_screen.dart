@@ -1,20 +1,114 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
+import 'package:malssi/features/settings/domain/app_settings.dart';
+import 'package:malssi/features/settings/providers/settings_providers.dart';
 
-/// 설정 탭. #21에서 씨앗 생성시간 설정 UI로 채운다. 그 전까지 자리 표시자.
+/// 설정 탭. 씨앗 생성시간 + 매일 알림 on/off.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      appBar: null,
-      body: SafeArea(
-        child: Center(
-          child: Text('씨앗 생성시간을 여기에 설정해요'),
+    final state = context.watch<SettingsProvider>();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('설정')),
+      body: _buildBody(context, state),
+      bottomNavigationBar: const MainBottomNav(currentIndex: 2),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, SettingsProvider state) {
+    if (state.isLoading && state.settings == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final settings = state.settings;
+    if (settings == null) {
+      return Center(
+          child: Text(state.errorMessage ?? '설정을 불러올 수 없습니다.'));
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      children: [
+        _Row(
+          label: '씨앗 생성 시간',
+          trailing: '${settings.seedTime} ›',
+          onTap: () => _pickSeedTime(context, state, settings),
+        ),
+        _Row(
+          label: '매일 알림',
+          trailingWidget: Switch(
+            value: settings.notifyEnabled,
+            activeThumbColor: AppTheme.gold,
+            onChanged: state.setNotifyEnabled,
+          ),
+        ),
+        if (state.errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              state.errorMessage!,
+              style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+            ),
+          ),
+        const Padding(
+          padding: EdgeInsets.only(top: 16),
+          child: Text(
+            '설정한 시간에 오늘의 씨앗이 도착하고 알림을 보내드려요',
+            style: TextStyle(fontSize: 11.5, color: AppTheme.muted),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickSeedTime(BuildContext context, SettingsProvider state,
+      AppSettings settings) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime:
+          TimeOfDay(hour: settings.seedHour, minute: settings.seedMinute),
+    );
+    if (picked == null || !context.mounted) return;
+    final formatted =
+        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+    await state.updateSeedTime(formatted);
+  }
+}
+
+class _Row extends StatelessWidget {
+  const _Row(
+      {required this.label, this.trailing, this.trailingWidget, this.onTap});
+
+  final String label;
+  final String? trailing;
+  final Widget? trailingWidget;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: AppTheme.line)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 13, color: AppTheme.paper)),
+            trailingWidget ??
+                Text(trailing ?? '',
+                    style: const TextStyle(
+                        fontSize: 11.5, color: AppTheme.muted)),
+          ],
         ),
       ),
-      bottomNavigationBar: MainBottomNav(currentIndex: 2),
     );
   }
 }

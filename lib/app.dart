@@ -3,20 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/auth/data/dummy_auth_service.dart';
-import 'package:malssi/features/category/data/hashtag_repository.dart';
-import 'package:malssi/features/category/providers/category_providers.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
-import 'package:malssi/features/home/providers/home_providers.dart';
-import 'package:malssi/features/my_quote/data/submission_repository.dart';
-import 'package:malssi/features/my_quote/providers/write_providers.dart';
-import 'package:malssi/features/mypage/data/user_repository.dart';
-import 'package:malssi/features/mypage/providers/user_providers.dart';
-import 'package:malssi/features/quote_detail/data/comment_repository.dart';
-import 'package:malssi/features/quote_detail/providers/comment_providers.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
+import 'package:malssi/features/settings/data/settings_repository.dart';
+import 'package:malssi/features/settings/providers/settings_providers.dart';
 import 'package:malssi/routing/app_router.dart';
 
 class AppShell extends StatelessWidget {
@@ -25,13 +18,11 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final quoteRepository = InMemoryQuoteRepository();
-    final commentRepository = InMemoryCommentRepository();
     final seedRepository = InMemorySeedRepository();
     final fruitRepository = InMemoryFruitRepository();
     return MultiProvider(
       providers: [
         Provider<QuoteRepository>.value(value: quoteRepository),
-        Provider<CommentRepository>.value(value: commentRepository),
         Provider<SeedRepository>.value(value: seedRepository),
         Provider<FruitRepository>.value(value: fruitRepository),
         ChangeNotifierProvider(
@@ -46,22 +37,27 @@ class AppShell extends StatelessWidget {
             ..load(),
         ),
         ChangeNotifierProvider(
-          create: (_) => QuoteProvider(repository: quoteRepository)..fetchRandomQuote(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => UserProfileProvider(repository: DummyUserRepository())..load(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CommentProvider(repository: commentRepository),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => CategoryProvider(repository: InMemoryHashtagRepository()),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => WriteProvider(repository: InMemorySubmissionRepository()),
+          create: (_) => SettingsProvider(
+            settingsRepository: InMemorySettingsRepository(),
+            onSettingsChanged:
+                ({required hour, required minute, required enabled}) async {
+              if (enabled) {
+                await NotificationService.instance
+                    .scheduleDailySeedNotification(
+                  id: NotificationService.seedNotificationId,
+                  title: '오늘의 씨앗이 도착했어요',
+                  body: '씨앗을 깨고 오늘의 명언을 만나보세요',
+                  hour: hour,
+                  minute: minute,
+                );
+              } else {
+                await NotificationService.instance.cancelSeedNotification(
+                    NotificationService.seedNotificationId);
+              }
+            },
+          )..load(),
         ),
         Provider(create: (_) => DummyAuthService()),
-        Provider<NotificationService>(create: (_) => NotificationService.instance),
       ],
       child: MaterialApp.router(
         title: 'malssi',
