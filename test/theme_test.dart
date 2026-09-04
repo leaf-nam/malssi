@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
@@ -112,6 +113,34 @@ void main() {
       final fruit = await repo.harvestFromSeed(seed: seed, quote: quote);
 
       expect(fruit.theme, SeedTheme.health);
+    });
+  });
+
+  group('ThemeAssets', () {
+    test('maps all 7 themes to asset paths', () {
+      expect(ThemeAssets.fruitImage(SeedTheme.vitality),
+          'assets/images/strawberry.png');
+      expect(ThemeAssets.fruitImage(SeedTheme.happiness),
+          'assets/images/orange.png');
+      expect(ThemeAssets.fruitImage(SeedTheme.growth),
+          'assets/images/lemon.png');
+      expect(ThemeAssets.fruitImage(SeedTheme.health),
+          'assets/images/kiwi.png');
+      expect(ThemeAssets.fruitImage(SeedTheme.peace),
+          'assets/images/blueberry.png');
+      expect(ThemeAssets.fruitImage(SeedTheme.relationship),
+          'assets/images/grape.png');
+      expect(ThemeAssets.fruitImage(SeedTheme.wisdom),
+          'assets/images/grapefruit.png');
+      expect(ThemeAssets.seedImage(SeedTheme.growth),
+          'assets/images/lemon_seed.png');
+      expect(ThemeAssets.labelOf(SeedTheme.growth), '성장');
+    });
+
+    test('unknown theme falls back', () {
+      expect(ThemeAssets.fruitImage(''), isEmpty);
+      expect(ThemeAssets.seedImage('nope'), isEmpty);
+      expect(ThemeAssets.labelOf(''), '오늘의 씨앗');
     });
   });
 

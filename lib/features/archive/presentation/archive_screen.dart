@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
@@ -89,7 +90,7 @@ class _FruitCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('🌱', style: TextStyle(fontSize: 14)),
+              _FruitIcon(theme: fruit.theme),
               const SizedBox(width: 6),
               Text(
                 ArchiveScreen.formatDate(fruit.harvestedAt),
@@ -114,6 +115,28 @@ class _FruitCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 열매 테마 아이콘. 에셋이 없거나 로드에 실패하면 🌱를 보여준다.
+class _FruitIcon extends StatelessWidget {
+  const _FruitIcon({required this.theme});
+
+  final String theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = ThemeAssets.fruitImage(theme);
+    if (path.isEmpty) {
+      return const Text('🌱', style: TextStyle(fontSize: 14));
+    }
+    return Image.asset(
+      path,
+      width: 20,
+      height: 20,
+      errorBuilder: (_, __, ___) =>
+          const Text('🌱', style: TextStyle(fontSize: 14)),
     );
   }
 }

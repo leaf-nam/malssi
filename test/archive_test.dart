@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/archive_screen.dart';
@@ -21,6 +22,7 @@ Future<void> _harvest(
   required String seedId,
   required String text,
   required DateTime at,
+  String theme = '',
 }) {
   return repo.harvestFromSeed(
     seed: Seed(
@@ -29,6 +31,7 @@ Future<void> _harvest(
       quoteId: 'q',
       status: SeedStatus.opened,
       createdAt: at,
+      theme: theme,
     ),
     quote: Quote(
       id: 'q',
@@ -36,6 +39,7 @@ Future<void> _harvest(
       author: '작자',
       likes: 0,
       createdAt: at,
+      theme: theme,
     ),
   );
 }
@@ -109,6 +113,24 @@ void main() {
       // 날짜 표시 확인 (2026.09.04 / 2026.09.03)
       expect(find.text('2026.09.04'), findsOneWidget);
       expect(find.text('2026.09.03'), findsOneWidget);
+    });
+
+    testWidgets('fruit card shows the themed fruit image', (tester) async {
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth);
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('성장 열매'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
     });
   });
 }
