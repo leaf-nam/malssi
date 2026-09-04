@@ -8,7 +8,8 @@ import 'package:malssi/features/archive/providers/archive_providers.dart';
 
 /// 보관 탭. 1년 단위 잔디 그리드로 수확 현황을 보여준다.
 /// 각 칸은 해당 날짜 열매의 테마 색상이며, 터치하면 상세 카드가 열린다.
-class ArchiveScreen extends StatelessWidget {
+/// 탭 진입 시마다 보관 목록을 다시 불러온다 (#62).
+class ArchiveScreen extends StatefulWidget {
   const ArchiveScreen({super.key});
 
   /// 테스트용 오늘 날짜 고정. `null`이면 실제 오늘.
@@ -24,6 +25,22 @@ class ArchiveScreen extends StatelessWidget {
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
     return '${date.year}-$m-$d';
+  }
+
+  @override
+  State<ArchiveScreen> createState() => _ArchiveScreenState();
+}
+
+class _ArchiveScreenState extends State<ArchiveScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 진입 시 reload: 세션 중 수확된 열매를 바로 반영한다.
+    // 빌드 중 notify 방지를 위해 첫 프레임 이후에 호출한다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<ArchiveProvider>().load();
+    });
   }
 
   @override
@@ -44,7 +61,7 @@ class ArchiveScreen extends StatelessWidget {
     if (state.errorMessage != null && state.fruits.isEmpty) {
       return Center(child: Text('Error: ${state.errorMessage}'));
     }
-    final today = debugToday ?? DateTime.now();
+    final today = ArchiveScreen.debugToday ?? DateTime.now();
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
@@ -83,7 +100,7 @@ class ArchiveScreen extends StatelessWidget {
       builder: (_) => FruitReviewSheet(
         quoteText: fruit.text,
         author: fruit.author,
-        dateLabel: formatDate(fruit.harvestedAt),
+        dateLabel: ArchiveScreen.formatDate(fruit.harvestedAt),
         imagePath: ThemeAssets.fruitImage(fruit.theme),
         initialMemo: fruit.memo,
         initialScore: fruit.fidelityScore,

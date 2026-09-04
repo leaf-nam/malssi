@@ -208,6 +208,17 @@ void main() {
   });
 
   group('SeedScreen', () {
+    testWidgets('entering the tab refreshes growth state (#62)',
+        (tester) async {
+      // 사전 준비 없이 진입 → 화면이 직접 갱신해 씨앗을 준비한다.
+      final provider = _buildProvider();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
     testWidgets('locked seed shows the plant button', (tester) async {
       final provider = _buildProvider();
       await provider.ensureTodaySeed();

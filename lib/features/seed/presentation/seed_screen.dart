@@ -11,8 +11,25 @@ import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 
 /// 씨앗 탭 (메인). 매일 씨앗 1개 → 탭 1회 → 명언 공개.
-class SeedScreen extends StatelessWidget {
+/// 탭 진입 시마다 성장 상태를 갱신한다 (#62).
+class SeedScreen extends StatefulWidget {
   const SeedScreen({super.key});
+
+  @override
+  State<SeedScreen> createState() => _SeedScreenState();
+}
+
+class _SeedScreenState extends State<SeedScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 진입 시 갱신: 앱 사용 중에도 단계 상승·완성 수확을 반영한다.
+    // 빌드 중 notify 방지를 위해 첫 프레임 이후에 호출한다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<SeedProvider>().refreshGrowth();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
