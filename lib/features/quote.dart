@@ -6,6 +6,9 @@ class Quote {
   final DateTime createdAt;
   final List<String> tags;
 
+  /// 테마 분류 키 (`SeedTheme` 값 중 1개, 미분류는 `''`).
+  final String theme;
+
   const Quote({
     required this.id,
     required this.text,
@@ -13,6 +16,7 @@ class Quote {
     required this.likes,
     required this.createdAt,
     this.tags = const [],
+    this.theme = '',
   });
 
   factory Quote.fromMap(Map<String, dynamic> map) {
@@ -23,6 +27,7 @@ class Quote {
       likes: map['likes'] ?? 0,
       createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
       tags: List<String>.from(map['tags'] ?? const []),
+      theme: map['theme'] ?? '',
     );
   }
 
@@ -34,6 +39,7 @@ class Quote {
       'likes': likes,
       'createdAt': createdAt,
       'tags': tags,
+      'theme': theme,
     };
   }
 
@@ -44,6 +50,7 @@ class Quote {
     int? likes,
     DateTime? createdAt,
     List<String>? tags,
+    String? theme,
   }) {
     return Quote(
       id: id ?? this.id,
@@ -52,6 +59,7 @@ class Quote {
       likes: likes ?? this.likes,
       createdAt: createdAt ?? this.createdAt,
       tags: tags ?? this.tags,
+      theme: theme ?? this.theme,
     );
   }
 }

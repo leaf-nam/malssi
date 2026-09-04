@@ -5,12 +5,17 @@ class Seed {
   final String status;
   final DateTime createdAt;
 
+  /// 당일 씨앗의 테마 (`SeedTheme` 값 중 1개, 미지정은 `''`).
+  /// 일자별 선정 방식은 후속 이슈에서 확정한다.
+  final String theme;
+
   const Seed({
     required this.id,
     required this.dateKey,
     required this.quoteId,
     required this.status,
     required this.createdAt,
+    this.theme = '',
   });
 
   /// 날짜키 (`'YYYY-MM-DD'`). 문서 ID로도 사용한다.
@@ -30,6 +35,7 @@ class Seed {
       quoteId: map['quoteId'] ?? '',
       status: map['status'] ?? SeedStatus.locked,
       createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
+      theme: map['theme'] ?? '',
     );
   }
 
@@ -40,6 +46,7 @@ class Seed {
       'quoteId': quoteId,
       'status': status,
       'createdAt': createdAt,
+      'theme': theme,
     };
   }
 
@@ -49,6 +56,7 @@ class Seed {
     String? quoteId,
     String? status,
     DateTime? createdAt,
+    String? theme,
   }) {
     return Seed(
       id: id ?? this.id,
@@ -56,6 +64,7 @@ class Seed {
       quoteId: quoteId ?? this.quoteId,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      theme: theme ?? this.theme,
     );
   }
 }

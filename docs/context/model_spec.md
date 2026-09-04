@@ -66,6 +66,7 @@ class CollectionNames {
 | likes | `int` | `likes` | `0` |
 | createdAt | `DateTime` | `createdAt` | `DateTime.now()` |
 | tags | `List<String>` | `tags` | `[]` (MVP, `#협력` 등 해시태그) |
+| theme | `String` | `theme` | `''` (테마 미분류, `SeedTheme` 키 값 — §4.11) |
 
 - **직렬화**: `fromMap` 팩토리, `toMap()`, `copyWith({id, text, author, likes, createdAt})` 제공.
   `Quote._internal` 클래스가 `implements Quote`로 실제 저장소 역할을 합니다.
@@ -175,6 +176,7 @@ class CollectionNames {
 | quoteId   | `String`   | `quoteId`    | `''` (개봉 시 확정, 그 전은 `''`) |
 | status    | `String`   | `status`     | `'locked'` (`locked`/`opened`/`expired`) |
 | createdAt | `DateTime` | `createdAt`  | `DateTime.now()`           |
+| theme     | `String`   | `theme`      | `''` (`SeedTheme` 키 값 — §4.11, 일자별 선정 방식은 후속 이슈) |
 
 - **상태 전이**: `locked` (생성) → `opened` (탭 1회 개봉) →
   자정 만료 시 미개봉분은 `expired` (이월 없음).
@@ -196,6 +198,7 @@ class CollectionNames {
 | text        | `String`   | `text`       | `''` (명언 스냅샷)         |
 | author      | `String`   | `author`     | `''` (명언 스냅샷)         |
 | harvestedAt | `DateTime` | `harvestedAt`| `DateTime.now()`           |
+| theme       | `String`   | `theme`      | `''` (수확 시점 `Quote.theme` 스냅샷 — §4.11) |
 
 - **스냅샷 규칙**: `text`/`author`는 수확 시점의 `Quote` 복사본이다.
   원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
@@ -226,7 +229,7 @@ class CollectionNames {
 - **개념**: 명언은 7개 테마로 분류하여 관리한다. 씨앗 1개는 테마 1개를 갖고,
   그 씨앗에서 수확되는 열매도 같은 테마다. 일자별 씨앗 테마 선정 방식(순환/랜덤 등)은
   후속 이슈에서 확정한다.
-- **정규 키** (7종, 문자열 상수화 예정 — 위치 후보 `lib/core/constants/seed_themes.dart`):
+- **정규 키** (7종, `lib/core/constants/seed_themes.dart`의 `SeedTheme`로 상수화됨):
   `vitality` / `happiness` / `growth` / `health` / `peace` / `relationship` / `wisdom`.
 
 | 키 | 테마 | 씨앗 | 최종 열매 | 에셋 (`assets/images/`) |
@@ -239,10 +242,10 @@ class CollectionNames {
 | `relationship` | 🟦 관계 | 남색 씨앗 | 🍇 포도 | `grape_seed.png` / `grape.png` |
 | `wisdom` | 🩷 지혜 | 분홍 자몽 씨앗 | 자몽 | `grapefruit_seed.png` / `grapefruit.png` |
 
-- **필드 귀속** (예정, 구현은 별도 이슈로 분리):
+- **필드 귀속** (구현됨, #28):
   - `Quote.theme` — 명언의 분류 테마 (관리용, `String`, 키 값).
   - `Seed.theme` — 당일 씨앗의 테마. 개봉 시 같은 테마의 명언을 선택한다.
-  - `Fruit.theme` — 수확 열매의 테마. 보관 탭에서 테마별 열매 이미지 렌더링에 사용한다.
+  - `Fruit.theme` — 수확 열매의 테마 스냅샷. 보관 탭에서 테마별 열매 이미지 렌더링에 사용한다.
   - `fromMap` 누락 시 기본값은 `''`. §3 직렬화 규칙을 따른다.
 - **에셋 규칙**: 열매 이미지는 `<이름>.png`, 씨앗 이미지는 `<이름>_seed.png`.
   `pubspec.yaml`의 `assets/images/`에 등록되어 있다.
