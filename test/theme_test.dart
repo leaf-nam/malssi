@@ -191,9 +191,19 @@ void main() {
 
       // 시드 데이터에 없는 테마 → 전체 랜덤 폴백.
       final quote =
-          await repo.getRandomQuoteByTheme(SeedTheme.happiness);
+          await repo.getRandomQuoteByTheme('unknown-theme');
 
       expect(quote.id, isNotEmpty);
+    });
+
+    test('every theme has at least one quote (#54)', () async {
+      final repo = InMemoryQuoteRepository();
+
+      for (final theme in SeedTheme.values) {
+        final quote = await repo.getRandomQuoteByTheme(theme);
+
+        expect(quote.theme, theme);
+      }
     });
 
     test('planting reveals a quote of the seed theme at once',

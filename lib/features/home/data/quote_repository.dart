@@ -30,7 +30,6 @@ class InMemoryQuoteRepository implements QuoteRepository {
       author: '아프리카 속담',
       likes: 128,
       createdAt: DateTime(2026, 1, 1),
-      tags: const ['협력', '관계'],
       theme: SeedTheme.relationship,
     ),
     Quote(
@@ -39,7 +38,6 @@ class InMemoryQuoteRepository implements QuoteRepository {
       author: '노자',
       likes: 96,
       createdAt: DateTime(2026, 1, 2),
-      tags: const ['도전', '인내'],
       theme: SeedTheme.growth,
     ),
     Quote(
@@ -48,7 +46,6 @@ class InMemoryQuoteRepository implements QuoteRepository {
       author: '랄프 왈도 에머슨',
       likes: 74,
       createdAt: DateTime(2026, 1, 3),
-      tags: const ['위로', '성장'],
       theme: SeedTheme.peace,
     ),
     Quote(
@@ -57,8 +54,31 @@ class InMemoryQuoteRepository implements QuoteRepository {
       author: '한국 속담',
       likes: 61,
       createdAt: DateTime(2026, 1, 4),
-      tags: const ['도전'],
       theme: SeedTheme.vitality,
+    ),
+    Quote(
+      id: 'seed-5',
+      text: '웃는 집에 복이 온다.',
+      author: '한국 속담',
+      likes: 58,
+      createdAt: DateTime(2026, 1, 5),
+      theme: SeedTheme.happiness,
+    ),
+    Quote(
+      id: 'seed-6',
+      text: '건강을 잃으면 모든 것을 잃는다.',
+      author: '한국 속담',
+      likes: 52,
+      createdAt: DateTime(2026, 1, 6),
+      theme: SeedTheme.health,
+    ),
+    Quote(
+      id: 'seed-7',
+      text: '아는 것이 힘이다.',
+      author: '프랜시스 베이컨',
+      likes: 49,
+      createdAt: DateTime(2026, 1, 7),
+      theme: SeedTheme.wisdom,
     ),
   ];
 
