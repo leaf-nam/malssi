@@ -31,6 +31,8 @@ flutter:
     - assets/images/
 
   fonts:
-    - family: NotoSerifKR
+    - family: Galmuri11
       fonts:
-        - asset: assets/fonts/NotoSerifKR.ttf
+        - asset: assets/fonts/Galmuri11.ttf
+        - asset: assets/fonts/Galmuri11-Bold.ttf
+          weight: 700

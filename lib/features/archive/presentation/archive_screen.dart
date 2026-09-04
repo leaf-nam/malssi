@@ -22,12 +22,13 @@ class ArchiveScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('보관')),
-      body: _buildBody(state),
+      body: _buildBody(context, state),
       bottomNavigationBar: const MainBottomNav(currentIndex: 1),
     );
   }
 
-  Widget _buildBody(ArchiveProvider state) {
+  Widget _buildBody(BuildContext context, ArchiveProvider state) {
+    final colors = Theme.of(context).colorScheme;
     if (state.isLoading && state.fruits.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -35,26 +36,27 @@ class ArchiveScreen extends StatelessWidget {
       return Center(child: Text('Error: ${state.errorMessage}'));
     }
     if (state.fruits.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('🧺', style: TextStyle(fontSize: 56)),
-              SizedBox(height: 16),
+              const Text('🧺', style: TextStyle(fontSize: 56)),
+              const SizedBox(height: 16),
               Text(
                 '아직 수확한 열매가 없어요',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.paper,
+                  color: colors.onSurface,
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
                 '씨앗 탭에서 오늘의 씨앗을 깨보세요',
-                style: TextStyle(fontSize: 12, color: AppTheme.muted),
+                style: TextStyle(
+                    fontSize: 12, color: colors.onSurfaceVariant),
               ),
             ],
           ),
@@ -78,11 +80,12 @@ class _FruitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
-        color: AppTheme.ink800,
-        border: Border.all(color: AppTheme.line),
+        color: Theme.of(context).cardColor,
+        border: Border.all(color: Theme.of(context).dividerColor),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -94,22 +97,23 @@ class _FruitCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 ArchiveScreen.formatDate(fruit.harvestedAt),
-                style: const TextStyle(
-                    fontSize: 11.5, color: AppTheme.muted),
+                style: TextStyle(
+                    fontSize: 11.5, color: colors.onSurfaceVariant),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             '"${fruit.text}"',
-            style: AppTheme.quoteTextStyle(fontSize: 16),
+            style: AppTheme.quoteTextStyle(fontSize: 16)
+                .copyWith(color: colors.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
             '— ${fruit.author}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppTheme.gold,
+              color: colors.primary,
               fontWeight: FontWeight.w600,
             ),
           ),

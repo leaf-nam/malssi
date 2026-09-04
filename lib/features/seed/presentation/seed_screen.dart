@@ -15,7 +15,11 @@ class SeedScreen extends StatelessWidget {
     final state = context.watch<SeedProvider>();
 
     return Scaffold(
+      // 씨앗 탭(메인)은 모드와 무관하게 항상 다크 고정.
+      backgroundColor: AppTheme.ink900,
       appBar: AppBar(
+        backgroundColor: AppTheme.ink900,
+        foregroundColor: AppTheme.paper,
         title: const Text('오늘의 씨앗'),
       ),
       body: _buildBody(context, state),

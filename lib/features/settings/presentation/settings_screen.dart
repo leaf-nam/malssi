@@ -41,7 +41,6 @@ class SettingsScreen extends StatelessWidget {
           label: '매일 알림',
           trailingWidget: Switch(
             value: settings.notifyEnabled,
-            activeThumbColor: AppTheme.gold,
             onChanged: state.setNotifyEnabled,
           ),
         ),
@@ -89,23 +88,24 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppTheme.line)),
+        decoration: BoxDecoration(
+          border:
+              Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style:
-                    const TextStyle(fontSize: 13, color: AppTheme.paper)),
+                style: TextStyle(fontSize: 13, color: colors.onSurface)),
             trailingWidget ??
                 Text(trailing ?? '',
-                    style: const TextStyle(
-                        fontSize: 11.5, color: AppTheme.muted)),
+                    style: TextStyle(
+                        fontSize: 11.5, color: colors.onSurfaceVariant)),
           ],
         ),
       ),

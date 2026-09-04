@@ -40,11 +40,16 @@
 
 ## 4. 테마 (`AppTheme`)
 
-- 색상/버튼/입력 장식은 `lib/core/theme/app_theme.dart`의 `AppTheme.light()`/`dark()`를 사용하고,
-  화면 코드에 색상·패딩 하드코딩을 피합니다.
-- 기준값: primary `Colors.indigo`, light 배경 `Colors.grey[50]`, dark 배경 `Colors.grey[900]`,
-  ElevatedButton (indigo 배경/white 전경, 16×12 패딩, radius 8),
-  InputDecoration (hint grey[400], radius 8 테두리).
+- 톤앤매너: 도트풍 **Galmuri11** (`assets/fonts/`, OFL) + 밝은 크림(라이트) / 잉크(다크).
+  전역 `fontFamily`와 명언(`quoteTextStyle`) 모두 Galmuri11을 쓴다.
+  런타임 폰트 다운로드는 금지 (macOS 샌드박스 차단 이슈).
+- 모드 규칙: 씨앗 탭(`/`)은 **항상 다크 고정** (명언 가독성).
+  나머지 화면(보관/설정)은 **라이트 기본 + 다크모드 지원** (`ThemeMode.system`).
+- 화면 코드는 `Theme.of(context)` (`cardColor`, `colorScheme`, `dividerColor`)를 쓰고,
+  `AppTheme.ink*`/`paper` 직접 참조는 씨앗 탭(다크 고정)에만 허용한다.
+- 기준값: 라이트 배경 `cream`(`0xFFFFF8EC`), 카드 흰색, 본문 `cocoa`,
+  강조 `goldDeep`; 다크 배경 `ink900`, 강조 `gold`.
+  BottomNav 색상은 하드코딩하지 않고 `bottomNavigationBarTheme`을 따른다.
 
 ## 5. 에러/로딩 처리 패턴
 
