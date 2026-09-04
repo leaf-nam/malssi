@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/quote.dart';
+import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 
 /// 씨앗 탭 (메인). 매일 씨앗 1개 → 탭 1회 → 명언 공개.
@@ -39,6 +41,13 @@ class SeedScreen extends StatelessWidget {
       return const Center(child: Text('오늘의 씨앗을 준비할 수 없습니다.'));
     }
     final quote = state.revealedQuote;
+    if (seed.isComplete && quote != null) {
+      return SingleChildScrollView(child: _OpenedQuote(quote: quote));
+    }
+    if (seed.isGrowing) {
+      return _GrowingSeed(seed: seed, isBusy: state.isLoading);
+    }
+    // 구 `opened` 씨앗 호환: 명언이 있으면 공개 화면.
     if (seed.isOpened && quote != null) {
       return SingleChildScrollView(child: _OpenedQuote(quote: quote));
     }
@@ -106,14 +115,14 @@ class _LockedSeed extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: isBusy
                     ? null
-                    : () => context.read<SeedProvider>().openSeed(),
+                    : () => context.read<SeedProvider>().plantSeed(),
                 child: isBusy
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('씨앗 깨기'),
+                    : const Text('씨앗 심기'),
               ),
             ),
           ],
@@ -123,8 +132,76 @@ class _LockedSeed extends StatelessWidget {
   }
 }
 
-class _OpenedQuote extends StatelessWidget {
-  const _OpenedQuote({required this.quote});
+/// 성장 중 화면. 단계 이미지 + 진행 표시. 디버그에서만 빨리감기 버튼.
+class _GrowingSeed extends StatelessWidget {
+  const _GrowingSeed({required this.seed, required this.isBusy});
+
+  final Seed seed;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ThemeImage(
+              path: ThemeAssets.growthImage(seed.theme, seed.growthStage),
+              size: 120,
+              fallbackFontSize: 72,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              '${seed.growthStage}단계 성장 중',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.paper,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < Seed.totalStages; i++)
+                  Container(
+                    width: 10,
+                    height: 10,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i <= seed.growthStage
+                          ? AppTheme.gold
+                          : AppTheme.line,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '2시간마다 한 단계씩 자라요',
+              style: TextStyle(fontSize: 12, color: AppTheme.muted),
+            ),
+            if (kDebugMode) ...[
+              const SizedBox(height: 24),
+              OutlinedButton(
+                onPressed: isBusy
+                    ? null
+                    : () =>
+                        context.read<SeedProvider>().debugAdvanceGrowth(),
+                child: const Text('디버그: +2시간'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OpenedQuote extends StatelessWidget {  const _OpenedQuote({required this.quote});
 
   final Quote quote;
 

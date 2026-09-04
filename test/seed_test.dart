@@ -51,9 +51,12 @@ void main() {
         quoteId: 'seed-1',
         status: SeedStatus.opened,
         createdAt: DateTime(2026, 9, 4),
+        plantedAt: DateTime(2026, 9, 4),
       );
       final restored = Seed.fromMap(
-          seed.toMap()..['createdAt'] = _FakeTimestamp(seed.createdAt));
+          seed.toMap()
+            ..['createdAt'] = _FakeTimestamp(seed.createdAt)
+            ..['plantedAt'] = _FakeTimestamp(seed.plantedAt));
 
       expect(restored.id, seed.id);
       expect(restored.dateKey, seed.dateKey);
@@ -143,7 +146,8 @@ void main() {
   });
 
   group('SeedProvider', () {
-    test('ensure then open reveals a quote and harvests a fruit', () async {
+    test('plant then complete harvests a fruit and reveals the quote',
+        () async {
       final seedRepository = InMemorySeedRepository(
           clock: () => DateTime(2026, 9, 4, 12));
       final fruitRepository = InMemoryFruitRepository(
@@ -158,8 +162,14 @@ void main() {
       expect(provider.todaySeed, isNotNull);
       expect(provider.revealedQuote, isNull);
 
-      await provider.openSeed();
-      expect(provider.todaySeed!.isOpened, isTrue);
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.revealedQuote, isNull);
+
+      for (var i = 0; i < 5; i++) {
+        await provider.debugAdvanceGrowth();
+      }
+      expect(provider.todaySeed!.isComplete, isTrue);
       expect(provider.revealedQuote, isNotNull);
       expect(provider.errorMessage, isNull);
 
@@ -170,7 +180,7 @@ void main() {
   });
 
   group('SeedScreen', () {
-    testWidgets('locked seed shows the open button', (tester) async {
+    testWidgets('locked seed shows the plant button', (tester) async {
       final provider = _buildProvider();
       await provider.ensureTodaySeed();
 
@@ -178,19 +188,28 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('오늘의 씨앗'), findsOneWidget);
-      expect(find.text('씨앗 깨기'), findsOneWidget);
+      expect(find.text('씨앗 심기'), findsOneWidget);
     });
 
-    testWidgets('tapping open reveals the quote', (tester) async {
+    testWidgets('plant grows and debug advance reveals the quote',
+        (tester) async {
       final provider = _buildProvider();
       await provider.ensureTodaySeed();
 
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('씨앗 깨기'));
+      await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
 
-      expect(find.text('씨앗 깨기'), findsNothing);
+      expect(find.text('씨앗 심기'), findsNothing);
+      expect(find.text('0단계 성장 중'), findsOneWidget);
+      expect(provider.revealedQuote, isNull);
+
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.text('디버그: +2시간'));
+        await tester.pumpAndSettle();
+      }
+
       expect(provider.revealedQuote, isNotNull);
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
@@ -208,7 +227,7 @@ void main() {
       expect(find.byType(Image), findsOneWidget);
     });
 
-    testWidgets('opened quote is minimal: no tags, header, or guide',
+    testWidgets('completed quote is minimal: no tags, header, or guide',
         (tester) async {
       final provider =
           _buildProvider(themePicker: () => SeedTheme.growth);
@@ -216,8 +235,12 @@ void main() {
 
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('씨앗 깨기'));
+      await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.text('디버그: +2시간'));
+        await tester.pumpAndSettle();
+      }
 
       // 성장 테마 명언(seed-2)은 태그를 갖고 있지만 화면에 노출하지 않는다.
       expect(find.textContaining('#'), findsNothing);

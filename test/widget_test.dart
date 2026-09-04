@@ -8,6 +8,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('오늘의 씨앗'), findsOneWidget);
-    expect(find.text('씨앗 깨기'), findsOneWidget);
+    expect(find.text('씨앗 심기'), findsOneWidget);
   });
 }

@@ -42,6 +42,19 @@ abstract class ThemeAssets {
   /// 한글 테마명. 미등록 테마는 `'오늘의 씨앗'`.
   static String labelOf(String theme) => labels[theme] ?? '오늘의 씨앗';
 
+  /// 성장 단계 이미지 (#40, 혼합 전략).
+  /// - 0~2단계: 공용 `growth_<n>.png` (없으면 테마 씨앗 이미지로 폴백).
+  /// - 3~4단계: 테마별 `growth_<이름>_<n>.png` (없으면 테마 씨앗 이미지로 폴백).
+  /// - 5단계(열매): 기존 테마 열매 이미지 재사용.
+  /// 미등록 테마는 `''` (호출 측 폴백).
+  static String growthImage(String theme, int stage) {
+    if (stage >= 5) return fruitImage(theme);
+    if (stage <= 2) return 'assets/images/growth_$stage.png';
+    final name = _fruits[theme];
+    if (name == null) return seedImage(theme);
+    return 'assets/images/growth_${name}_$stage.png';
+  }
+
   /// 잔디 그리드 셀 색상. 다크톤 7종 (#39). 미등록 테마는 회색.
   static Color cellColor(String theme) {
     switch (theme) {
