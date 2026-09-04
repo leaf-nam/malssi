@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
+import 'package:malssi/features/archive/domain/fruit.dart';
+import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
@@ -29,6 +31,24 @@ class SeedScreen extends StatelessWidget {
     );
   }
 
+  void _openReview(
+      BuildContext context, SeedProvider state, Fruit fruit) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => FruitReviewSheet(
+        quoteText: fruit.text,
+        author: fruit.author,
+        dateLabel: fruit.harvestDateKey.replaceAll('-', '.'),
+        imagePath: ThemeAssets.fruitImage(fruit.theme),
+        initialMemo: fruit.memo,
+        initialScore: fruit.fidelityScore,
+        onSave: ({required memo, required fidelityScore}) =>
+            state.saveReview(memo: memo, fidelityScore: fidelityScore),
+      ),
+    );
+  }
+
   Widget _buildBody(BuildContext context, SeedProvider state) {
     if (state.isLoading && state.todaySeed == null) {
       return const Center(child: CircularProgressIndicator());
@@ -41,15 +61,28 @@ class SeedScreen extends StatelessWidget {
       return const Center(child: Text('오늘의 씨앗을 준비할 수 없습니다.'));
     }
     final quote = state.revealedQuote;
+    final fruit = state.completedFruit;
     if (seed.isComplete && quote != null) {
-      return SingleChildScrollView(child: _OpenedQuote(quote: quote));
+      return _OpenedQuote(
+        quote: quote,
+        fruit: fruit,
+        onTapReview: fruit == null
+            ? null
+            : () => _openReview(context, state, fruit),
+      );
     }
     if (seed.isGrowing) {
       return _GrowingSeed(seed: seed, isBusy: state.isLoading);
     }
     // 구 `opened` 씨앗 호환: 명언이 있으면 공개 화면.
     if (seed.isOpened && quote != null) {
-      return SingleChildScrollView(child: _OpenedQuote(quote: quote));
+      return _OpenedQuote(
+        quote: quote,
+        fruit: fruit,
+        onTapReview: fruit == null
+            ? null
+            : () => _openReview(context, state, fruit),
+      );
     }
     return _LockedSeed(
       seedDateKey: seed.dateKey,
@@ -200,35 +233,52 @@ class _GrowingSeed extends StatelessWidget {
     );
   }
 }
-
-class _OpenedQuote extends StatelessWidget {  const _OpenedQuote({required this.quote});
+class _OpenedQuote extends StatelessWidget {
+  const _OpenedQuote({
+    required this.quote,
+    required this.fruit,
+    required this.onTapReview,
+  });
 
   final Quote quote;
+  final Fruit? fruit;
+  final VoidCallback? onTapReview;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(32, 48, 32, 48),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '"${quote.text}"',
-              textAlign: TextAlign.center,
-              style: AppTheme.quoteTextStyle(fontSize: 26),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '— ${quote.author}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppTheme.paper,
+    return GestureDetector(
+      onTap: onTapReview,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(32, 48, 32, 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '"${quote.text}"',
+                textAlign: TextAlign.center,
+                style: AppTheme.quoteTextStyle(fontSize: 26),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                '— ${quote.author}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.paper,
+                ),
+              ),
+              if (onTapReview != null) ...[
+                const SizedBox(height: 24),
+                const Text(
+                  '눌러서 오늘의 리뷰 남기기',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
