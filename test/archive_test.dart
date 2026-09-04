@@ -32,6 +32,7 @@ Future<void> _harvest(
       status: SeedStatus.opened,
       createdAt: at,
       theme: theme,
+      plantedAt: at,
     ),
     quote: Quote(
       id: 'q',

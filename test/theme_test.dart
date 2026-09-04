@@ -68,9 +68,12 @@ void main() {
         status: SeedStatus.locked,
         createdAt: DateTime(2026, 9, 4),
         theme: SeedTheme.vitality,
+        plantedAt: DateTime(2026, 9, 4),
       );
       final restored = Seed.fromMap(
-          seed.toMap()..['createdAt'] = _FakeTimestamp(seed.createdAt));
+          seed.toMap()
+            ..['createdAt'] = _FakeTimestamp(seed.createdAt)
+            ..['plantedAt'] = _FakeTimestamp(seed.plantedAt));
 
       expect(restored.theme, SeedTheme.vitality);
     });
@@ -100,6 +103,7 @@ void main() {
         status: SeedStatus.opened,
         createdAt: DateTime(2026, 9, 4),
         theme: SeedTheme.health,
+        plantedAt: DateTime(2026, 9, 4),
       );
       final quote = Quote(
         id: 'q1',
@@ -192,7 +196,8 @@ void main() {
       expect(quote.id, isNotEmpty);
     });
 
-    test('openSeed reveals a quote of the seed theme', () async {
+    test('planting then completing reveals a quote of the seed theme',
+        () async {
       final seedRepository = InMemorySeedRepository(
         clock: () => DateTime(2026, 9, 4, 12),
         themePicker: () => SeedTheme.growth,
@@ -207,11 +212,129 @@ void main() {
       );
 
       await provider.ensureTodaySeed();
-      await provider.openSeed();
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.revealedQuote, isNull);
 
+      // 2시간씩 5번 빨리감기 → 10시간 경과 → 완성 + 수확.
+      for (var i = 0; i < 5; i++) {
+        await provider.debugAdvanceGrowth();
+      }
+
+      expect(provider.todaySeed!.isComplete, isTrue);
       expect(provider.revealedQuote!.theme, SeedTheme.growth);
       final fruits = await fruitRepository.getFruits();
       expect(fruits.single.theme, SeedTheme.growth);
+    });
+  });
+
+  group('growth stages', () {
+    test('growthStageAt rises every 2 hours and caps at 5', () {
+      final plantedAt = DateTime(2026, 9, 4, 12);
+      final seed = Seed(
+        id: '2026-09-04',
+        dateKey: '2026-09-04',
+        quoteId: 'q',
+        status: SeedStatus.growing,
+        createdAt: plantedAt,
+        plantedAt: plantedAt,
+      );
+
+      expect(seed.growthStageAt(plantedAt), 0);
+      expect(
+          seed.growthStageAt(plantedAt.add(const Duration(hours: 5))), 2);
+      expect(
+          seed.growthStageAt(plantedAt.add(const Duration(hours: 11))), 5);
+    });
+
+    test('growthStageAt keeps stored stage when not growing', () {
+      final seed = Seed(
+        id: '2026-09-04',
+        dateKey: '2026-09-04',
+        quoteId: '',
+        status: SeedStatus.locked,
+        createdAt: DateTime(2026, 9, 4),
+        plantedAt: DateTime(2026, 9, 4),
+      );
+
+      expect(
+          seed.growthStageAt(DateTime(2026, 9, 9)), 0);
+    });
+
+    test('plantSeed switches locked to growing', () async {
+      final repo = InMemorySeedRepository(
+        clock: () => DateTime(2026, 9, 4, 12),
+        themePicker: () => SeedTheme.growth,
+      );
+      final seed = await repo.getTodaySeed();
+      final quote = Quote(
+        id: 'seed-2',
+        text: 't',
+        author: 'a',
+        likes: 0,
+        createdAt: DateTime(2026, 1, 2),
+      );
+
+      final planted =
+          await repo.plantSeed(seedId: seed.id, quote: quote);
+
+      expect(planted.isGrowing, isTrue);
+      expect(planted.quoteId, 'seed-2');
+      expect(planted.plantedAt, DateTime(2026, 9, 4, 12));
+      expect(
+        () => repo.plantSeed(seedId: seed.id, quote: quote),
+        throwsStateError,
+      );
+    });
+
+    test('refreshGrowth completes after 10 hours', () async {
+      var now = DateTime(2026, 9, 4, 12);
+      final repo = InMemorySeedRepository(
+        clock: () => now,
+        themePicker: () => SeedTheme.growth,
+      );
+      final quote = await InMemoryQuoteRepository()
+          .getRandomQuoteByTheme(SeedTheme.growth);
+      final seed = await repo.getTodaySeed();
+      await repo.plantSeed(seedId: seed.id, quote: quote);
+
+      now = now.add(const Duration(hours: 10));
+      await repo.refreshGrowth();
+      final active = await repo.getActiveSeed();
+
+      expect(active.isComplete, isTrue);
+      expect(active.growthStage, Seed.maxGrowthStage);
+    });
+
+    test('getActiveSeed carries over growing seeds past midnight', () async {
+      var now = DateTime(2026, 9, 4, 20);
+      final repo = InMemorySeedRepository(
+        clock: () => now,
+        themePicker: () => SeedTheme.growth,
+      );
+      final quote = await InMemoryQuoteRepository()
+          .getRandomQuoteByTheme(SeedTheme.growth);
+      final seed = await repo.getTodaySeed();
+      await repo.plantSeed(seedId: seed.id, quote: quote);
+
+      now = DateTime(2026, 9, 5, 1);
+      final active = await repo.getActiveSeed();
+
+      // 심은 씨앗은 만료되지 않고 이월된다 (5시간 경과 → 2단계).
+      expect(active.id, '2026-09-04');
+      expect(active.isGrowing, isTrue);
+      expect(active.growthStage, 2);
+    });
+
+    test('growthImage maps stages with fallbacks', () {
+      // 0~2단계 공용, 3~4단계 테마별, 5단계 열매 재사용.
+      expect(ThemeAssets.growthImage(SeedTheme.growth, 1),
+          'assets/images/growth_1.png');
+      expect(ThemeAssets.growthImage(SeedTheme.growth, 3),
+          'assets/images/growth_lemon_3.png');
+      expect(ThemeAssets.growthImage(SeedTheme.growth, 5),
+          'assets/images/lemon.png');
+      expect(ThemeAssets.growthImage('', 3), isEmpty);
     });
   });
 }
