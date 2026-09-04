@@ -5,4 +5,7 @@ class CollectionNames {
   static const categories = 'categories';
   static const submissions = 'submissions';
   static const users = 'users';
+  static const seeds = 'seeds';
+  static const fruits = 'fruits';
+  static const settings = 'settings';
 }

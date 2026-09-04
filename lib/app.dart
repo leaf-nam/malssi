@@ -5,6 +5,7 @@ import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/auth/data/dummy_auth_service.dart';
 import 'package:malssi/features/category/data/hashtag_repository.dart';
 import 'package:malssi/features/category/providers/category_providers.dart';
+import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/home/providers/home_providers.dart';
 import 'package:malssi/features/my_quote/data/submission_repository.dart';
@@ -13,6 +14,8 @@ import 'package:malssi/features/mypage/data/user_repository.dart';
 import 'package:malssi/features/mypage/providers/user_providers.dart';
 import 'package:malssi/features/quote_detail/data/comment_repository.dart';
 import 'package:malssi/features/quote_detail/providers/comment_providers.dart';
+import 'package:malssi/features/seed/data/seed_repository.dart';
+import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/routing/app_router.dart';
 
 class AppShell extends StatelessWidget {
@@ -22,10 +25,21 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final quoteRepository = InMemoryQuoteRepository();
     final commentRepository = InMemoryCommentRepository();
+    final seedRepository = InMemorySeedRepository();
+    final fruitRepository = InMemoryFruitRepository();
     return MultiProvider(
       providers: [
         Provider<QuoteRepository>.value(value: quoteRepository),
         Provider<CommentRepository>.value(value: commentRepository),
+        Provider<SeedRepository>.value(value: seedRepository),
+        Provider<FruitRepository>.value(value: fruitRepository),
+        ChangeNotifierProvider(
+          create: (_) => SeedProvider(
+            seedRepository: seedRepository,
+            quoteRepository: quoteRepository,
+            fruitRepository: fruitRepository,
+          )..ensureTodaySeed(),
+        ),
         ChangeNotifierProvider(
           create: (_) => QuoteProvider(repository: quoteRepository)..fetchRandomQuote(),
         ),
