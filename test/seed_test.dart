@@ -234,6 +234,13 @@ void main() {
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
       expect(find.text('0단계 성장 중'), findsOneWidget);
+      // #51: 명언 영역(2/3) : 성장 에셋(1/3).
+      final growingFlexes = tester
+          .widgetList<Expanded>(find.byType(Expanded))
+          .map((e) => e.flex)
+          .toList();
+      expect(growingFlexes[0], 2);
+      expect(growingFlexes[1], 1);
 
       for (var i = 0; i < 5; i++) {
         await tester.tap(find.text('디버그: +2시간'));
@@ -277,6 +284,14 @@ void main() {
       expect(find.textContaining('열매'), findsNothing);
       expect(find.textContaining('보관 탭에서'), findsNothing);
       expect(find.text('— 노자'), findsOneWidget);
+      // #51: 완성 시 명언과 함께 열매 이미지가 나온다 (명언 2/3 : 열매 1/3).
+      expect(find.byType(Image), findsOneWidget);
+      final completedFlexes = tester
+          .widgetList<Expanded>(find.byType(Expanded))
+          .map((e) => e.flex)
+          .toList();
+      expect(completedFlexes[0], 2);
+      expect(completedFlexes[1], 1);
     });
 
     testWidgets('tapping the completed quote opens the review sheet',
