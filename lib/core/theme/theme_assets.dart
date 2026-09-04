@@ -55,25 +55,39 @@ abstract class ThemeAssets {
     return 'assets/images/growth_${name}_$stage.png';
   }
 
-  /// 잔디 그리드 셀 색상. 다크톤 7종 (#39). 미등록 테마는 회색.
-  static Color cellColor(String theme) {
-    switch (theme) {
-      case SeedTheme.vitality:
-        return const Color(0xFFA03236);
-      case SeedTheme.happiness:
-        return const Color(0xFFAC6F08);
-      case SeedTheme.growth:
-        return const Color(0xFFA47D06);
-      case SeedTheme.health:
-        return const Color(0xFF188A42);
-      case SeedTheme.peace:
-        return const Color(0xFF295BAC);
-      case SeedTheme.relationship:
-        return const Color(0xFF4547A9);
-      case SeedTheme.wisdom:
-        return const Color(0xFFA5326B);
-      default:
-        return const Color(0xFF6C707E);
-    }
+  /// 잔디 그리드 셀 색상. 다크 7종 (#39) + 라이트 밝은 7종 (#56).
+  /// [brightness]에 따라 다크톤/밝은톤을 반환한다. 미등록 테마는 회색.
+  static Color cellColor(String theme,
+      [Brightness brightness = Brightness.dark]) {
+    final cells =
+        brightness == Brightness.light ? _lightCells : _darkCells;
+    return cells[theme] ?? _fallbackCell(brightness);
   }
+
+  /// 다크톤 7종 (#39).
+  static const _darkCells = {
+    SeedTheme.vitality: Color(0xFFA03236),
+    SeedTheme.happiness: Color(0xFFAC6F08),
+    SeedTheme.growth: Color(0xFFA47D06),
+    SeedTheme.health: Color(0xFF188A42),
+    SeedTheme.peace: Color(0xFF295BAC),
+    SeedTheme.relationship: Color(0xFF4547A9),
+    SeedTheme.wisdom: Color(0xFFA5326B),
+  };
+
+  /// 라이트용 밝은 열매 7종 (#56).
+  static const _lightCells = {
+    SeedTheme.vitality: Color(0xFFE35D6A),
+    SeedTheme.happiness: Color(0xFFF2994A),
+    SeedTheme.growth: Color(0xFFF2C94C),
+    SeedTheme.health: Color(0xFF6FCF97),
+    SeedTheme.peace: Color(0xFF5B8DEF),
+    SeedTheme.relationship: Color(0xFF9B7EDE),
+    SeedTheme.wisdom: Color(0xFFF0618F),
+  };
+
+  static Color _fallbackCell(Brightness brightness) =>
+      brightness == Brightness.light
+          ? const Color(0xFFD8D2C7)
+          : const Color(0xFF6C707E);
 }

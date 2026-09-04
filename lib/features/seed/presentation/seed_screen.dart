@@ -250,54 +250,14 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
-        // 성장 에셋: 화면의 1/3.
+        // 성장 에셋: 화면의 1/3. 형태만 보여주고 문구·도트는 두지 않는다 (#57).
         Expanded(
           flex: 1,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: _ContainImage(
-                  path: ThemeAssets.growthImage(
-                      seed.theme, seed.growthStage),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${seed.growthStage}단계 성장 중',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.paper,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < Seed.totalStages; i++)
-                    Container(
-                      width: 10,
-                      height: 10,
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: i <= seed.growthStage
-                            ? AppTheme.gold
-                            : AppTheme.line,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                '2시간마다 한 단계씩 자라요',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppTheme.muted),
-              ),
-            ],
+          child: Center(
+            child: _ContainImage(
+              path: ThemeAssets.growthImage(
+                  seed.theme, seed.growthStage),
+            ),
           ),
         ),
         if (kDebugMode) ...[

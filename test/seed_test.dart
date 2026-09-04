@@ -233,7 +233,10 @@ void main() {
       expect(provider.revealedQuote, isNotNull);
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
-      expect(find.text('0단계 성장 중'), findsOneWidget);
+      // #57: 성장 형태(에셋)만 보이고 단계·안내 문구는 없다.
+      expect(find.textContaining('단계'), findsNothing);
+      expect(find.textContaining('2시간마다'), findsNothing);
+      expect(find.byType(Image), findsOneWidget);
       // #51: 명언 영역(2/3) : 성장 에셋(1/3).
       final growingFlexes = tester
           .widgetList<Expanded>(find.byType(Expanded))

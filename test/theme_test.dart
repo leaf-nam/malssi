@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
@@ -152,6 +153,20 @@ void main() {
         expect(ThemeAssets.cellColor(key), isNotNull);
       }
       expect(ThemeAssets.cellColor(''), isNotNull);
+    });
+
+    test('cellColor differs between dark and light (#56)', () {
+      for (final key in SeedTheme.values) {
+        final dark = ThemeAssets.cellColor(key, Brightness.dark);
+        final light = ThemeAssets.cellColor(key, Brightness.light);
+
+        expect(light, isNotNull);
+        expect(light, isNot(dark));
+      }
+      expect(
+        ThemeAssets.cellColor('', Brightness.light),
+        isNot(ThemeAssets.cellColor('', Brightness.dark)),
+      );
     });
   });
 
