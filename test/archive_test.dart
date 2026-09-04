@@ -177,6 +177,25 @@ void main() {
   });
 
   group('ArchiveScreen grass grid', () {
+    testWidgets('entering the tab reloads harvested fruits (#62)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '오늘', at: at);
+      // 사전 load 없이 진입 → 화면이 직접 reload한다.
+      final provider = ArchiveProvider(fruitRepository: repo);
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('최근 1년 · 1개의 열매'), findsOneWidget);
+      expect(find.byKey(const ValueKey('grass-2026-09-04')),
+          findsOneWidget);
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('empty grid guides to the seed tab', (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final provider = ArchiveProvider(
