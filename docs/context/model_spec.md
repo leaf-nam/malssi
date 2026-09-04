@@ -221,6 +221,34 @@ class CollectionNames {
 - **향후 과제**: Firestore 저장 vs 로컬 저장(`SharedPreferences`) 결정 시 본 스펙 개정
   (아키텍처 이슈로 분리). 비로그인 시 로컬 폴백이 후보이다.
 
+### 4.11 테마 분류 — 씨앗·열매·명언 (2026-09-04)
+
+- **개념**: 명언은 7개 테마로 분류하여 관리한다. 씨앗 1개는 테마 1개를 갖고,
+  그 씨앗에서 수확되는 열매도 같은 테마다. 일자별 씨앗 테마 선정 방식(순환/랜덤 등)은
+  후속 이슈에서 확정한다.
+- **정규 키** (7종, 문자열 상수화 예정 — 위치 후보 `lib/core/constants/seed_themes.dart`):
+  `vitality` / `happiness` / `growth` / `health` / `peace` / `relationship` / `wisdom`.
+
+| 키 | 테마 | 씨앗 | 최종 열매 | 에셋 (`assets/images/`) |
+|---|---|---|---|---|
+| `vitality` | 🔴 활력 | 빨간 딸기 씨앗 | 🍓 딸기 | `strawberry_seed.png` / `strawberry.png` |
+| `happiness` | 🟠 행복 | 주황 씨앗 | 🍊 오렌지 | `orange_seed.png` / `orange.png` |
+| `growth` | 🟡 성장 | 노란 씨앗 | 🍋 레몬 | `lemon_seed.png` / `lemon.png` |
+| `health` | 🟢 건강 | 초록 씨앗 | 🥝 키위 | `kiwi_seed.png` / `kiwi.png` |
+| `peace` | 🔵 평온 | 파란 씨앗 | 🫐 블루베리 | `blueberry_seed.png` / `blueberry.png` |
+| `relationship` | 🟦 관계 | 남색 씨앗 | 🍇 포도 | `grape_seed.png` / `grape.png` |
+| `wisdom` | 🩷 지혜 | 분홍 자몽 씨앗 | 자몽 | `grapefruit_seed.png` / `grapefruit.png` |
+
+- **필드 귀속** (예정, 구현은 별도 이슈로 분리):
+  - `Quote.theme` — 명언의 분류 테마 (관리용, `String`, 키 값).
+  - `Seed.theme` — 당일 씨앗의 테마. 개봉 시 같은 테마의 명언을 선택한다.
+  - `Fruit.theme` — 수확 열매의 테마. 보관 탭에서 테마별 열매 이미지 렌더링에 사용한다.
+  - `fromMap` 누락 시 기본값은 `''`. §3 직렬화 규칙을 따른다.
+- **에셋 규칙**: 열매 이미지는 `<이름>.png`, 씨앗 이미지는 `<이름>_seed.png`.
+  `pubspec.yaml`의 `assets/images/`에 등록되어 있다.
+- **변경 이력**: 초안의 `보라 지혜 → 블랙베리`는 `분홍 지혜 → 자몽`으로 교체됨.
+  초안의 `빨간 사과`는 업로드된 에셋(`strawberry.png`)에 맞춰 `빨간 딸기`로 확정됨.
+
 ## 5. Repository 추상 스펙 (참고)
 
 | Repository             | 위치                                                    | 핵심 메서드                                                                    |
