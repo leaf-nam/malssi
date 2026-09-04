@@ -6,6 +6,7 @@ import 'package:malssi/features/auth/data/dummy_auth_service.dart';
 import 'package:malssi/features/category/data/hashtag_repository.dart';
 import 'package:malssi/features/category/providers/category_providers.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
+import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/home/providers/home_providers.dart';
 import 'package:malssi/features/my_quote/data/submission_repository.dart';
@@ -39,6 +40,10 @@ class AppShell extends StatelessWidget {
             quoteRepository: quoteRepository,
             fruitRepository: fruitRepository,
           )..ensureTodaySeed(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ArchiveProvider(fruitRepository: fruitRepository)
+            ..load(),
         ),
         ChangeNotifierProvider(
           create: (_) => QuoteProvider(repository: quoteRepository)..fetchRandomQuote(),
