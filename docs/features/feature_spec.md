@@ -2,134 +2,94 @@
 
 > AI 에이전트용 개발 하네스 문서 중 하나입니다. 상위 지침: `AGENTS.md`.
 > 관련: `docs/context/model_spec.md` (모델/컬렉션), `docs/architecture/architecture_spec.md` (구조/서비스).
-> 본 문서는 제품 요구 7종(오늘의 명언/내 명언/댓글/카테고리/좋아요·추천/공유/하루 1회 알림)의
-> 공식 기능 명세를 정의합니다. 각 항목의 **구현 상태**는 기준 시점의 실제 코드를 기준으로 표기하며,
+> 본 문서는 3탭(씨앗 메인/보관/설정) 체제의 공식 기능 명세를 정의합니다.
+> 각 항목의 **구현 상태**는 기준 시점의 실제 코드를 기준으로 표기하며,
 > 미구현 부분은 "미구현"으로 명시합니다 (추측 금지).
+> 2026-09-04 개정: 기존 7기능(오늘의 명언/내 명언/댓글/카테고리/좋아요·추천/공유/하루 1회 알림)
+> 체제를 폐기하고 3탭 체제로 전면 개편합니다. 폐기 내역은 §5 참조.
 
-## 1. 오늘의 명언 (랜덤 1개 + 교체 시 광고 시청)
+## 1. 씨앗 탭 (메인, `/`)
 
-- **요구**: 명언 DB에서 1개를 가져와 보여준다. 명언을 바꿀 때마다 광고를 시청한다.
-- **구현 상태**: MVP 구현됨 (인메모리 시드 4건, 광고 다이얼로그 후 다음 명언, 연속 읽음, 공유 연결). Firebase 연동·실제 광고 SDK는 후속 과제.
-- **관련 코드**:
-  - 조회: `QuoteRepository.getRandomQuote()` (`lib/features/home/data/quote_repository.dart`) —
-    추상 선언만 존재, `QuoteRepositoryImpl` 미구현.
-  - 상태: `QuoteNotifier.fetchRandomQuote()` + `randomQuoteProvider`
-    (`lib/features/home/providers/home_providers.dart`).
-  - 화면: `HomeScreen` (`lib/features/home/presentation/home_screen.dart`)이
-    `quoteAsync.when(data/loading/error)` 삼분기로 렌더링.
-  - 광고: `AdService.loadAd()`/`showAd()` (`lib/core/services/ad_service.dart`) 스텁만 존재.
-    명언 교체 플로우와 연결되어 있지 않음.
+- **요구**: 매일 1개의 씨앗이 생성된다. 씨앗을 깨면(탭 1회) 그날의 명언이 나온다.
+  광고 시청 게이트는 없다.
+- **구현 상태**: 미구현 (신규). 기존 `HomeScreen`의 랜덤 명언 + 광고 게이트 플로우를 대체한다.
+- **관련 코드 (예정)**:
+  - 모델: `Seed`, `Fruit` (`model_spec.md` §4.8·§4.9 참조).
+  - 저장소: `SeedRepository` (`getTodaySeed()`, `openSeed(seedId)`),
+    `FruitRepository` (`harvestFromSeed(seedId)`, `getFruitsStream()`)
+    (`lib/features/seed/data/`, `lib/features/archive/data/` 예정).
+  - 화면: `SeedScreen` (`lib/features/seed/presentation/seed_screen.dart` 예정) —
+    기존 `HomeScreen` (`lib/features/home/presentation/home_screen.dart`)을 대체.
+  - 상태: `SeedProvider` (`lib/features/seed/providers/` 예정).
+  - 명언 원천: 기존 `quotes` 컬렉션 + `Quote` 모델 재사용
+    (`lib/features/quote.dart`, `CollectionNames.quotes`).
 - **동작 플로우 (목표)**:
-  1. `fetchRandomQuote()` → `quotes` 컬렉션에서 1개 조회 → 카드 렌더링.
-  2. 사용자가 "바꾸기" 요청 → `AdService.showAd()` (보상형 광고) 시청 완료 후 → 다음 명언 조회.
-- **향후 과제**: `QuoteRepositoryImpl.getRandomQuote` 구현 (랜덤 추출 방식 확정),
-  교체 버튼 UI + 광고 시청 게이트 연결, 광고 SDK 연동.
+  1. 설정 시각(`AppSettings.seedTime`, 기본 12:00)에 당일 `Seed` 문서 1개 생성
+     (문서 ID = 날짜키, 예: `'2026-09-04'`) + 씨앗 알림 발송.
+  2. 사용자가 씨앗을 탭 1회 → `openSeed()` → `status: locked → opened` →
+     `quotes`에서 1개 선택 → `Fruit` 문서 생성 (수확).
+  3. 개봉된 씨앗 자리에는 명언 카드 렌더링. 미개봉 씨앗은 다음 날 자정에 만료
+     (이월 없음).
+- **향후 과제 (후속 이슈로 분리)**: 씨앗→식물 성장 연출 단계,
+  열매에 그날의 명언 충실도 기록 (`fidelityScore`/`memo`, `model_spec.md` §4.9 참조).
 
-## 2. 내 명언 (사용자 작성 → DB 등록, 관리자 승인 후 노출)
+## 2. 보관 탭 (`/archive`)
 
-- **요구**: 내가 명언을 작성해서 DB에 올린다. 관리자 승인 후 노출된다.
-- **구현 상태**: MVP 구현됨 (`WriteScreen` + `WriteProvider` + `InMemorySubmissionRepository`, 상태 목록 포함). 관리자 승인 화면·`quotes` 반영은 후속 과제.
-- **관련 코드**:
-  - 제출: `SubmissionRepository.submitQuote({text, author, category})`,
-    상태 변경: `updateSubmissionStatus({submissionId, status})`,
-    목록: `getSubmissionsStream()`
-    (`lib/features/my_quote/data/submission_repository.dart`).
-  - 컬렉션: `submissions` (`CollectionNames.submissions`).
-  - `lib/features/my_quote/presentation/`, `providers/`는 비어 있음.
+- **요구**: 지금까지 수확한 열매들을 기록한다. 1차 범위(MVP)는 날짜+명언만.
+- **구현 상태**: 미구현 (신규).
+- **관련 코드 (예정)**:
+  - 모델: `Fruit` (`model_spec.md` §4.9 참조).
+  - 저장소: `FruitRepository.getFruitsStream()` (날짜 내림차순)
+    (`lib/features/archive/data/` 예정).
+  - 화면: `ArchiveScreen` (`lib/features/archive/presentation/archive_screen.dart` 예정).
+  - 상태: `ArchiveProvider` (`lib/features/archive/providers/` 예정).
 - **동작 플로우 (목표)**:
-  1. 사용자가 명언 작성 (`text`/`author`/`category`) → `submitQuote()` → `submissions` 문서 생성 (초기 `status`, 예: 대기).
-  2. 관리자가 승인/반려 → `updateSubmissionStatus()`로 `status` 변경.
-  3. 승인된 것만 `quotes` 컬렉션에 반영 (반영 방식 — 복사 vs 승격 — 미정, 아키텍처 이슈로 분리).
-- **향후 과제**: `status` 값 상수/enum화, 작성 화면 + Provider, 관리자 승인 화면,
-  승인→`quotes` 반영 규칙 확정 (`model_spec.md` §4.6 참조).
+  1. 씨앗 개봉 시 생성된 `Fruit`가 보관 목록에 추가된다.
+  2. 목록은 수확일 내림차순으로 노출 (날짜 + 명언 텍스트 + 저자).
+- **향후 과제 (후속 이슈로 분리)**: 열매 상세 (충실도 점수/메모, 성장 단계 표시),
+  기존 공유하기의 열매 상세 편입 여부 결정.
 
-## 3. 명언 댓글 (오늘의 명언에 댓글, 베스트 댓글 3개 노출)
+## 3. 설정 탭 (`/settings`)
 
-- **요구**: 오늘의 명언에 댓글을 단다. 베스트 댓글 3개를 노출한다.
-- **구현 상태**: MVP 구현됨 (`CommentScreen` + `CommentProvider` + `InMemoryCommentRepository`, 베스트 3·최근·등록·좋아요).
-- **관련 코드**:
-  - 모델: `Comment` (`lib/features/quote_detail/domain/comment.dart`) —
-    `id`/`quoteId`/`author`/`text`/`likes`/`createdAt`, `fromMap`/`toMap`/`copyWith` 완비.
-  - 컬렉션: `comments` (`CollectionNames.comments`), `quoteId`로 부모 명언 참조.
-  - 화면: `CommentScreen` (`lib/features/quote_detail/presentation/comment_screen.dart`) —
-    현재 `'Comment Screen - Coming Soon'` 플레이스홀더.
-  - 라우트: `/quote-detail/:quoteId` (`lib/routing/app_router.dart`).
+- **요구**: 씨앗 생성시간 등을 설정한다. 설정 시각에 씨앗 생성과 알림이 동시에 동작한다.
+- **구현 상태**: 미구현 (신규). 기존 `MyPageScreen`의 알림 토글·시간 설정 UI는
+  본 탭으로 이관 후 `MyPageScreen`은 폐기한다.
+- **관련 코드 (예정)**:
+  - 모델: `AppSettings` (`model_spec.md` §4.10 참조).
+  - 저장소: `SettingsRepository` (`getSettingsStream()`, `updateSeedTime()`,
+    `setNotifyEnabled()`) (`lib/features/settings/data/` 예정).
+  - 화면: `SettingsScreen` (`lib/features/settings/presentation/settings_screen.dart` 예정).
+  - 알림: `NotificationService` (`lib/core/services/notification_service.dart`) —
+    기존 1회 예약 API를 매일 반복 스케줄로 확장 (`scheduleDailySeedNotification()` 예정).
 - **동작 플로우 (목표)**:
-  1. `/quote-detail/:quoteId` 진입 → 해당 `quoteId`의 댓글 목록 조회.
-  2. 댓글 작성 → `comments` 문서 생성.
-  3. `likes` 상위 3개를 "베스트 댓글"로 상단 노출 (정렬 기준·동점 처리 미정).
-- **향후 과제**: 댓글 Repository/Provider/화면 구현, 베스트 3개 쿼리
-  (`orderBy likes desc limit 3` 등) 확정, 좋아요 API.
+  1. 사용자가 씨앗 생성 시각 변경 (기본값 매일 12:00) → `updateSeedTime()` 저장.
+  2. 다음 날부터 해당 시각에 씨앗 생성 + `NotificationService` 일일 알림 발송.
+  3. 알림 탭 → 씨앗 탭(`/`)으로 이동 (딥링크/라우팅 연결).
+- **향후 과제**: 알림 권한 요청 플로우, 타임존 처리, 서버 푸시(FCM) 필요 여부 결정,
+  로그인(`/auth`) 연동 여부 (설정 저장을 Firestore `settings` vs 로컬 — 아키텍처 이슈로 분리).
 
-## 4. 카테고리 (해시태그로 명언 분류)
-
-- **요구**: 해시태그로 명언을 분류한다.
-- **구현 상태**: MVP 구현됨 (`CategoryScreen` + `CategoryProvider` + `InMemoryHashtagRepository`, 인기 그리드·전체 목록). 태그별 명언 목록 연결은 후속 과제.
-- **관련 코드**:
-  - `HashtagRepository` (`lib/features/category/data/hashtag_repository.dart`) —
-    `getHashtagsStream()` / `addHashtag()` / `removeHashtag()` (추상, `String` 기반).
-  - `HomeQuote.category` (`lib/features/home/domain/quote.dart`) — 명언 측 분류 필드.
-  - 컬렉션: `categories` (`CollectionNames.categories`).
-  - `lib/features/category/presentation/`는 비어 있음.
-- **동작 플로우 (목표)**:
-  1. 해시태그 목록 조회 (`getHashtagsStream`) → 카테고리 탭/필터 UI.
-  2. 명언의 `category`와 매칭하여 분류별 목록 노출.
-- **향후 과제**: 단일 `category` vs 복수 해시태그 스키마 확정 (`model_spec.md` §4.5),
-  카테고리 화면/Provider 구현, 명언-해시태그 연결 쿼리 정의.
-
-## 5. 좋아요 + 해시태그 기반 유사 명언 추천
-
-- **요구**: 좋아요 기능 + 해시태그 기반 유사한 명언 추천.
-- **구현 상태**: 좋아요 MVP 구현됨 (FAB/하트, `LikedScreen` 목록). 해시태그 기반 추천 로직은 미구현(후속 과제).
-- **관련 코드**:
-  - 카운트: `Quote.likes`, `Comment.likes` (모델 필드).
-  - 업데이트: `QuoteRepository.updateLike(quoteId)` (추상),
-    `QuoteNotifier.likeCurrentQuote()` (현재 명언에 호출).
-  - 좋아요 목록 스트림: `likedQuotesStreamProvider` (`home_providers.dart`).
-  - 화면: `HomeScreen` FAB (❤) + 카드에 `💚 ${quote.likes}` 표시.
-  - 추천(유사 명언) 관련 코드는 없음.
-- **동작 플로우 (목표)**:
-  1. FAB 탭 → `likeCurrentQuote()` → `likes` 증가 반영.
-  2. 좋아요한 명언의 해시태그(`category`)를 기준으로 동일/유사 태그 명언을 추천 목록으로 노출
-     (유사도 정의·쿼리 방식 미정).
-- **향후 과제**: 좋아요 중복 방지 (유저별 like 기록), `updateLike` 구현,
-  추천 알고리즘 명세 (태그 일치 → 최신/인기 정렬 등) 신규 이슈로 분리.
-
-## 6. 공유 (명언 링크로 보내기)
-
-- **요구**: 명언을 링크로 보낸다 (딥링크 공유).
-- **구현 상태**: MVP 구현됨 (`share_plus` 텍스트+링크 공유). 딥링크 수신 처리는 후속 과제.
-- **관련 코드**: 없음. 공유 패키지(`share_plus` 등) 미도입.
-  딥링크 수신처 후보는 `/quote-detail/:quoteId` (이미 라우트 존재).
-- **동작 플로우 (목표)**:
-  1. 명언 카드에서 "공유" 탭 → `https://.../quote-detail/:quoteId` 형태 링크 생성.
-  2. OS 공유 시트로 전송 → 수신자가 링크 열면 해당 명언 상세로 진입.
-- **향후 과제**: 공유 패키지 선정, 링크 형식 + 딥링크(웹 URL/앱 링크) 방식 확정,
-  공유 버튼 UI를 명언 카드에 추가. 신규 이슈로 분리.
-
-## 7. 하루 1회 알림
-
-- **요구**: 하루 1회 명언 알림을 보낸다.
-- **구현 상태**: MVP 구현됨 (마이페이지 토글·시간 설정 UI + 홈 알림 예약). 매일 반복 스케줄·탭 이동·FCM은 후속 과제.
-- **관련 코드**:
-  - `NotificationService` (`lib/core/services/notification_service.dart`) —
-    `init()`, `scheduleNotification({id, title, body, scheduleTime})`,
-    `showLocalNotification({id, title, body})` 싱글톤 구현.
-  - 사용 예시: `HomeScreen` 알림 아이콘 탭 → 5초 후 예약 알림 1회 발송.
-- **동작 플로우 (목표)**:
-  1. `init()` 완료 후 매일 고정 시각에 `scheduleNotification()` 등록.
-  2. 알림 탭 → 오늘의 명언 화면으로 이동 (이동 처리 미구현).
-- **향후 과제**: 일일 반복 스케줄 확정 (매일 시각, 타임존 처리),
-  알림 탭 → 라우팅 연결, 권한 요청 플로우, 서버 푸시(FCM) 필요 여부 결정.
-
-## 8. 기능-코드 매핑표
+## 4. 기능-코드 매핑표
 
 | # | 기능 | 컬렉션 | 모델 | Repository | 화면/Provider | 상태 |
 |---|------|--------|------|------------|---------------|------|
-| 1 | 오늘의 명언 | `quotes` | `Quote`(+`tags`), `HomeQuote` | `InMemoryQuoteRepository` | `HomeScreen`, `QuoteProvider` | MVP 구현 |
-| 2 | 내 명언 | `submissions` | `Submission`+`SubmissionStatus` | `InMemorySubmissionRepository` | `WriteScreen`, `WriteProvider` | MVP 구현 |
-| 3 | 명언 댓글 | `comments` | `Comment` | `InMemoryCommentRepository` | `CommentScreen`, `CommentProvider` | MVP 구현 |
-| 4 | 카테고리 | `categories` | `HashtagCount` | `InMemoryHashtagRepository` | `CategoryScreen`, `CategoryProvider` | MVP 구현 |
-| 5 | 좋아요·추천 | `quotes` | `likes` 필드 | `InMemoryQuoteRepository.updateLike` | 홈 하트 + `LikedScreen` | 좋아요 MVP / 추천 미구현 |
-| 6 | 공유 | — | — | — | `share_plus` 공유 | MVP 구현 |
-| 7 | 하루 1회 알림 | — | — | — | `NotificationService` + 마이페이지 토글·시간 설정 | MVP 구현 |
+| 1 | 씨앗 (메인) | `seeds` (+`quotes` 원천) | `Seed` / `Quote` | `SeedRepository` | `SeedScreen`, `SeedProvider` | 미구현 |
+| 2 | 보관 (열매) | `fruits` | `Fruit` | `FruitRepository` | `ArchiveScreen`, `ArchiveProvider` | 미구현 |
+| 3 | 설정 | `settings` | `AppSettings` | `SettingsRepository` | `SettingsScreen` | 미구현 |
+
+## 5. 폐기된 기존 7기능과 사유 (2026-09-04 확정)
+
+기존 GitHub 이슈 #1~#7은 3탭 개편에 따라 Close하고, 아래와 같이 대체/폐기한다.
+
+| 기존 이슈 | 기능 | 처리 |
+|-----------|------|------|
+| #1 | 오늘의 명언 DB (랜덤 1개 + 광고 게이트) | 대체 — 명언 DB(`quotes`)는 씨앗의 명언 원천으로 재사용, 광고 게이트는 폐기 |
+| #2 | 내 명언 생성 (작성→관리자 승인) | 폐기 — 3탭에 없음. 수요 발생 시 별도 이슈로 부활 |
+| #3 | 명언 댓글 (베스트 3개) | 폐기 — 3탭에 없음. 충실도 기록과 통합 여부는 후속 이슈에서 결정 |
+| #4 | 카테고리 (해시태그 분류) | 폐기 — 3탭에 없음. 추천 활용 계획도 함께 폐기 |
+| #5 | 좋아요 (+해시태그 추천) | 폐기 — 3탭에 없음 |
+| #6 | 공유 (딥링크) | 폐기 — 1차 제외. 보관 상세 편입 여부는 후속 이슈에서 결정 |
+| #7 | 하루 1회 알림 | 대체 — 설정 탭의 씨앗 생성 시각 알림으로 흡수 (씨앗 생성+알림 동시) |
+
+> 기존 코드(`HomeScreen`, `CategoryScreen`, `WriteScreen`, `LikedScreen`,
+> `MyPageScreen`, `CommentScreen`, `MvpBottomNav` 5탭, `AdService` 광고 게이트 등)는
+> 구현 브랜치에서 정리한다 (`architecture_spec.md` §3 참조). 본 문서는 요구 명세만 정의한다.
