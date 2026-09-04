@@ -148,12 +148,10 @@ lib/
 - API: `scheduleNotification({id, title, body, scheduleTime})`,
   `showLocalNotification({id, title, body})`.
 
-### 2.4 광고 (`AdService`)
+### 2.4 광고 (`AdService` — #19에서 삭제됨)
 
-- 싱글톤 (`AdService.instance`). `loadAd()` → `showAd()` → 재로드 사이클의 스텁 구현.
-- 3탭 개편(2026-09-04)으로 씨앗 개봉 플로우에서 광고 게이트가 폐지되어
-  `AdService`는 미사용 예정. 삭제 여부는 구현 브랜치의 정리 이슈에서 결정한다.
-  신규 코드에서 참조하지 마십시오.
+- 씨앗 개봉 플로우에 광고 게이트가 없으므로 `lib/core/services/ad_service.dart`를
+  #19에서 삭제했다. 광고를 다시 도입하려면 신규 이슈 + 본 스펙 개정부터 시작한다.
 
 ## 3. 확장 계획
 
@@ -161,9 +159,12 @@ lib/
    Firestore(또는 InMemory 선행) 구현체 작성 (`model_spec.md` §4.8~§4.10, §5 참조).
    화면은 `SeedScreen`/`ArchiveScreen`/`SettingsScreen` + 3탭 BottomNav 교체,
    라우트 `/`·`/archive`·`/settings` 등록.
-2. **구 탭/화면 정리**: `home`/`category`/`my_quote`/`liked`/`mypage`/`quote_detail`
-   feature, 구 라우트(`/home`, `/quote-detail/:quoteId`, `/category`, `/write`,
-   `/liked`, `/mypage`), `MvpBottomNav` 5탭, `AdService` 참조 제거.
+2. **구 탭/화면 정리** (#19에서 완료): `home`(화면·Provider·`HomeQuote`)/`category`/
+   `my_quote`/`liked`/`mypage`/`quote_detail` feature, 구 라우트(`/home`,
+   `/quote-detail/:quoteId`, `/category`, `/write`, `/liked`, `/mypage`),
+   `MvpBottomNav` 5탭, `AdService`, 구 Provider·구 화면 테스트 제거.
+   `Quote` 모델·`quotes` 조회(`lib/features/quote.dart`,
+   `lib/features/home/data/quote_repository.dart`)는 씨앗 탭의 명언 원천으로 유지.
    구 컬렉션(`comments`/`categories`/`submissions`) 데이터 처리는 별도 이슈로 분리.
 3. **`NotificationService` 일일 반복 확장**: `scheduleDailySeedNotification()` 등
    매일 `seedTime` 발송 + 알림 탭 → `/` 이동 연결, 권한 요청 플로우, 타임존 처리.

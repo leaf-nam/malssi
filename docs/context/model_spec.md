@@ -253,10 +253,10 @@ class CollectionNames {
 
 | Repository             | 위치                                                    | 핵심 메서드                                                                    |
 | ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `QuoteRepository`      | `lib/features/home/data/quote_repository.dart`          | `getRandomQuote`, `getQuotesStream`, `addQuote`, `updateLike`, `deleteQuote` — 3탭 개편 후 명언 원천 조회 용도로만 사용 (구 `home` 화면 폐기 예정) |
-| `UserRepository`       | `lib/features/mypage/data/user_repository.dart`         | `getUserProfile`, `getUserProfileStream`, `updateUserProfile`, `deleteAccount` — 구 `mypage` 화면과 함께 폐기 예정 |
-| `HashtagRepository`    | `lib/features/category/data/hashtag_repository.dart`    | `getHashtagsStream`, `addHashtag`, `removeHashtag` — 구 `category` 화면과 함께 폐기 예정 |
-| `SubmissionRepository` | `lib/features/my_quote/data/submission_repository.dart` | `submitQuote`, `getSubmissionsStream`, `updateSubmissionStatus` — 구 `my_quote` 화면과 함께 폐기 예정 |
+| `QuoteRepository`      | `lib/features/home/data/quote_repository.dart`          | `getRandomQuote`, `getQuotesStream`, `addQuote`, `updateLike`, `deleteQuote` — 씨앗 탭의 명언 원천 조회 용도로 유지 (구 `home` 화면·Provider는 #19에서 제거) |
+| `UserRepository` (제거됨, #19) | — | 구 `mypage` 화면과 함께 제거 |
+| `HashtagRepository` (제거됨, #19) | — | 구 `category` 화면과 함께 제거 |
+| `SubmissionRepository` (제거됨, #19) | — | 구 `my_quote` 화면과 함께 제거 |
 | `SeedRepository` (신규) | `lib/features/seed/data/` (예정)                      | `getTodaySeed`, `getSeedsStream`, `openSeed`                                   |
 | `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순)                         |
 | `SettingsRepository` (신규) | `lib/features/settings/data/` (예정)              | `getSettingsStream`, `updateSeedTime`, `setNotifyEnabled`                      |

@@ -15,8 +15,9 @@
 ## 2. 네이밍 컨벤션
 
 - Screen: `<Name>Screen` (예: `SeedScreen`, `ArchiveScreen`, `SettingsScreen`).
-  구 화면명(`HomeScreen`, `LoginScreen`, `MyPageScreen`, `CommentScreen`,
-  `CategoryScreen`, `WriteScreen`, `LikedScreen`)은 폐기 예정이며 신규 코드에서 사용하지 마십시오.
+  구 화면(`HomeScreen`, `LoginScreen` 제외 — `/auth` 유지,
+  `MyPageScreen`, `CommentScreen`, `CategoryScreen`, `WriteScreen`, `LikedScreen`)은
+  #19에서 제거됨.
 - BottomNav: 3탭 고정 (`SeedScreen`/`ArchiveScreen`/`SettingsScreen` 순서).
   탭 추가·순서 변경 시 `feature_spec.md`와 본 문서 §6을 함께 개정하십시오.
 - Repository: `<Name>Repository` 추상 클래스 + `<Name>RepositoryImpl` 구현체

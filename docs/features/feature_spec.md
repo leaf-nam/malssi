@@ -114,4 +114,4 @@
 
 > 기존 코드(`HomeScreen`, `CategoryScreen`, `WriteScreen`, `LikedScreen`,
 > `MyPageScreen`, `CommentScreen`, `MvpBottomNav` 5탭, `AdService` 광고 게이트 등)는
-> 구현 브랜치에서 정리한다 (`architecture_spec.md` §3 참조). 본 문서는 요구 명세만 정의한다.
+> #19에서 정리 완료했다. 본 문서는 요구 명세만 정의한다.
