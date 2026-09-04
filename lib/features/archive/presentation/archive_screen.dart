@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
+import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 
 /// 보관 탭. 1년 단위 잔디 그리드로 수확 현황을 보여준다.
@@ -76,12 +76,23 @@ class ArchiveScreen extends StatelessWidget {
   }
 
   void _openDetail(BuildContext context, Fruit fruit) {
+    final archive = context.read<ArchiveProvider>();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => ChangeNotifierProvider.value(
-        value: context.read<ArchiveProvider>(),
-        child: _FruitDetailSheet(fruit: fruit),
+      builder: (_) => FruitReviewSheet(
+        quoteText: fruit.text,
+        author: fruit.author,
+        dateLabel: formatDate(fruit.harvestedAt),
+        imagePath: ThemeAssets.fruitImage(fruit.theme),
+        initialMemo: fruit.memo,
+        initialScore: fruit.fidelityScore,
+        onSave: ({required memo, required fidelityScore}) =>
+            archive.updateReview(
+          fruitId: fruit.id,
+          memo: memo,
+          fidelityScore: fidelityScore,
+        ),
       ),
     );
   }
@@ -166,134 +177,6 @@ class _GrassGrid extends StatelessWidget {
         decoration: BoxDecoration(
           color: ThemeAssets.cellColor(fruit.theme),
           borderRadius: BorderRadius.circular(5),
-        ),
-      ),
-    );
-  }
-}
-
-/// 칸 터치 시 열리는 상세 카드: 열매 + 명언 + 후기 + 점수 + 작성 진입점.
-class _FruitDetailSheet extends StatefulWidget {
-  const _FruitDetailSheet({required this.fruit});
-
-  final Fruit fruit;
-
-  @override
-  State<_FruitDetailSheet> createState() => _FruitDetailSheetState();
-}
-
-class _FruitDetailSheetState extends State<_FruitDetailSheet> {
-  late final TextEditingController _memoController;
-  late int _score;
-
-  @override
-  void initState() {
-    super.initState();
-    _memoController = TextEditingController(text: widget.fruit.memo);
-    _score = widget.fruit.fidelityScore;
-  }
-
-  @override
-  void dispose() {
-    _memoController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final fruit = widget.fruit;
-    final imagePath = ThemeAssets.fruitImage(fruit.theme);
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: imagePath.isEmpty
-                  ? const Text('🌱', style: TextStyle(fontSize: 64))
-                  : Image.asset(
-                      imagePath,
-                      width: 72,
-                      height: 72,
-                      errorBuilder: (_, __, ___) => const Text('🌱',
-                          style: TextStyle(fontSize: 64)),
-                    ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              ArchiveScreen.formatDate(fruit.harvestedAt),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 12, color: colors.onSurfaceVariant),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '"${fruit.text}"',
-              textAlign: TextAlign.center,
-              style: AppTheme.quoteTextStyle(fontSize: 17)
-                  .copyWith(color: colors.onSurface),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '— ${fruit.author}',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: colors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('오늘의 점수', style: TextStyle(fontSize: 13)),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var i = 1; i <= 5; i++)
-                  IconButton(
-                    key: ValueKey('score-$i'),
-                    icon: Icon(
-                      i <= _score ? Icons.star : Icons.star_border,
-                      color: colors.primary,
-                    ),
-                    onPressed: () => setState(() => _score = i),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text('오늘의 후기', style: TextStyle(fontSize: 13)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _memoController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: '명언에 얼마나 충실히 살았는지 적어보세요',
-              ),
-            ),
-            const SizedBox(height: 16),
-            Consumer<ArchiveProvider>(
-              builder: (context, archive, __) => ElevatedButton(
-                onPressed: () async {
-                  await archive.updateReview(
-                    fruitId: fruit.id,
-                    memo: _memoController.text,
-                    fidelityScore: _score,
-                  );
-                  if (context.mounted) Navigator.of(context).pop();
-                },
-                child: const Text('후기 저장하기'),
-              ),
-            ),
-          ],
         ),
       ),
     );

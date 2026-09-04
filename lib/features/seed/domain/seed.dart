@@ -9,6 +9,21 @@ class Seed {
   /// 일자별 선정 방식은 후속 이슈에서 확정한다.
   final String theme;
 
+  /// 성장 단계 (0~5). 2시간마다 1단계씩 오른다.
+  final int growthStage;
+
+  /// 심은 시각. 경과 시간으로 단계를 계산한다.
+  final DateTime plantedAt;
+
+  /// 전체 단계 수 (0~5, 6단계).
+  static const totalStages = 6;
+
+  /// 최종 단계 (열매).
+  static const maxGrowthStage = 5;
+
+  /// 단계 상승 간격 (시간).
+  static const stageHours = 2;
+
   const Seed({
     required this.id,
     required this.dateKey,
@@ -16,6 +31,8 @@ class Seed {
     required this.status,
     required this.createdAt,
     this.theme = '',
+    this.growthStage = 0,
+    required this.plantedAt,
   });
 
   /// 날짜키 (`'YYYY-MM-DD'`). 문서 ID로도 사용한다.
@@ -29,13 +46,18 @@ class Seed {
   bool get isOpened => status == SeedStatus.opened;
 
   factory Seed.fromMap(Map<String, dynamic> map) {
+    final createdAt =
+        (map['createdAt'] as dynamic).toDate() ?? DateTime.now();
     return Seed(
       id: map['id'] ?? '',
       dateKey: map['dateKey'] ?? '',
       quoteId: map['quoteId'] ?? '',
       status: map['status'] ?? SeedStatus.locked,
-      createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
+      createdAt: createdAt,
       theme: map['theme'] ?? '',
+      growthStage: map['growthStage'] ?? 0,
+      plantedAt:
+          (map['plantedAt'] as dynamic)?.toDate() ?? createdAt,
     );
   }
 
@@ -47,6 +69,8 @@ class Seed {
       'status': status,
       'createdAt': createdAt,
       'theme': theme,
+      'growthStage': growthStage,
+      'plantedAt': plantedAt,
     };
   }
 
@@ -57,6 +81,8 @@ class Seed {
     String? status,
     DateTime? createdAt,
     String? theme,
+    int? growthStage,
+    DateTime? plantedAt,
   }) {
     return Seed(
       id: id ?? this.id,
@@ -65,13 +91,31 @@ class Seed {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       theme: theme ?? this.theme,
+      growthStage: growthStage ?? this.growthStage,
+      plantedAt: plantedAt ?? this.plantedAt,
     );
+  }
+
+  bool get isGrowing => status == SeedStatus.growing;
+  bool get isComplete => status == SeedStatus.complete;
+
+  /// [now] 기준 성장 단계. `growing`이 아니면 저장된 단계 그대로.
+  int growthStageAt(DateTime now) {
+    if (!isGrowing) return growthStage;
+    final elapsed = now.difference(plantedAt).inHours ~/ Seed.stageHours;
+    return elapsed.clamp(0, Seed.maxGrowthStage);
   }
 }
 
 /// `Seed.status` 값. enum 대신 문자열 상수로 둔다 (Firestore 직렬화 단순화).
 abstract class SeedStatus {
   static const locked = 'locked';
+
+  /// 심김. 2시간 간격으로 `growthStage`가 오른다.
+  static const growing = 'growing';
+
+  /// 성장 완료 (열매). quoteId 확정, 수확 대상.
+  static const complete = 'complete';
   static const opened = 'opened';
   static const expired = 'expired';
 }

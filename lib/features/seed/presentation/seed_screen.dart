@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
+import 'package:malssi/features/archive/domain/fruit.dart';
+import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
+import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 
 /// 씨앗 탭 (메인). 매일 씨앗 1개 → 탭 1회 → 명언 공개.
@@ -27,6 +31,24 @@ class SeedScreen extends StatelessWidget {
     );
   }
 
+  void _openReview(
+      BuildContext context, SeedProvider state, Fruit fruit) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => FruitReviewSheet(
+        quoteText: fruit.text,
+        author: fruit.author,
+        dateLabel: fruit.harvestDateKey.replaceAll('-', '.'),
+        imagePath: ThemeAssets.fruitImage(fruit.theme),
+        initialMemo: fruit.memo,
+        initialScore: fruit.fidelityScore,
+        onSave: ({required memo, required fidelityScore}) =>
+            state.saveReview(memo: memo, fidelityScore: fidelityScore),
+      ),
+    );
+  }
+
   Widget _buildBody(BuildContext context, SeedProvider state) {
     if (state.isLoading && state.todaySeed == null) {
       return const Center(child: CircularProgressIndicator());
@@ -39,8 +61,28 @@ class SeedScreen extends StatelessWidget {
       return const Center(child: Text('오늘의 씨앗을 준비할 수 없습니다.'));
     }
     final quote = state.revealedQuote;
+    final fruit = state.completedFruit;
+    if (seed.isComplete && quote != null) {
+      return _OpenedQuote(
+        quote: quote,
+        fruit: fruit,
+        onTapReview: fruit == null
+            ? null
+            : () => _openReview(context, state, fruit),
+      );
+    }
+    if (seed.isGrowing) {
+      return _GrowingSeed(seed: seed, isBusy: state.isLoading);
+    }
+    // 구 `opened` 씨앗 호환: 명언이 있으면 공개 화면.
     if (seed.isOpened && quote != null) {
-      return SingleChildScrollView(child: _OpenedQuote(quote: quote));
+      return _OpenedQuote(
+        quote: quote,
+        fruit: fruit,
+        onTapReview: fruit == null
+            ? null
+            : () => _openReview(context, state, fruit),
+      );
     }
     return _LockedSeed(
       seedDateKey: seed.dateKey,
@@ -106,14 +148,14 @@ class _LockedSeed extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: isBusy
                     ? null
-                    : () => context.read<SeedProvider>().openSeed(),
+                    : () => context.read<SeedProvider>().plantSeed(),
                 child: isBusy
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('씨앗 깨기'),
+                    : const Text('씨앗 심기'),
               ),
             ),
           ],
@@ -123,35 +165,120 @@ class _LockedSeed extends StatelessWidget {
   }
 }
 
-class _OpenedQuote extends StatelessWidget {
-  const _OpenedQuote({required this.quote});
+/// 성장 중 화면. 단계 이미지 + 진행 표시. 디버그에서만 빨리감기 버튼.
+class _GrowingSeed extends StatelessWidget {
+  const _GrowingSeed({required this.seed, required this.isBusy});
 
-  final Quote quote;
+  final Seed seed;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(32, 48, 32, 48),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              '"${quote.text}"',
-              textAlign: TextAlign.center,
-              style: AppTheme.quoteTextStyle(fontSize: 26),
+            _ThemeImage(
+              path: ThemeAssets.growthImage(seed.theme, seed.growthStage),
+              size: 120,
+              fallbackFontSize: 72,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Text(
-              '— ${quote.author}',
-              textAlign: TextAlign.center,
+              '${seed.growthStage}단계 성장 중',
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
                 color: AppTheme.paper,
               ),
             ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < Seed.totalStages; i++)
+                  Container(
+                    width: 10,
+                    height: 10,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i <= seed.growthStage
+                          ? AppTheme.gold
+                          : AppTheme.line,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '2시간마다 한 단계씩 자라요',
+              style: TextStyle(fontSize: 12, color: AppTheme.muted),
+            ),
+            if (kDebugMode) ...[
+              const SizedBox(height: 24),
+              OutlinedButton(
+                onPressed: isBusy
+                    ? null
+                    : () =>
+                        context.read<SeedProvider>().debugAdvanceGrowth(),
+                child: const Text('디버그: +2시간'),
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+class _OpenedQuote extends StatelessWidget {
+  const _OpenedQuote({
+    required this.quote,
+    required this.fruit,
+    required this.onTapReview,
+  });
+
+  final Quote quote;
+  final Fruit? fruit;
+  final VoidCallback? onTapReview;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTapReview,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(32, 48, 32, 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '"${quote.text}"',
+                textAlign: TextAlign.center,
+                style: AppTheme.quoteTextStyle(fontSize: 26),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '— ${quote.author}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.paper,
+                ),
+              ),
+              if (onTapReview != null) ...[
+                const SizedBox(height: 24),
+                const Text(
+                  '눌러서 오늘의 리뷰 남기기',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

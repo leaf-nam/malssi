@@ -174,14 +174,18 @@ class CollectionNames {
 | id        | `String`   | `id`         | `''` (날짜키 권장)         |
 | dateKey   | `String`   | `dateKey`    | `''` (`'YYYY-MM-DD'`)      |
 | quoteId   | `String`   | `quoteId`    | `''` (개봉 시 확정, 그 전은 `''`) |
-| status    | `String`   | `status`     | `'locked'` (`locked`/`opened`/`expired`) |
+| status    | `String`   | `status`     | `'locked'` (`locked`/`growing`/`complete`/`opened`(구)/`expired`) |
 | createdAt | `DateTime` | `createdAt`  | `DateTime.now()`           |
 | theme     | `String`   | `theme`      | `''` (`SeedTheme` 키 값 — §4.11, 생성 시 랜덤 부여) |
+| growthStage | `int`    | `growthStage` | `0` (0~5, 2시간마다 +1)   |
+| plantedAt | `DateTime` | `plantedAt`  | `createdAt` (심은 시각, 단계 계산 기준) |
 
-- **상태 전이**: `locked` (생성) → `opened` (탭 1회 개봉) →
-  자정 만료 시 미개봉분은 `expired` (이월 없음).
+- **상태 전이**: `locked` (생성, 탭 → 심기) → `growing` (2시간 간격 성장) →
+  `complete` (5단계 도달, 열매 수확 대상).
+  자정 만료는 미심김(`locked`)에만 적용되고, `growing`은 다음 날로 이월된다.
+  (`opened`는 성장 도입 전 상태로 호환용으로만 유지.)
 - **컬렉션**: `seeds` (`CollectionNames.seeds`).
-- **향후 과제**: `status` 값의 enum/상수화, 성장 단계 필드 추가 시 본 스펙 개정.
+- **향후 과제**: 성장 단계 연출 에셋 확정 시 §4.11 개정.
 
 ### 4.9 `Fruit` — 열매 (3탭 개편 신규, 2026-09-04)
 
@@ -230,8 +234,17 @@ class CollectionNames {
 
 - **개념**: 명언은 7개 테마로 분류하여 관리한다. 씨앗 1개는 테마 1개를 갖고,
   그 씨앗에서 수확되는 열매도 같은 테마다. 일자별 씨앗 테마는 **랜덤**으로 부여한다
-  (중복 허용, 2026-09-04 확정, #30). 개봉 시 같은 테마의 명언을 선택하며,
+  (중복 허용, 2026-09-04 확정, #30). 심을 때 같은 테마의 명언을 확정하고,
+  **명언은 성장 완성(5단계) 시점에 공개**된다 (#40).
   해당 테마 명언이 없으면 전체에서 랜덤 선택한다 (폴백).
+- **성장 단계 에셋** (혼합 전략, #40 — `ThemeAssets.growthImage(theme, stage)`):
+  - 0~2단계: 공용 `growth_0.png`·`growth_1.png`·`growth_2.png`
+    (미등록 시 테마 씨앗 이미지로 폴백).
+  - 3~4단계: 테마별 `growth_<이름>_3.png`·`growth_<이름>_4.png`
+    (`<이름>`은 strawberry/orange/lemon/kiwi/blueberry/grape/grapefruit,
+    미등록 시 테마 씨앗 이미지로 폴백).
+  - 5단계(열매): 기존 테마 열매 이미지 재사용 (신규 에셋 불필요).
+  - 필요 신규 에셋: 공용 3개 + 테마별 14개 = 17개.
 - **정규 키** (7종, `lib/core/constants/seed_themes.dart`의 `SeedTheme`로 상수화됨):
   `vitality` / `happiness` / `growth` / `health` / `peace` / `relationship` / `wisdom`.
 
