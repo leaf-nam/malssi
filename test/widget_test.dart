@@ -7,7 +7,7 @@ void main() {
     await tester.pumpWidget(const AppShell());
     await tester.pumpAndSettle();
 
-    expect(find.text('오늘의 씨앗'), findsOneWidget);
+    expect(find.text('말씨'), findsOneWidget);
     expect(find.text('씨앗 심기'), findsOneWidget);
   });
 }

@@ -21,12 +21,7 @@ class SeedScreen extends StatelessWidget {
     return Scaffold(
       // 씨앗 탭(메인)은 모드와 무관하게 항상 다크 고정.
       backgroundColor: AppTheme.ink900,
-      appBar: AppBar(
-        backgroundColor: AppTheme.ink900,
-        foregroundColor: AppTheme.paper,
-        title: const Text('오늘의 씨앗'),
-      ),
-      body: _buildBody(context, state),
+      body: SafeArea(child: _buildBody(context, state)),
       bottomNavigationBar: const MainBottomNav(currentIndex: 0),
     );
   }
@@ -72,7 +67,12 @@ class SeedScreen extends StatelessWidget {
       );
     }
     if (seed.isGrowing) {
-      return _GrowingSeed(seed: seed, isBusy: state.isLoading);
+      // #46: 심자마자 명언을 먼저 보여주고, 그 아래에 성장 에셋을 그린다.
+      return _GrowingSeed(
+        seed: seed,
+        quote: quote,
+        isBusy: state.isLoading,
+      );
     }
     // 구 `opened` 씨앗 호환: 명언이 있으면 공개 화면.
     if (seed.isOpened && quote != null) {
@@ -165,29 +165,59 @@ class _LockedSeed extends StatelessWidget {
   }
 }
 
-/// 성장 중 화면. 단계 이미지 + 진행 표시. 디버그에서만 빨리감기 버튼.
+/// 성장 중 화면. 명언을 먼저 보여주고 (#46) 그 아래 단계 이미지 + 진행 표시.
+/// 디버그에서만 빨리감기 버튼.
 class _GrowingSeed extends StatelessWidget {
-  const _GrowingSeed({required this.seed, required this.isBusy});
+  const _GrowingSeed({
+    required this.seed,
+    required this.quote,
+    required this.isBusy,
+  });
 
   final Seed seed;
+
+  /// 심을 때 확정한 명언. 없으면(구 데이터) 성장 표시만 보여준다.
+  final Quote? quote;
   final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
+    final quote = this.quote;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(32, 40, 32, 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ThemeImage(
-              path: ThemeAssets.growthImage(seed.theme, seed.growthStage),
-              size: 120,
-              fallbackFontSize: 72,
+            if (quote != null) ...[
+              Text(
+                '"${quote.text}"',
+                textAlign: TextAlign.center,
+                style: AppTheme.quoteTextStyle(fontSize: 26),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '— ${quote.author}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.paper,
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+            Center(
+              child: _ThemeImage(
+                path: ThemeAssets.growthImage(seed.theme, seed.growthStage),
+                size: 120,
+                fallbackFontSize: 72,
+              ),
             ),
             const SizedBox(height: 20),
             Text(
               '${seed.growthStage}단계 성장 중',
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -197,6 +227,7 @@ class _GrowingSeed extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 for (var i = 0; i < Seed.totalStages; i++)
                   Container(
@@ -215,16 +246,19 @@ class _GrowingSeed extends StatelessWidget {
             const SizedBox(height: 6),
             const Text(
               '2시간마다 한 단계씩 자라요',
+              textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: AppTheme.muted),
             ),
             if (kDebugMode) ...[
               const SizedBox(height: 24),
-              OutlinedButton(
-                onPressed: isBusy
-                    ? null
-                    : () =>
-                        context.read<SeedProvider>().debugAdvanceGrowth(),
-                child: const Text('디버그: +2시간'),
+              Center(
+                child: OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () =>
+                          context.read<SeedProvider>().debugAdvanceGrowth(),
+                  child: const Text('디버그: +2시간'),
+                ),
               ),
             ],
           ],

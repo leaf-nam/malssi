@@ -18,7 +18,8 @@
   구 화면(`HomeScreen`, `LoginScreen` 제외 — `/auth` 유지,
   `MyPageScreen`, `CommentScreen`, `CategoryScreen`, `WriteScreen`, `LikedScreen`)은
   #19에서 제거됨.
-- BottomNav: 3탭 고정 (`SeedScreen`/`ArchiveScreen`/`SettingsScreen` 순서).
+- BottomNav: 3탭 고정 (`말씨`/`정원`/`설정` 라벨, `eco`/`grass`/`settings` 아이콘,
+  `SeedScreen`/`ArchiveScreen`/`SettingsScreen` 순서, #45).
   탭 추가·순서 변경 시 `feature_spec.md`와 본 문서 §6을 함께 개정하십시오.
 - Repository: `<Name>Repository` 추상 클래스 + `<Name>RepositoryImpl` 구현체
   (예: `QuoteRepository` / `QuoteRepositoryImpl`).
@@ -43,8 +44,9 @@
 - 톤앤매너: 도트풍 **Galmuri11** (`assets/fonts/`, OFL) + 밝은 크림(라이트) / 잉크(다크).
   전역 `fontFamily`와 명언(`quoteTextStyle`) 모두 Galmuri11을 쓴다.
   런타임 폰트 다운로드는 금지 (macOS 샌드박스 차단 이슈).
-- 모드 규칙: 씨앗 탭(`/`)은 **항상 다크 고정** (명언 가독성).
-  나머지 화면(보관/설정)은 **라이트 기본 + 다크모드 지원** (`ThemeMode.system`).
+- 모드 규칙: 말씨 탭(`/`)은 **항상 다크 고정** (명언 가독성).
+  나머지 화면(정원/설정)은 **설정 탭의 화면 모드(라이트/다크/시스템)**를 따른다 (#47).
+  각 탭 상단 타이틀(AppBar)은 두지 않는다 (하단 탭 라벨과 중복, #49).
 - 화면 코드는 `Theme.of(context)` (`cardColor`, `colorScheme`, `dividerColor`)를 쓰고,
   `AppTheme.ink*`/`paper` 직접 참조는 씨앗 탭(다크 고정)에만 허용한다.
 - 기준값: 라이트 배경 `cream`(`0xFFFFF8EC`), 카드 흰색, 본문 `cocoa`,

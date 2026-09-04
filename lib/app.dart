@@ -59,12 +59,21 @@ class AppShell extends StatelessWidget {
         ),
         Provider(create: (_) => DummyAuthService()),
       ],
-      child: MaterialApp.router(
-        title: 'malssi',
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
-        routerConfig: appRouter,
+      child: Consumer<SettingsProvider>(
+        builder: (_, settingsState, __) {
+          final themeMode = switch (settingsState.settings?.themeMode) {
+            'light' => ThemeMode.light,
+            'dark' => ThemeMode.dark,
+            _ => ThemeMode.system,
+          };
+          return MaterialApp.router(
+            title: 'malssi',
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: themeMode,
+            routerConfig: appRouter,
+          );
+        },
       ),
     );
   }

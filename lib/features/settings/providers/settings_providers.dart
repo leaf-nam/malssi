@@ -71,6 +71,18 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> setThemeMode(String themeMode) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _settings = await _settingsRepository.setThemeMode(themeMode);
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
+  }
+
   Future<void> _reschedule() async {
     final settings = _settings;
     final reschedule = _onSettingsChanged;

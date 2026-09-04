@@ -9,6 +9,9 @@ abstract class SettingsRepository {
   Future<AppSettings> updateSeedTime(String seedTime);
 
   Future<AppSettings> setNotifyEnabled(bool enabled);
+
+  /// 화면 모드 변경 (`'light'`/`'dark'`/`'system'`). 형식이 틀리면 [ArgumentError].
+  Future<AppSettings> setThemeMode(String themeMode);
 }
 
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
@@ -40,6 +43,15 @@ class InMemorySettingsRepository implements SettingsRepository {
   @override
   Future<AppSettings> setNotifyEnabled(bool enabled) async {
     _settings = _settings.copyWith(notifyEnabled: enabled);
+    return _settings;
+  }
+
+  @override
+  Future<AppSettings> setThemeMode(String themeMode) async {
+    if (!AppSettings.isValidThemeMode(themeMode)) {
+      throw ArgumentError('Invalid themeMode: $themeMode');
+    }
+    _settings = _settings.copyWith(themeMode: themeMode);
     return _settings;
   }
 }

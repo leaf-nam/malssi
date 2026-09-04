@@ -164,7 +164,8 @@ void main() {
 
       await provider.plantSeed();
       expect(provider.todaySeed!.isGrowing, isTrue);
-      expect(provider.revealedQuote, isNull);
+      // #46: 심자마자 명언이 바로 공개된다.
+      expect(provider.revealedQuote, isNotNull);
 
       for (var i = 0; i < 5; i++) {
         await provider.debugAdvanceGrowth();
@@ -213,11 +214,11 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('오늘의 씨앗'), findsOneWidget);
+      expect(find.text('말씨'), findsOneWidget);
       expect(find.text('씨앗 심기'), findsOneWidget);
     });
 
-    testWidgets('plant grows and debug advance reveals the quote',
+    testWidgets('plant reveals the quote at once with growth below',
         (tester) async {
       final provider = _buildProvider();
       await provider.ensureTodaySeed();
@@ -228,15 +229,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('씨앗 심기'), findsNothing);
+      // #46: 심자마자 명언이 보이고, 그 아래 성장 에셋이 그려진다.
+      expect(provider.revealedQuote, isNotNull);
+      expect(find.textContaining(provider.revealedQuote!.text),
+          findsOneWidget);
       expect(find.text('0단계 성장 중'), findsOneWidget);
-      expect(provider.revealedQuote, isNull);
 
       for (var i = 0; i < 5; i++) {
         await tester.tap(find.text('디버그: +2시간'));
         await tester.pumpAndSettle();
       }
 
-      expect(provider.revealedQuote, isNotNull);
+      expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
     });

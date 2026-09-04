@@ -2,17 +2,18 @@
 
 > AI 에이전트용 개발 하네스 문서 중 하나입니다. 상위 지침: `AGENTS.md`.
 > 관련: `docs/context/model_spec.md` (모델/컬렉션), `docs/architecture/architecture_spec.md` (구조/서비스).
-> 본 문서는 3탭(씨앗 메인/보관/설정) 체제의 공식 기능 명세를 정의합니다.
+> 본 문서는 3탭(말씨/정원/설정) 체제의 공식 기능 명세를 정의합니다.
 > 각 항목의 **구현 상태**는 기준 시점의 실제 코드를 기준으로 표기하며,
 > 미구현 부분은 "미구현"으로 명시합니다 (추측 금지).
 > 2026-09-04 개정: 기존 7기능(오늘의 명언/내 명언/댓글/카테고리/좋아요·추천/공유/하루 1회 알림)
 > 체제를 폐기하고 3탭 체제로 전면 개편합니다. 폐기 내역은 §6 참조.
 > 테마 분류(명언·씨앗·열매 7종) 체계는 §4 참조.
 
-## 1. 씨앗 탭 (메인, `/`)
+## 1. 말씨 탭 (메인, `/`)
 
-- **요구**: 매일 1개의 씨앗이 생성된다. 씨앗을 심으면 2시간 간격으로 자라고(0~5단계),
-  완성되면 열매와 함께 그날의 명언이 공개된다. 씨앗은 7개 테마(§4 참조) 중 1개의
+- **요구**: 매일 1개의 씨앗이 생성된다. 씨앗을 심으면(개봉) **그날의 명언이 바로 공개**되고,
+  명언 아래에 씨앗이 2시간 간격으로 자라는 에셋이 그려진다(0~5단계).
+  완성되면 열매가 맺힌다. 씨앗은 7개 테마(§4 참조) 중 1개의
   테마를 갖고, 명언은 해당 테마로 분류된 것 중에서 선택된다.
 - **메인 화면 구성** (미니멀, #39): 작은 씨앗 UI + 중앙의 큰 명언 + 작은 저자만 노출.
   안내 문구·열매 헤더·카드 테두리·태그 칩은 삭제. 저자는 작게(11px) 흰색 통일.
@@ -28,13 +29,13 @@
   - 명언 원천: 기존 `quotes` 컬렉션 + `Quote` 모델 재사용
     (`lib/features/quote.dart`, `CollectionNames.quotes`).
 - **동작 플로우 (목표)**:
-  1. 설정 시각(`AppSettings.seedTime`, 기본 12:00)에 당일 `Seed` 문서 1개 생성
+  1. 설정 시각(`AppSettings.seedTime`, 기본 08:00)에 당일 `Seed` 문서 1개 생성
      (문서 ID = 날짜키, 예: `'2026-09-04'`, 테마 랜덤 부여) + 씨앗 알림 발송.
   2. 사용자가 씨앗을 탭 1회 → `plantSeed()` → `status: locked → growing` →
-     같은 테마의 명언 확정 (해당 테마가 없으면 전체 랜덤 폴백).
-  3. 2시간마다 1단계씩 성장 (0~5단계, 단계 이미지는 §4·`model_spec.md` §4.11).
+     같은 테마의 명언 확정 + **명언 즉시 공개** (해당 테마가 없으면 전체 랜덤 폴백).
+  3. 명언 아래에 성장 에셋 표시. 2시간마다 1단계씩 성장 (0~5단계, 단계 이미지는 §4·`model_spec.md` §4.11).
      앱 실행 중 15분 간격 갱신 + 재실행 시 경과 시간 계산.
-  4. 5단계 도달 → `complete` → `Fruit` 수확 + 명언 공개.
+  4. 5단계 도달 → `complete` → `Fruit` 수확.
      미심김 씨앗만 자정에 만료되고, 성장 중 씨앗은 다음 날로 이월된다.
   5. 완성된 명언을 탭 → 리뷰 카드 (별점 1~5 + 한줄 후기, `FruitReviewSheet` 공용).
      저장된 후기는 덮어쓰기 가능 (#41).
@@ -42,43 +43,48 @@
 - **향후 과제 (후속 이슈로 분리)**: 성장 단계 연출 에셋 17개 확보
   (`model_spec.md` §4.11), 열매에 그날의 명언 충실도 기록 (#41 리뷰 작성으로 해소 예정).
 
-## 2. 보관 탭 (`/archive`)
+## 2. 정원 탭 (`/archive`, 구 보관)
 
 - **요구**: 지금까지 수확한 열매들을 기록한다.
   GitHub 잔디 스타일로 **최근 1년을 그리드**로 보여주고, 각 칸은 해당 날짜 열매의
-  **테마 색깔로만** 표시한다. 칸을 터치하면 확대되면서 **열매 + 그날의 후기 및 점수 카드**가 나온다.
-- **구현 상태**: 잔디 그리드 + 상세 카드 + 후기·점수 저장 구현됨 (#31).
+  **테마 색깔로만** 표시한다. 칸을 터치하면 확대되면서 **열매 + 저장된 후기 및 점수 카드**가 나온다.
+  **후기 작성은 불가**하며 이미 저장된 후기만 불러온다 (#48).
+  작성은 말씨 탭의 완성 열매 흐름(#41)에서만 가능하다.
+- **구현 상태**: 잔디 그리드 + 읽기 전용 상세 카드 구현됨 (#31, #48).
   기존 목록형 MVP는 본 형태로 대체되었다.
 - **관련 코드**:
   - 모델: `Fruit` (`model_spec.md` §4.9 참조) — `memo`/`fidelityScore`(0~5, `0`=미평가) 포함.
   - 저장소: `FruitRepository.getFruitsStream()` (날짜 내림차순),
     `updateReview({fruitId, memo, fidelityScore})` (0~5 범위 외는 `ArgumentError`).
   - 화면: `ArchiveScreen` (`lib/features/archive/presentation/archive_screen.dart`) —
-    `_GrassGrid`(53주 × 7일, 가로 스크롤) + 공용 `FruitReviewSheet`(열매 이미지·명언·별점·후기 입력·저장).
+    `_GrassGrid`(53주 × 7일, 가로 스크롤) + 공용 `FruitReviewSheet`(읽기 전용, `readOnly: true`).
   - 상태: `ArchiveProvider` (`load()`, `fruitsByDateKey`, `updateReview()`).
-  - 메인 진입점: 완성 명언 탭 → 같은 `FruitReviewSheet` (`SeedProvider.saveReview()` 저장, #41).
+  - 메인 진입점: 완성 명언 탭 → 같은 `FruitReviewSheet` 작성 모드 (`SeedProvider.saveReview()` 저장, #41).
   - 셀 색상: `ThemeAssets.cellColor(theme)` (`lib/core/theme/theme_assets.dart`).
 - **동작 플로우 (목표)**:
   1. 씨앗 개봉 시 생성된 `Fruit`가 잔디의 해당 날짜 칸에 테마 색으로 표시된다.
-  2. 칸 터치 → 상세 카드 (열매 이미지 + 명언 + 별점 1~5 + 후기 입력 + `후기 저장하기`).
+  2. 칸 터치 → 상세 카드 (열매 이미지 + 명언 + 저장된 별점 + 저장된 후기 또는 빈 상태 문구).
 - **향후 과제 (후속 이슈로 분리)**: 1년 이전 데이터 페이징, 열매 상세에 기존 공유하기 편입 여부.
 
 ## 3. 설정 탭 (`/settings`)
 
-- **요구**: 씨앗 생성시간 등을 설정한다. 설정 시각에 씨앗 생성과 알림이 동시에 동작한다.
+- **요구**: 씨앗 생성시간·화면 모드 등을 설정한다. 설정 시각에 씨앗 생성과 알림이 동시에 동작한다.
+  화면 모드(라이트/다크/시스템, #47)와 씨앗 기본 생성시간 08:00 (#47)을 제공한다.
 - **구현 상태**: 미구현 (신규). 기존 `MyPageScreen`의 알림 토글·시간 설정 UI는
   본 탭으로 이관 후 `MyPageScreen`은 폐기한다.
 - **관련 코드 (예정)**:
   - 모델: `AppSettings` (`model_spec.md` §4.10 참조).
   - 저장소: `SettingsRepository` (`getSettingsStream()`, `updateSeedTime()`,
-    `setNotifyEnabled()`) (`lib/features/settings/data/` 예정).
+    `setNotifyEnabled()`, `setThemeMode()`) (`lib/features/settings/data/` 예정).
   - 화면: `SettingsScreen` (`lib/features/settings/presentation/settings_screen.dart` 예정).
   - 알림: `NotificationService` (`lib/core/services/notification_service.dart`) —
     기존 1회 예약 API를 매일 반복 스케줄로 확장 (`scheduleDailySeedNotification()` 예정).
 - **동작 플로우 (목표)**:
-  1. 사용자가 씨앗 생성 시각 변경 (기본값 매일 12:00) → `updateSeedTime()` 저장.
-  2. 다음 날부터 해당 시각에 씨앗 생성 + `NotificationService` 일일 알림 발송.
-  3. 알림 탭 → 씨앗 탭(`/`)으로 이동 (딥링크/라우팅 연결).
+  1. 사용자가 씨앗 생성 시각 변경 (기본값 매일 08:00) → `updateSeedTime()` 저장.
+  2. 사용자가 화면 모드 변경 (라이트/다크/시스템, 기본 시스템) → `setThemeMode()` 저장·즉시 적용.
+     말씨 탭(`/`)은 항상 다크 고정으로 제외.
+  3. 다음 날부터 해당 시각에 씨앗 생성 + `NotificationService` 일일 알림 발송.
+  4. 알림 탭 → 말씨 탭(`/`)으로 이동 (딥링크/라우팅 연결).
 - **향후 과제**: 알림 권한 요청 플로우, 타임존 처리, 서버 푸시(FCM) 필요 여부 결정,
   로그인(`/auth`) 연동 여부 (설정 저장을 Firestore `settings` vs 로컬 — 아키텍처 이슈로 분리).
 
@@ -105,8 +111,8 @@
 
 | # | 기능 | 컬렉션 | 모델 | Repository | 화면/Provider | 상태 |
 |---|------|--------|------|------------|---------------|------|
-| 1 | 씨앗 (메인) | `seeds` (+`quotes` 원천) | `Seed` / `Quote` | `SeedRepository` | `SeedScreen`, `SeedProvider` | 미구현 |
-| 2 | 보관 (열매) | `fruits` | `Fruit` | `FruitRepository` | `ArchiveScreen`, `ArchiveProvider` | 미구현 |
+| 1 | 말씨 (메인) | `seeds` (+`quotes` 원천) | `Seed` / `Quote` | `SeedRepository` | `SeedScreen`, `SeedProvider` | 미구현 |
+| 2 | 정원 (열매) | `fruits` | `Fruit` | `FruitRepository` | `ArchiveScreen`, `ArchiveProvider` | 미구현 |
 | 3 | 설정 | `settings` | `AppSettings` | `SettingsRepository` | `SettingsScreen` | 미구현 |
 
 ## 6. 폐기된 기존 7기능과 사유 (2026-09-04 확정)

@@ -186,9 +186,9 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('보관'), findsWidgets);
+      expect(find.text('정원'), findsOneWidget);
       expect(find.text('최근 1년 · 0개의 열매'), findsOneWidget);
-      expect(find.text('씨앗 탭에서 오늘의 씨앗을 깨면 잔디가 채워져요'),
+      expect(find.text('말씨 탭에서 오늘의 씨앗을 깨면 잔디가 채워져요'),
           findsOneWidget);
       ArchiveScreen.debugToday = null;
     });
@@ -214,7 +214,8 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
-    testWidgets('tapping a cell opens the detail card', (tester) async {
+    testWidgets('tapping a cell opens the read-only detail card',
+        (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final at = DateTime(2026, 9, 4, 12);
       final repo = InMemoryFruitRepository(clock: () => at);
@@ -235,10 +236,42 @@ void main() {
       expect(find.textContaining('성장 열매'), findsOneWidget);
       expect(find.text('오늘의 점수'), findsOneWidget);
       expect(find.text('오늘의 후기'), findsOneWidget);
+      // #48: 보관에서는 저장 UI가 없다.
+      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
       ArchiveScreen.debugToday = null;
     });
 
-    testWidgets('saving a review updates the fruit', (tester) async {
+    testWidgets('detail card shows the saved review read-only',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '성장 열매', at: at);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '오늘 충실히 살았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester
+          .tap(find.byKey(const ValueKey('grass-2026-09-04')));
+      await tester.pumpAndSettle();
+
+      // 저장된 별점·후기만 표시된다.
+      expect(find.text('오늘 충실히 살았다'), findsOneWidget);
+      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('detail card shows an empty state without a review',
+        (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final at = DateTime(2026, 9, 4, 12);
       final repo = InMemoryFruitRepository(clock: () => at);
@@ -253,16 +286,7 @@ void main() {
           .tap(find.byKey(const ValueKey('grass-2026-09-04')));
       await tester.pumpAndSettle();
 
-      await tester.enterText(
-          find.byType(TextField), '오늘 충실히 살았다');
-      await tester.tap(find.byKey(const ValueKey('score-4')));
-      await tester.pump();
-      await tester.tap(find.text('후기 저장하기'));
-      await tester.pumpAndSettle();
-
-      expect(provider.fruits.single.memo, '오늘 충실히 살았다');
-      expect(provider.fruits.single.fidelityScore, 4);
-      // 시트가 닫혔다.
+      expect(find.text('작성된 후기가 없어요'), findsOneWidget);
       expect(find.text('후기 저장하기'), findsNothing);
       ArchiveScreen.debugToday = null;
     });

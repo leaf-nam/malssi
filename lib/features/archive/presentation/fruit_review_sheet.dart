@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 
 /// 열매 리뷰 카드 (별점 + 한줄 후기).
-/// 메인(완성 열매 탭)과 보관(잔디 상세) 양쪽에서 재사용한다.
-/// 저장은 호출 측이 [onSave]로 주입한다. 이미 작성된 후기도 수정 가능하다 (덮어쓰기).
+/// 메인(완성 열매 탭)에서는 작성용으로, 보관(잔디 상세)에서는 읽기 전용으로 쓴다.
+/// 저장은 호출 측이 [onSave]로 주입한다 (작성 모드에서 필수).
+/// 보관에서는 이미 저장된 후기만 보여주고 새로 쓸 수 없다 (#48).
 class FruitReviewSheet extends StatefulWidget {
   const FruitReviewSheet({
     super.key,
@@ -13,8 +14,10 @@ class FruitReviewSheet extends StatefulWidget {
     required this.imagePath,
     required this.initialMemo,
     required this.initialScore,
-    required this.onSave,
-  });
+    this.readOnly = false,
+    this.onSave,
+  }) : assert(readOnly || onSave != null,
+            '작성 모드에서는 onSave가 필요합니다.');
 
   final String quoteText;
   final String author;
@@ -22,8 +25,11 @@ class FruitReviewSheet extends StatefulWidget {
   final String imagePath;
   final String initialMemo;
   final int initialScore;
+
+  /// `true`면 별점·후기를 표시만 하고 입력 UI를 숨긴다.
+  final bool readOnly;
   final Future<void> Function(
-      {required String memo, required int fidelityScore}) onSave;
+      {required String memo, required int fidelityScore})? onSave;
 
   @override
   State<FruitReviewSheet> createState() => _FruitReviewSheetState();
@@ -101,50 +107,76 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
             const SizedBox(height: 16),
             const Text('오늘의 점수', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var i = 1; i <= 5; i++)
-                  IconButton(
-                    key: ValueKey('score-$i'),
-                    icon: Icon(
+            if (widget.readOnly)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 1; i <= 5; i++)
+                    Icon(
                       i <= _score ? Icons.star : Icons.star_border,
                       color: colors.primary,
                     ),
-                    onPressed: _saving
-                        ? null
-                        : () => setState(() => _score = i),
-                  ),
-              ],
-            ),
+                ],
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 1; i <= 5; i++)
+                    IconButton(
+                      key: ValueKey('score-$i'),
+                      icon: Icon(
+                        i <= _score ? Icons.star : Icons.star_border,
+                        color: colors.primary,
+                      ),
+                      onPressed: _saving
+                          ? null
+                          : () => setState(() => _score = i),
+                    ),
+                ],
+              ),
             const SizedBox(height: 8),
             const Text('오늘의 후기', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 8),
-            TextField(
-              controller: _memoController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: '명언에 얼마나 충실히 살았는지 적어보세요',
+            if (widget.readOnly)
+              Text(
+                _memoController.text.isEmpty
+                    ? '작성된 후기가 없어요'
+                    : _memoController.text,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _memoController.text.isEmpty
+                      ? colors.onSurfaceVariant
+                      : colors.onSurface,
+                ),
+              )
+            else ...[
+              TextField(
+                controller: _memoController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: '명언에 얼마나 충실히 살았는지 적어보세요',
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _saving
-                  ? null
-                  : () async {
-                      setState(() => _saving = true);
-                      try {
-                        await widget.onSave(
-                          memo: _memoController.text,
-                          fidelityScore: _score,
-                        );
-                      } finally {
-                        if (mounted) setState(() => _saving = false);
-                      }
-                      if (context.mounted) Navigator.of(context).pop();
-                    },
-              child: const Text('후기 저장하기'),
-            ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _saving
+                    ? null
+                    : () async {
+                        setState(() => _saving = true);
+                        try {
+                          await widget.onSave!(
+                            memo: _memoController.text,
+                            fidelityScore: _score,
+                          );
+                        } finally {
+                          if (mounted) setState(() => _saving = false);
+                        }
+                        if (context.mounted) Navigator.of(context).pop();
+                      },
+                child: const Text('후기 저장하기'),
+              ),
+            ],
           ],
         ),
       ),
