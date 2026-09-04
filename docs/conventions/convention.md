@@ -14,11 +14,16 @@
 
 ## 2. 네이밍 컨벤션
 
-- Screen: `<Name>Screen` (예: `HomeScreen`, `LoginScreen`, `MyPageScreen`, `CommentScreen`).
+- Screen: `<Name>Screen` (예: `SeedScreen`, `ArchiveScreen`, `SettingsScreen`).
+  구 화면명(`HomeScreen`, `LoginScreen`, `MyPageScreen`, `CommentScreen`,
+  `CategoryScreen`, `WriteScreen`, `LikedScreen`)은 폐기 예정이며 신규 코드에서 사용하지 마십시오.
+- BottomNav: 3탭 고정 (`SeedScreen`/`ArchiveScreen`/`SettingsScreen` 순서).
+  탭 추가·순서 변경 시 `feature_spec.md`와 본 문서 §6을 함께 개정하십시오.
 - Repository: `<Name>Repository` 추상 클래스 + `<Name>RepositoryImpl` 구현체
   (예: `QuoteRepository` / `QuoteRepositoryImpl`).
 - Provider/Notifier: `<Name>Provider`, `<Name>Notifier` (예: `randomQuoteProvider`, `QuoteNotifier`).
-- 모델: `Quote`, `HomeQuote`, `Comment` (+ 향후 `User`, `Submission`, `Hashtag`/`Category`).
+- 모델: `Quote`, `HomeQuote`, `Comment`, `Seed`, `Fruit`, `AppSettings`
+  (+ 향후 `User`, `Submission`, `Hashtag`/`Category` — 구 화면 폐기로 보류).
 - Firestore 컬렉션: `CollectionNames` 상수 경유 (문자열 리터럴 금지).
 
 ## 3. 상태 관리
@@ -27,8 +32,9 @@
   - `provider`: `AppShell`의 `MultiProvider`, 각 화면의 `context.watch<T>()` / `context.read<T>()`.
   - `riverpod`: `home_providers.dart`의 `StateNotifierProvider` (`QuoteNotifier`),
     `StreamProvider` (`likedQuotesStreamProvider`).
-- 기존 파일의 패턴을 유지하십시오. 새 파일에서는 화면 상태 구독에 기존 화면(`home_screen.dart`,
-  `mypage_screen.dart`)이 쓰는 패턴을 따르고, 비동기 스트림에는 `StreamProvider` + `.when()`을 사용합니다.
+- 기존 파일의 패턴을 유지하십시오. 새 파일에서는 화면 상태 구독에 `provider` +
+  `ChangeNotifier` + `context.watch`/`context.read` 패턴(구 `home_screen.dart`가 쓰던 방식)을 따르고,
+  비동기 스트림에는 `StreamProvider` + `.when()`을 사용합니다.
 - `riverpod` 정식 의존성 승격 여부가 결정되기 전까지 `pubspec.yaml`의 섹션을 임의로 이동하지 마십시오.
 
 ## 4. 테마 (`AppTheme`)
@@ -51,5 +57,9 @@
 ## 6. 라우팅
 
 - 신규 화면은 `lib/routing/app_router.dart`에 `GoRoute(path: ...)`로 등록합니다.
+  목표 라우트: `/`, `/archive`, `/settings` (+ `/auth` 잔류 여부 미정).
+  구 라우트(`/home`, `/quote-detail/:quoteId`, `/category`, `/write`, `/liked`, `/mypage`)는
+  폐기 예정이며 신규 코드에서 연결하지 마십시오.
 - 경로 파라미터는 `state.pathParameters['quoteId'] ?? ''` 패턴으로 안전하게 읽습니다.
 - 화면 이동은 `context.go(...)`를 사용합니다.
+- 탭 이동은 BottomNav 3탭 경유를 원칙으로 합니다. 알림 탭 → `/` 이동도 `context.go('/')`를 사용합니다.

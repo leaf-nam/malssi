@@ -25,6 +25,10 @@ class CollectionNames {
   static const categories = 'categories';
   static const submissions = 'submissions';
   static const users = 'users';
+  // 3탭 개편 (2026-09-04) 신규 컬렉션:
+  static const seeds = 'seeds';
+  static const fruits = 'fruits';
+  static const settings = 'settings';
 }
 ```
 
@@ -157,14 +161,77 @@ class CollectionNames {
   `currentUserId => 'anonymous_user'`).
 - **컬렉션**: `auth` (`CollectionNames.auth`) — 실제 Auth 연동 시 스키마 확정 필요.
 
+### 4.8 `Seed` — 씨앗 (3탭 개편 신규, 2026-09-04)
+
+- **위치 (예정)**: `lib/features/seed/domain/seed.dart`
+- **성격**: 하루 1개 생성되는 씨앗. 문서 ID는 날짜키(예: `'2026-09-04'`) 사용을 권장.
+  불변 모델이며 `fromMap`/`toMap`/`copyWith` 삼중 구조를 따른다 (§3 준수).
+- **필드**:
+
+| 필드      | 타입       | Firestore 키 | 기본값 (`fromMap` 누락 시) |
+| --------- | ---------- | ------------ | -------------------------- |
+| id        | `String`   | `id`         | `''` (날짜키 권장)         |
+| dateKey   | `String`   | `dateKey`    | `''` (`'YYYY-MM-DD'`)      |
+| quoteId   | `String`   | `quoteId`    | `''` (개봉 시 확정, 그 전은 `''`) |
+| status    | `String`   | `status`     | `'locked'` (`locked`/`opened`/`expired`) |
+| createdAt | `DateTime` | `createdAt`  | `DateTime.now()`           |
+
+- **상태 전이**: `locked` (생성) → `opened` (탭 1회 개봉) →
+  자정 만료 시 미개봉분은 `expired` (이월 없음).
+- **컬렉션**: `seeds` (`CollectionNames.seeds`).
+- **향후 과제**: `status` 값의 enum/상수화, 성장 단계 필드 추가 시 본 스펙 개정.
+
+### 4.9 `Fruit` — 열매 (3탭 개편 신규, 2026-09-04)
+
+- **위치 (예정)**: `lib/features/archive/domain/fruit.dart`
+- **성격**: 씨앗 개봉 시 수확되는 기록. 보관 탭 MVP는 날짜+명언만 담는다.
+  불변 모델이며 `fromMap`/`toMap`/`copyWith` 삼중 구조를 따른다 (§3 준수).
+- **필드**:
+
+| 필드        | 타입       | Firestore 키 | 기본값 (`fromMap` 누락 시) |
+| ----------- | ---------- | ------------ | -------------------------- |
+| id          | `String`   | `id`         | `''`                       |
+| seedId      | `String`   | `seedId`     | `''` (원천 씨앗의 날짜키)  |
+| quoteId     | `String`   | `quoteId`    | `''` (원천 명언 FK)        |
+| text        | `String`   | `text`       | `''` (명언 스냅샷)         |
+| author      | `String`   | `author`     | `''` (명언 스냅샷)         |
+| harvestedAt | `DateTime` | `harvestedAt`| `DateTime.now()`           |
+
+- **스냅샷 규칙**: `text`/`author`는 수확 시점의 `Quote` 복사본이다.
+  원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
+- **컬렉션**: `fruits` (`CollectionNames.fruits`).
+- **향후 과제 (후속 이슈로 분리)**: 충실도 기록 필드
+  (`fidelityScore` (`int?`), `memo` (`String?`)), 성장 단계 필드 추가 시 본 스펙 개정.
+
+### 4.10 `AppSettings` — 앱 설정 (3탭 개편 신규, 2026-09-04)
+
+- **위치 (예정)**: `lib/features/settings/domain/app_settings.dart`
+- **성격**: 사용자별 1문서. 씨앗 생성 시각 등을 담는다.
+  불변 모델이며 `fromMap`/`toMap`/`copyWith` 삼중 구조를 따른다 (§3 준수).
+- **필드**:
+
+| 필드           | 타입   | Firestore 키    | 기본값 (`fromMap` 누락 시) |
+| -------------- | ------ | --------------- | -------------------------- |
+| seedTime       | `String` | `seedTime`    | `'12:00'` (`'HH:mm'`)      |
+| notifyEnabled  | `bool` | `notifyEnabled` | `true`                     |
+
+- **동작 귀속**: `seedTime` 시각에 씨앗 생성 + 알림 발송이 동시에 동작한다
+  (`feature_spec.md` §3 참조).
+- **컬렉션**: `settings` (`CollectionNames.settings`).
+- **향후 과제**: Firestore 저장 vs 로컬 저장(`SharedPreferences`) 결정 시 본 스펙 개정
+  (아키텍처 이슈로 분리). 비로그인 시 로컬 폴백이 후보이다.
+
 ## 5. Repository 추상 스펙 (참고)
 
 | Repository             | 위치                                                    | 핵심 메서드                                                                    |
 | ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `QuoteRepository`      | `lib/features/home/data/quote_repository.dart`          | `getRandomQuote`, `getQuotesStream`, `addQuote`, `updateLike`, `deleteQuote`   |
-| `UserRepository`       | `lib/features/mypage/data/user_repository.dart`         | `getUserProfile`, `getUserProfileStream`, `updateUserProfile`, `deleteAccount` |
-| `HashtagRepository`    | `lib/features/category/data/hashtag_repository.dart`    | `getHashtagsStream`, `addHashtag`, `removeHashtag`                             |
-| `SubmissionRepository` | `lib/features/my_quote/data/submission_repository.dart` | `submitQuote`, `getSubmissionsStream`, `updateSubmissionStatus`                |
+| `QuoteRepository`      | `lib/features/home/data/quote_repository.dart`          | `getRandomQuote`, `getQuotesStream`, `addQuote`, `updateLike`, `deleteQuote` — 3탭 개편 후 명언 원천 조회 용도로만 사용 (구 `home` 화면 폐기 예정) |
+| `UserRepository`       | `lib/features/mypage/data/user_repository.dart`         | `getUserProfile`, `getUserProfileStream`, `updateUserProfile`, `deleteAccount` — 구 `mypage` 화면과 함께 폐기 예정 |
+| `HashtagRepository`    | `lib/features/category/data/hashtag_repository.dart`    | `getHashtagsStream`, `addHashtag`, `removeHashtag` — 구 `category` 화면과 함께 폐기 예정 |
+| `SubmissionRepository` | `lib/features/my_quote/data/submission_repository.dart` | `submitQuote`, `getSubmissionsStream`, `updateSubmissionStatus` — 구 `my_quote` 화면과 함께 폐기 예정 |
+| `SeedRepository` (신규) | `lib/features/seed/data/` (예정)                      | `getTodaySeed`, `getSeedsStream`, `openSeed`                                   |
+| `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순)                         |
+| `SettingsRepository` (신규) | `lib/features/settings/data/` (예정)              | `getSettingsStream`, `updateSeedTime`, `setNotifyEnabled`                      |
 
 > `home_providers.dart`는 `QuoteRepositoryImpl()`을 참조하지만 해당 구현체가
 > 아직 존재하지 않습니다. 구현체 추가 시 본 스펙의 `fromMap`/`toMap` 규칙을 따르십시오.
