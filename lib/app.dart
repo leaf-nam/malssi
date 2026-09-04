@@ -17,6 +17,8 @@ import 'package:malssi/features/quote_detail/data/comment_repository.dart';
 import 'package:malssi/features/quote_detail/providers/comment_providers.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
+import 'package:malssi/features/settings/data/settings_repository.dart';
+import 'package:malssi/features/settings/providers/settings_providers.dart';
 import 'package:malssi/routing/app_router.dart';
 
 class AppShell extends StatelessWidget {
@@ -44,6 +46,27 @@ class AppShell extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ArchiveProvider(fruitRepository: fruitRepository)
             ..load(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(
+            settingsRepository: InMemorySettingsRepository(),
+            onSettingsChanged:
+                ({required hour, required minute, required enabled}) async {
+              if (enabled) {
+                await NotificationService.instance
+                    .scheduleDailySeedNotification(
+                  id: NotificationService.seedNotificationId,
+                  title: '오늘의 씨앗이 도착했어요',
+                  body: '씨앗을 깨고 오늘의 명언을 만나보세요',
+                  hour: hour,
+                  minute: minute,
+                );
+              } else {
+                await NotificationService.instance.cancelSeedNotification(
+                    NotificationService.seedNotificationId);
+              }
+            },
+          )..load(),
         ),
         ChangeNotifierProvider(
           create: (_) => QuoteProvider(repository: quoteRepository)..fetchRandomQuote(),
