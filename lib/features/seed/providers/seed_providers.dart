@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
+import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
@@ -42,6 +43,10 @@ class SeedProvider extends ChangeNotifier {
 
   /// 심을 때 확정한 명언. 수확 시 스냅샷 원본으로 사용한다.
   Quote? _plantedQuote;
+
+  /// 완성된 씨앗의 열매. 리뷰 진입에 사용한다.
+  Fruit? _completedFruit;
+  Fruit? get completedFruit => _completedFruit;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -137,6 +142,7 @@ class SeedProvider extends ChangeNotifier {
     final fruits = await _fruitRepository.getFruits();
     for (final fruit in fruits) {
       if (fruit.seedId == seed.id) {
+        _completedFruit = fruit;
         _revealedQuote = Quote(
           id: fruit.quoteId,
           text: fruit.text,
@@ -158,7 +164,36 @@ class SeedProvider extends ChangeNotifier {
       harvestQuote = await _findPlantedQuote(seed);
     }
     await _fruitRepository.harvestFromSeed(seed: seed, quote: harvestQuote);
+    final refreshed = await _fruitRepository.getFruits();
+    for (final fruit in refreshed) {
+      if (fruit.seedId == seed.id) {
+        _completedFruit = fruit;
+        break;
+      }
+    }
     _revealedQuote = harvestQuote;
+  }
+
+  /// 완성 열매의 후기·점수를 저장한다 (그날의 리뷰, 덮어쓰기 허용).
+  Future<void> saveReview({
+    required String memo,
+    required int fidelityScore,
+  }) async {
+    final fruit = _completedFruit;
+    if (fruit == null) return;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _completedFruit = await _fruitRepository.updateReview(
+        fruitId: fruit.id,
+        memo: memo,
+        fidelityScore: fidelityScore,
+      );
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
   }
 
   /// 수확 원본 명언 조회: 원천 스트림에서 `quoteId` 일치 → 없으면 테마 랜덤.
@@ -178,6 +213,7 @@ class SeedProvider extends ChangeNotifier {
     final fruits = await _fruitRepository.getFruits();
     for (final fruit in fruits) {
       if (fruit.seedId == seed.id) {
+        _completedFruit = fruit;
         _revealedQuote = Quote(
           id: fruit.quoteId,
           text: fruit.text,

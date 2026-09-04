@@ -177,6 +177,32 @@ void main() {
       expect(fruits.length, 1);
       expect(fruits.first.text, provider.revealedQuote!.text);
     });
+
+    test('saveReview stores memo and score on the completed fruit',
+        () async {
+      final seedRepository = InMemorySeedRepository(
+          clock: () => DateTime(2026, 9, 4, 12));
+      final fruitRepository = InMemoryFruitRepository(
+          clock: () => DateTime(2026, 9, 4, 12));
+      final provider = SeedProvider(
+        seedRepository: seedRepository,
+        quoteRepository: InMemoryQuoteRepository(),
+        fruitRepository: fruitRepository,
+      );
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      for (var i = 0; i < 5; i++) {
+        await provider.debugAdvanceGrowth();
+      }
+      expect(provider.completedFruit, isNotNull);
+
+      await provider.saveReview(memo: '잘 지켰다', fidelityScore: 5);
+
+      expect(provider.completedFruit!.memo, '잘 지켰다');
+      expect(provider.completedFruit!.fidelityScore, 5);
+      expect(provider.errorMessage, isNull);
+    });
   });
 
   group('SeedScreen', () {
@@ -247,6 +273,36 @@ void main() {
       expect(find.textContaining('열매'), findsNothing);
       expect(find.textContaining('보관 탭에서'), findsNothing);
       expect(find.text('— 노자'), findsOneWidget);
+    });
+
+    testWidgets('tapping the completed quote opens the review sheet',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.text('디버그: +2시간'));
+        await tester.pumpAndSettle();
+      }
+
+      await tester.tap(find.text('— 노자'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('오늘의 점수'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), '오늘 잘 지켰다');
+      await tester.tap(find.byKey(const ValueKey('score-5')));
+      await tester.pump();
+      await tester.tap(find.text('후기 저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(provider.completedFruit!.memo, '오늘 잘 지켰다');
+      expect(provider.completedFruit!.fidelityScore, 5);
+      expect(find.text('후기 저장하기'), findsNothing);
     });
   });
 }

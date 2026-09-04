@@ -36,7 +36,9 @@
      앱 실행 중 15분 간격 갱신 + 재실행 시 경과 시간 계산.
   4. 5단계 도달 → `complete` → `Fruit` 수확 + 명언 공개.
      미심김 씨앗만 자정에 만료되고, 성장 중 씨앗은 다음 날로 이월된다.
-  5. 개발 모드 한정 임시 버튼 (`kDebugMode`, `디버그: +2시간`)으로 단계 강제 진행.
+  5. 완성된 명언을 탭 → 리뷰 카드 (별점 1~5 + 한줄 후기, `FruitReviewSheet` 공용).
+     저장된 후기는 덮어쓰기 가능 (#41).
+  6. 개발 모드 한정 임시 버튼 (`kDebugMode`, `디버그: +2시간`)으로 단계 강제 진행.
 - **향후 과제 (후속 이슈로 분리)**: 성장 단계 연출 에셋 17개 확보
   (`model_spec.md` §4.11), 열매에 그날의 명언 충실도 기록 (#41 리뷰 작성으로 해소 예정).
 
@@ -52,8 +54,9 @@
   - 저장소: `FruitRepository.getFruitsStream()` (날짜 내림차순),
     `updateReview({fruitId, memo, fidelityScore})` (0~5 범위 외는 `ArgumentError`).
   - 화면: `ArchiveScreen` (`lib/features/archive/presentation/archive_screen.dart`) —
-    `_GrassGrid`(53주 × 7일, 가로 스크롤) + `_FruitDetailSheet`(열매 이미지·명언·별점·후기 입력·저장).
+    `_GrassGrid`(53주 × 7일, 가로 스크롤) + 공용 `FruitReviewSheet`(열매 이미지·명언·별점·후기 입력·저장).
   - 상태: `ArchiveProvider` (`load()`, `fruitsByDateKey`, `updateReview()`).
+  - 메인 진입점: 완성 명언 탭 → 같은 `FruitReviewSheet` (`SeedProvider.saveReview()` 저장, #41).
   - 셀 색상: `ThemeAssets.cellColor(theme)` (`lib/core/theme/theme_assets.dart`).
 - **동작 플로우 (목표)**:
   1. 씨앗 개봉 시 생성된 `Fruit`가 잔디의 해당 날짜 칸에 테마 색으로 표시된다.
