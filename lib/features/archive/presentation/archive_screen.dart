@@ -170,7 +170,9 @@ class _GrassGrid extends StatelessWidget {
         width: _cellSize,
         height: _cellSize,
         decoration: BoxDecoration(
-          color: ThemeAssets.cellColor(fruit.theme),
+          // #56: 라이트 테마에서는 밝은 열매색, 다크에서는 다크톤.
+          color: ThemeAssets.cellColor(
+              fruit.theme, Theme.of(context).brightness),
           borderRadius: BorderRadius.circular(5),
         ),
       ),

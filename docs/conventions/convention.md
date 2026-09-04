@@ -52,6 +52,8 @@
   `AppTheme.ink*`/`paper` 직접 참조는 씨앗 탭(다크 고정)에만 허용한다.
 - 기준값: 라이트 배경 `cream`(`0xFFFFF8EC`), 카드 흰색, 본문 `cocoa`,
   강조 `goldDeep`; 다크 배경 `ink900`, 강조 `gold`.
+  잔디 셀 색상은 테마 7종 × 모드 2종 (`ThemeAssets.cellColor(theme, brightness)` —
+  라이트는 밝은 열매색, 다크는 다크톤, #56).
   BottomNav 색상은 하드코딩하지 않고 `bottomNavigationBarTheme`을 따른다.
 
 ## 5. 에러/로딩 처리 패턴
