@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
 
@@ -14,12 +17,22 @@ abstract class SeedRepository {
 }
 
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
+///
+/// 일자별 씨앗 테마는 **랜덤**으로 부여한다 (중복 허용, 2026-09-04 확정).
+/// [themePicker]를 주면 테마 선택을 고정할 수 있다 (테스트용).
 class InMemorySeedRepository implements SeedRepository {
-  InMemorySeedRepository({DateTime Function()? clock})
-      : _clock = clock ?? DateTime.now;
+  InMemorySeedRepository({DateTime Function()? clock, String Function()? themePicker})
+      : _clock = clock ?? DateTime.now,
+        _themePicker = themePicker ?? _randomTheme;
 
   final DateTime Function() _clock;
+  final String Function() _themePicker;
   final Map<String, Seed> _seeds = {};
+
+  static String _randomTheme() {
+    final values = SeedTheme.values;
+    return values[Random().nextInt(values.length)];
+  }
 
   @override
   Future<Seed> getTodaySeed() async {
@@ -38,6 +51,7 @@ class InMemorySeedRepository implements SeedRepository {
         quoteId: '',
         status: SeedStatus.locked,
         createdAt: _clock(),
+        theme: _themePicker(),
       ),
     );
   }

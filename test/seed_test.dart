@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
@@ -10,8 +11,10 @@ import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/presentation/seed_screen.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 
-SeedProvider _buildProvider({DateTime Function()? clock}) {
-  final seedRepository = InMemorySeedRepository(clock: clock);
+SeedProvider _buildProvider(
+    {DateTime Function()? clock, String Function()? themePicker}) {
+  final seedRepository =
+      InMemorySeedRepository(clock: clock, themePicker: themePicker);
   return SeedProvider(
     seedRepository: seedRepository,
     quoteRepository: InMemoryQuoteRepository(),
@@ -191,6 +194,18 @@ void main() {
       expect(provider.revealedQuote, isNotNull);
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
+    });
+
+    testWidgets('locked seed shows the themed seed image', (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('성장 씨앗이 도착했어요'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
     });
   });
 }

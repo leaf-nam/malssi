@@ -61,9 +61,9 @@ class AppShell extends StatelessWidget {
       ],
       child: MaterialApp.router(
         title: 'malssi',
-        theme: AppTheme.dark(),
+        theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.dark,
+        themeMode: ThemeMode.system,
         routerConfig: appRouter,
       ),
     );

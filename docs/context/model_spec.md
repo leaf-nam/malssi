@@ -176,7 +176,7 @@ class CollectionNames {
 | quoteId   | `String`   | `quoteId`    | `''` (개봉 시 확정, 그 전은 `''`) |
 | status    | `String`   | `status`     | `'locked'` (`locked`/`opened`/`expired`) |
 | createdAt | `DateTime` | `createdAt`  | `DateTime.now()`           |
-| theme     | `String`   | `theme`      | `''` (`SeedTheme` 키 값 — §4.11, 일자별 선정 방식은 후속 이슈) |
+| theme     | `String`   | `theme`      | `''` (`SeedTheme` 키 값 — §4.11, 생성 시 랜덤 부여) |
 
 - **상태 전이**: `locked` (생성) → `opened` (탭 1회 개봉) →
   자정 만료 시 미개봉분은 `expired` (이월 없음).
@@ -199,12 +199,14 @@ class CollectionNames {
 | author      | `String`   | `author`     | `''` (명언 스냅샷)         |
 | harvestedAt | `DateTime` | `harvestedAt`| `DateTime.now()`           |
 | theme       | `String`   | `theme`      | `''` (수확 시점 `Quote.theme` 스냅샷 — §4.11) |
+| memo        | `String`   | `memo`       | `''` (그날의 후기, 미작성) |
+| fidelityScore | `int`    | `fidelityScore` | `0` (그날의 점수 0~5, `0` = 미평가) |
 
-- **스냅샷 규칙**: `text`/`author`는 수확 시점의 `Quote` 복사본이다.
+- **스냅샷 규칙**: `text`/`author`/`theme`은 수확 시점의 `Quote` 복사본이다.
   원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
+  `memo`/`fidelityScore`는 수확 후 상세 카드에서 작성한다 (#31).
 - **컬렉션**: `fruits` (`CollectionNames.fruits`).
-- **향후 과제 (후속 이슈로 분리)**: 충실도 기록 필드
-  (`fidelityScore` (`int?`), `memo` (`String?`)), 성장 단계 필드 추가 시 본 스펙 개정.
+- **향후 과제 (후속 이슈로 분리)**: 성장 단계 필드 추가 시 본 스펙 개정.
 
 ### 4.10 `AppSettings` — 앱 설정 (3탭 개편 신규, 2026-09-04)
 
@@ -227,8 +229,9 @@ class CollectionNames {
 ### 4.11 테마 분류 — 씨앗·열매·명언 (2026-09-04)
 
 - **개념**: 명언은 7개 테마로 분류하여 관리한다. 씨앗 1개는 테마 1개를 갖고,
-  그 씨앗에서 수확되는 열매도 같은 테마다. 일자별 씨앗 테마 선정 방식(순환/랜덤 등)은
-  후속 이슈에서 확정한다.
+  그 씨앗에서 수확되는 열매도 같은 테마다. 일자별 씨앗 테마는 **랜덤**으로 부여한다
+  (중복 허용, 2026-09-04 확정, #30). 개봉 시 같은 테마의 명언을 선택하며,
+  해당 테마 명언이 없으면 전체에서 랜덤 선택한다 (폴백).
 - **정규 키** (7종, `lib/core/constants/seed_themes.dart`의 `SeedTheme`로 상수화됨):
   `vitality` / `happiness` / `growth` / `health` / `peace` / `relationship` / `wisdom`.
 
@@ -261,7 +264,7 @@ class CollectionNames {
 | `HashtagRepository` (제거됨, #19) | — | 구 `category` 화면과 함께 제거 |
 | `SubmissionRepository` (제거됨, #19) | — | 구 `my_quote` 화면과 함께 제거 |
 | `SeedRepository` (신규) | `lib/features/seed/data/` (예정)                      | `getTodaySeed`, `getSeedsStream`, `openSeed`                                   |
-| `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순)                         |
+| `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순), `updateReview` (후기·점수 저장) |
 | `SettingsRepository` (신규) | `lib/features/settings/data/` (예정)              | `getSettingsStream`, `updateSeedTime`, `setNotifyEnabled`                      |
 
 > `home_providers.dart`는 `QuoteRepositoryImpl()`을 참조하지만 해당 구현체가

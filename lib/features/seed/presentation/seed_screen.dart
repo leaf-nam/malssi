@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
@@ -14,7 +15,11 @@ class SeedScreen extends StatelessWidget {
     final state = context.watch<SeedProvider>();
 
     return Scaffold(
+      // 씨앗 탭(메인)은 모드와 무관하게 항상 다크 고정.
+      backgroundColor: AppTheme.ink900,
       appBar: AppBar(
+        backgroundColor: AppTheme.ink900,
+        foregroundColor: AppTheme.paper,
         title: const Text('오늘의 씨앗'),
       ),
       body: _buildBody(context, state),
@@ -37,14 +42,23 @@ class SeedScreen extends StatelessWidget {
     if (seed.isOpened && quote != null) {
       return SingleChildScrollView(child: _OpenedQuote(quote: quote));
     }
-    return _LockedSeed(seedDateKey: seed.dateKey, isBusy: state.isLoading);
+    return _LockedSeed(
+      seedDateKey: seed.dateKey,
+      theme: seed.theme,
+      isBusy: state.isLoading,
+    );
   }
 }
 
 class _LockedSeed extends StatelessWidget {
-  const _LockedSeed({required this.seedDateKey, required this.isBusy});
+  const _LockedSeed({
+    required this.seedDateKey,
+    required this.theme,
+    required this.isBusy,
+  });
 
   final String seedDateKey;
+  final String theme;
   final bool isBusy;
 
   @override
@@ -63,8 +77,12 @@ class _LockedSeed extends StatelessWidget {
                 border: Border.all(color: AppTheme.line),
                 borderRadius: BorderRadius.circular(80),
               ),
-              child: const Center(
-                child: Text('🌱', style: TextStyle(fontSize: 72)),
+              child: Center(
+                child: _ThemeImage(
+                  path: ThemeAssets.seedImage(theme),
+                  size: 96,
+                  fallbackFontSize: 72,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -74,9 +92,9 @@ class _LockedSeed extends StatelessWidget {
                   const TextStyle(fontSize: 12, color: AppTheme.muted),
             ),
             const SizedBox(height: 6),
-            const Text(
-              '오늘의 씨앗이 도착했어요',
-              style: TextStyle(
+            Text(
+              '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.paper,
@@ -120,8 +138,29 @@ class _OpenedQuote extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+          child: Row(
+            children: [
+              _ThemeImage(
+                path: ThemeAssets.fruitImage(quote.theme),
+                size: 32,
+                fallbackFontSize: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${ThemeAssets.labelOf(quote.theme)} 열매',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.gold,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
         Container(
-          margin: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+          margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
           padding: const EdgeInsets.fromLTRB(22, 30, 22, 24),
           decoration: BoxDecoration(
             color: AppTheme.ink800,
@@ -177,6 +216,33 @@ class _OpenedQuote extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 테마 이미지. 에셋이 없거나 로드에 실패하면 [fallbackFontSize] 크기의 🌱를 보여준다.
+class _ThemeImage extends StatelessWidget {
+  const _ThemeImage({
+    required this.path,
+    required this.size,
+    required this.fallbackFontSize,
+  });
+
+  final String path;
+  final double size;
+  final double fallbackFontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    if (path.isEmpty) {
+      return Text('🌱', style: TextStyle(fontSize: fallbackFontSize));
+    }
+    return Image.asset(
+      path,
+      width: size,
+      height: size,
+      errorBuilder: (_, __, ___) =>
+          Text('🌱', style: TextStyle(fontSize: fallbackFontSize)),
     );
   }
 }

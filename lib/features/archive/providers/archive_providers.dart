@@ -11,6 +11,11 @@ class ArchiveProvider extends ChangeNotifier {
   List<Fruit> _fruits = List.unmodifiable(const <Fruit>[]);
   List<Fruit> get fruits => _fruits;
 
+  /// 수확일 날짜키(`'YYYY-MM-DD'`) → 열매. 잔디 그리드의 칸 조회용.
+  Map<String, Fruit> get fruitsByDateKey => {
+        for (final fruit in _fruits) fruit.harvestDateKey: fruit,
+      };
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -28,6 +33,28 @@ class ArchiveProvider extends ChangeNotifier {
       _errorMessage = '$e';
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// 후기·점수를 저장하고 목록을 갱신한다.
+  Future<void> updateReview({
+    required String fruitId,
+    required String memo,
+    required int fidelityScore,
+  }) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _fruitRepository.updateReview(
+        fruitId: fruitId,
+        memo: memo,
+        fidelityScore: fidelityScore,
+      );
+      _fruits = await _fruitRepository.getFruits();
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
       notifyListeners();
     }
   }

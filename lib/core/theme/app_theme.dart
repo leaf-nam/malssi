@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// MVP mockup palette: dark ink background, serif quotes, gold accents.
+/// 앱 톤앤매너: 도트풍 Galmuri11 + 밝은 크림(라이트) / 잉크(다크).
+/// - 명언 씨앗 탭(`/`)은 항상 다크 고정 (밝은 모드에서도 잉크 배경).
+/// - 나머지 화면은 라이트 기본 + 다크모드 지원 (`ThemeMode.system`).
 class AppTheme {
+  /// 도트풍 한글 폰트 (Galmuri11, OFL).
+  static const String fontFamily = 'Galmuri11';
+
+  // 다크 팔레트 (씨앗 탭 고정 + 다크모드).
   static const Color ink900 = Color(0xFF171B24);
   static const Color ink850 = Color(0xFF1C202B);
   static const Color ink800 = Color(0xFF20242F);
@@ -14,11 +20,18 @@ class AppTheme {
   static const Color sage = Color(0xFF7C9885);
   static const Color line = Color(0xFF333847);
 
-  /// Bundled serif (assets/fonts/NotoSerifKR.ttf) — no runtime download,
-  /// since the macOS sandbox blocks the google_fonts HTTP fetch.
+  // 라이트 팔레트 (밝은 크림 베이스).
+  static const Color cream = Color(0xFFFFF8EC);
+  static const Color creamCard = Color(0xFFFFFFFF);
+  static const Color creamLine = Color(0xFFEADFCB);
+  static const Color cocoa = Color(0xFF3B3128);
+  static const Color cocoaMuted = Color(0xFF97897A);
+  static const Color goldDeep = Color(0xFFA86E14);
+
+  /// 명언本文. 도트풍 Galmuri11 (기존 NotoSerifKR에서 교체, #32).
   static TextStyle quoteTextStyle({double fontSize = 21}) =>
       TextStyle(
-        fontFamily: 'NotoSerifKR',
+        fontFamily: fontFamily,
         fontSize: fontSize,
         height: 1.55,
         fontWeight: FontWeight.w500,
@@ -33,11 +46,17 @@ class AppTheme {
         seedColor: gold,
         brightness: Brightness.dark,
       ),
+      textTheme: base.textTheme.apply(
+        fontFamily: fontFamily,
+        bodyColor: paper,
+        displayColor: paper,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: ink900,
         foregroundColor: paper,
         elevation: 0,
         titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: paper,
@@ -60,7 +79,10 @@ class AppTheme {
             borderRadius: BorderRadius.circular(10),
           )),
           textStyle: WidgetStateProperty.all(
-            const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+            const TextStyle(
+                fontFamily: fontFamily,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700),
           ),
         ),
       ),
@@ -88,25 +110,75 @@ class AppTheme {
   }
 
   /// Light theme kept for compatibility; the MVP uses [dark].
-  static ThemeData light() => ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        scaffoldBackgroundColor: Colors.grey[50],
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.all(Colors.indigo),
-            foregroundColor: WidgetStateProperty.all(Colors.white),
-            padding: WidgetStateProperty.all(
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
-            shape: WidgetStateProperty.all(RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            )),
+  static ThemeData light() {
+    final base = ThemeData.light(useMaterial3: true);
+    return base.copyWith(
+      scaffoldBackgroundColor: cream,
+      dividerColor: creamLine,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: goldDeep,
+        brightness: Brightness.light,
+      ),
+      textTheme: base.textTheme.apply(
+        fontFamily: fontFamily,
+        bodyColor: cocoa,
+        displayColor: cocoa,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: cream,
+        foregroundColor: cocoa,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: cocoa,
+        ),
+      ),
+      cardTheme: const CardThemeData(
+        color: creamCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+          side: BorderSide(color: creamLine),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.all(gold),
+          foregroundColor: WidgetStateProperty.all(const Color(0xFF211705)),
+          padding: WidgetStateProperty.all(
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 13)),
+          shape: WidgetStateProperty.all(RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          )),
+          textStyle: WidgetStateProperty.all(
+            const TextStyle(
+                fontFamily: fontFamily,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700),
           ),
         ),
-        inputDecorationTheme: InputDecorationTheme(
-          hintStyle: TextStyle(color: Colors.grey[400]),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: creamCard,
+        hintStyle: const TextStyle(color: cocoaMuted, fontSize: 12.5),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: creamLine),
         ),
-      );
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: creamLine),
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: cream,
+        selectedItemColor: goldDeep,
+        unselectedItemColor: cocoaMuted,
+        selectedLabelStyle: TextStyle(fontSize: 9.5),
+        unselectedLabelStyle: TextStyle(fontSize: 9.5),
+      ),
+    );
+  }
 }

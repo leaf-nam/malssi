@@ -1,9 +1,13 @@
 import 'dart:math';
 
+import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/features/quote.dart';
 
 abstract class QuoteRepository {
   Future<Quote> getRandomQuote();
+
+  /// [theme] 테마의 명언 중 랜덤 1개. 해당 테마가 없으면 전체에서 랜덤 (폴백).
+  Future<Quote> getRandomQuoteByTheme(String theme);
 
   Stream<List<Quote>> getQuotesStream();
 
@@ -27,6 +31,7 @@ class InMemoryQuoteRepository implements QuoteRepository {
       likes: 128,
       createdAt: DateTime(2026, 1, 1),
       tags: const ['협력', '관계'],
+      theme: SeedTheme.relationship,
     ),
     Quote(
       id: 'seed-2',
@@ -35,6 +40,7 @@ class InMemoryQuoteRepository implements QuoteRepository {
       likes: 96,
       createdAt: DateTime(2026, 1, 2),
       tags: const ['도전', '인내'],
+      theme: SeedTheme.growth,
     ),
     Quote(
       id: 'seed-3',
@@ -43,6 +49,7 @@ class InMemoryQuoteRepository implements QuoteRepository {
       likes: 74,
       createdAt: DateTime(2026, 1, 3),
       tags: const ['위로', '성장'],
+      theme: SeedTheme.peace,
     ),
     Quote(
       id: 'seed-4',
@@ -51,6 +58,7 @@ class InMemoryQuoteRepository implements QuoteRepository {
       likes: 61,
       createdAt: DateTime(2026, 1, 4),
       tags: const ['도전'],
+      theme: SeedTheme.vitality,
     ),
   ];
 
@@ -63,6 +71,15 @@ class InMemoryQuoteRepository implements QuoteRepository {
       throw StateError('No quotes available');
     }
     return _quotes[_random.nextInt(_quotes.length)];
+  }
+
+  @override
+  Future<Quote> getRandomQuoteByTheme(String theme) async {
+    final themed = _quotes.where((q) => q.theme == theme).toList();
+    if (themed.isEmpty) {
+      return getRandomQuote();
+    }
+    return themed[_random.nextInt(themed.length)];
   }
 
   @override

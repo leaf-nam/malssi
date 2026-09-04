@@ -9,6 +9,12 @@ class Fruit {
   /// 수확 시점의 테마 스냅샷 (`SeedTheme` 값 중 1개, 미분류는 `''`).
   final String theme;
 
+  /// 그날의 후기. 미작성은 `''`.
+  final String memo;
+
+  /// 그날의 점수 (0~5, `0` = 미평가).
+  final int fidelityScore;
+
   const Fruit({
     required this.id,
     required this.seedId,
@@ -17,6 +23,8 @@ class Fruit {
     required this.author,
     required this.harvestedAt,
     this.theme = '',
+    this.memo = '',
+    this.fidelityScore = 0,
   });
 
   factory Fruit.fromMap(Map<String, dynamic> map) {
@@ -29,6 +37,8 @@ class Fruit {
       harvestedAt:
           (map['harvestedAt'] as dynamic).toDate() ?? DateTime.now(),
       theme: map['theme'] ?? '',
+      memo: map['memo'] ?? '',
+      fidelityScore: map['fidelityScore'] ?? 0,
     );
   }
 
@@ -41,6 +51,8 @@ class Fruit {
       'author': author,
       'harvestedAt': harvestedAt,
       'theme': theme,
+      'memo': memo,
+      'fidelityScore': fidelityScore,
     };
   }
 
@@ -52,6 +64,8 @@ class Fruit {
     String? author,
     DateTime? harvestedAt,
     String? theme,
+    String? memo,
+    int? fidelityScore,
   }) {
     return Fruit(
       id: id ?? this.id,
@@ -61,6 +75,15 @@ class Fruit {
       author: author ?? this.author,
       harvestedAt: harvestedAt ?? this.harvestedAt,
       theme: theme ?? this.theme,
+      memo: memo ?? this.memo,
+      fidelityScore: fidelityScore ?? this.fidelityScore,
     );
+  }
+
+  /// 수확일 날짜키 (`'YYYY-MM-DD'`). 잔디 그리드의 칸 키로 사용한다.
+  String get harvestDateKey {
+    final m = harvestedAt.month.toString().padLeft(2, '0');
+    final d = harvestedAt.day.toString().padLeft(2, '0');
+    return '${harvestedAt.year}-$m-$d';
   }
 }
