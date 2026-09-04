@@ -196,7 +196,7 @@ void main() {
       expect(quote.id, isNotEmpty);
     });
 
-    test('planting then completing reveals a quote of the seed theme',
+    test('planting reveals a quote of the seed theme at once',
         () async {
       final seedRepository = InMemorySeedRepository(
         clock: () => DateTime(2026, 9, 4, 12),
@@ -214,7 +214,8 @@ void main() {
       await provider.ensureTodaySeed();
       await provider.plantSeed();
       expect(provider.todaySeed!.isGrowing, isTrue);
-      expect(provider.revealedQuote, isNull);
+      // #46: 심자마자 씨앗 테마의 명언이 바로 공개된다.
+      expect(provider.revealedQuote!.theme, SeedTheme.growth);
 
       // 2시간씩 5번 빨리감기 → 10시간 경과 → 완성 + 수확.
       for (var i = 0; i < 5; i++) {

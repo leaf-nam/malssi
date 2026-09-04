@@ -14,8 +14,7 @@ class SettingsScreen extends StatelessWidget {
     final state = context.watch<SettingsProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('설정')),
-      body: _buildBody(context, state),
+      body: SafeArea(child: _buildBody(context, state)),
       bottomNavigationBar: const MainBottomNav(currentIndex: 2),
     );
   }
@@ -42,6 +41,22 @@ class SettingsScreen extends StatelessWidget {
           trailingWidget: Switch(
             value: settings.notifyEnabled,
             onChanged: state.setNotifyEnabled,
+          ),
+        ),
+        _Row(
+          label: '화면 모드',
+          trailingWidget: SegmentedButton<String>(
+            style: SegmentedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
+            segments: const [
+              ButtonSegment(value: 'light', label: Text('라이트')),
+              ButtonSegment(value: 'dark', label: Text('다크')),
+              ButtonSegment(value: 'system', label: Text('시스템')),
+            ],
+            selected: {settings.themeMode},
+            onSelectionChanged: (selected) =>
+                state.setThemeMode(selected.single),
           ),
         ),
         if (state.errorMessage != null)

@@ -10,7 +10,8 @@ import 'package:malssi/features/seed/domain/seed.dart';
 
 /// 씨앗 탭 상태. `provider` + [ChangeNotifier] 패턴 (컨벤션 §3).
 ///
-/// 성장 플로우 (#40): 심기 → 2시간 간격 성장(0~5단계) → 완성 시 열매 수확 + 명언 공개.
+/// 성장 플로우 (#40, #46): 심기(명언 즉시 공개) → 2시간 간격 성장(0~5단계) →
+/// 완성 시 열매 수확. 명언 아래에 성장 에셋을 함께 보여준다.
 /// `enableAutoRefresh`가 켜지면 15분마다 성장을 갱신한다 (앱 실사용).
 /// 테스트에서는 꺼둔다 (보류 타이머 방지).
 class SeedProvider extends ChangeNotifier {
@@ -77,7 +78,7 @@ class SeedProvider extends ChangeNotifier {
     }
   }
 
-  /// 씨앗을 심는다 (`locked` → `growing`). 명언은 완성 시점에 공개된다.
+  /// 씨앗을 심는다 (`locked` → `growing`). 명언은 심는 즉시 공개된다 (#46).
   Future<void> plantSeed() async {
     final seed = _todaySeed;
     if (seed == null || !seed.isLocked) return;
@@ -92,7 +93,7 @@ class SeedProvider extends ChangeNotifier {
       _todaySeed =
           await _seedRepository.plantSeed(seedId: seed.id, quote: quote);
       _plantedQuote = quote;
-      _revealedQuote = null;
+      _revealedQuote = quote;
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -205,7 +206,8 @@ class SeedProvider extends ChangeNotifier {
     return _quoteRepository.getRandomQuoteByTheme(seed.theme);
   }
 
-  /// 재시작 후 복원: 기존 `opened` 씨앗이면 보관 기록에서 명언을 찾는다.
+  /// 재시작 후 복원: 성장 중 씨앗이면 확정한 명언을, 수확된 씨앗이면
+  /// 보관 기록에서 명언을 찾는다.
   Future<void> _restoreRevealedQuote() async {
     final seed = _todaySeed;
     if (seed == null || seed.quoteId.isEmpty) return;
@@ -224,6 +226,10 @@ class SeedProvider extends ChangeNotifier {
         );
         return;
       }
+    }
+    // 미수확 성장 중 씨앗: 심을 때 확정한 명언을 다시 보여준다 (#46).
+    if (seed.isGrowing) {
+      _revealedQuote = await _findPlantedQuote(seed);
     }
   }
 }

@@ -31,8 +31,7 @@ class ArchiveScreen extends StatelessWidget {
     final state = context.watch<ArchiveProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('보관')),
-      body: _buildBody(context, state),
+      body: SafeArea(child: _buildBody(context, state)),
       bottomNavigationBar: const MainBottomNav(currentIndex: 1),
     );
   }
@@ -65,7 +64,7 @@ class ArchiveScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Text(
-                '씨앗 탭에서 오늘의 씨앗을 깨면 잔디가 채워져요',
+                '말씨 탭에서 오늘의 씨앗을 깨면 잔디가 채워져요',
                 style: TextStyle(
                     fontSize: 12, color: colors.onSurfaceVariant),
               ),
@@ -75,8 +74,9 @@ class ArchiveScreen extends StatelessWidget {
     );
   }
 
+  /// 보관 상세는 읽기 전용: 저장된 별점·후기만 보여준다.
+  /// 후기 작성은 말씨 탭의 완성 열매 흐름에서만 가능하다 (#48).
   void _openDetail(BuildContext context, Fruit fruit) {
-    final archive = context.read<ArchiveProvider>();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -87,12 +87,7 @@ class ArchiveScreen extends StatelessWidget {
         imagePath: ThemeAssets.fruitImage(fruit.theme),
         initialMemo: fruit.memo,
         initialScore: fruit.fidelityScore,
-        onSave: ({required memo, required fidelityScore}) =>
-            archive.updateReview(
-          fruitId: fruit.id,
-          memo: memo,
-          fidelityScore: fidelityScore,
-        ),
+        readOnly: true,
       ),
     );
   }

@@ -208,7 +208,8 @@ class CollectionNames {
 
 - **스냅샷 규칙**: `text`/`author`/`theme`은 수확 시점의 `Quote` 복사본이다.
   원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
-  `memo`/`fidelityScore`는 수확 후 상세 카드에서 작성한다 (#31).
+  `memo`/`fidelityScore`는 말씨 탭의 완성 열매 흐름에서 작성하고 (#41),
+  보관 상세 카드에서는 읽기만 한다 (#48).
 - **컬렉션**: `fruits` (`CollectionNames.fruits`).
 - **향후 과제 (후속 이슈로 분리)**: 성장 단계 필드 추가 시 본 스펙 개정.
 
@@ -221,8 +222,9 @@ class CollectionNames {
 
 | 필드           | 타입   | Firestore 키    | 기본값 (`fromMap` 누락 시) |
 | -------------- | ------ | --------------- | -------------------------- |
-| seedTime       | `String` | `seedTime`    | `'12:00'` (`'HH:mm'`)      |
+| seedTime       | `String` | `seedTime`    | `'08:00'` (`'HH:mm'`, #47) |
 | notifyEnabled  | `bool` | `notifyEnabled` | `true`                     |
+| themeMode      | `String` | `themeMode`   | `'system'` (`'light'`/`'dark'`/`'system'`, #47) |
 
 - **동작 귀속**: `seedTime` 시각에 씨앗 생성 + 알림 발송이 동시에 동작한다
   (`feature_spec.md` §3 참조).
@@ -235,7 +237,8 @@ class CollectionNames {
 - **개념**: 명언은 7개 테마로 분류하여 관리한다. 씨앗 1개는 테마 1개를 갖고,
   그 씨앗에서 수확되는 열매도 같은 테마다. 일자별 씨앗 테마는 **랜덤**으로 부여한다
   (중복 허용, 2026-09-04 확정, #30). 심을 때 같은 테마의 명언을 확정하고,
-  **명언은 성장 완성(5단계) 시점에 공개**된다 (#40).
+  **명언은 심는 즉시 공개되며, 명언 아래에 성장 에셋이 2시간 간격으로 그려진다**
+  (#46, 2026-09-05 개정 — 종전 "성장 완성 시 공개" 폐기).
   해당 테마 명언이 없으면 전체에서 랜덤 선택한다 (폴백).
 - **성장 단계 에셋** (혼합 전략, #40 — `ThemeAssets.growthImage(theme, stage)`):
   - 0~2단계: 공용 `growth_0.png`·`growth_1.png`·`growth_2.png`
