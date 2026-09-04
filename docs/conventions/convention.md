@@ -25,7 +25,8 @@
   (예: `QuoteRepository` / `QuoteRepositoryImpl`).
 - Provider/Notifier: `<Name>Provider`, `<Name>Notifier` (예: `randomQuoteProvider`, `QuoteNotifier`).
 - 모델: `Quote`, `HomeQuote`, `Comment`, `Seed`, `Fruit`, `AppSettings`
-  (+ 향후 `User`, `Submission`, `Hashtag`/`Category` — 구 화면 폐기로 보류).
+  (+ 향후 `User`, `Submission` — 구 화면 폐기로 보류.
+  `Hashtag`/`Category`와 `Quote.tags`는 미사용 확정으로 2026-09-05 제외).
 - Firestore 컬렉션: `CollectionNames` 상수 경유 (문자열 리터럴 금지).
 
 ## 3. 상태 관리

@@ -4,7 +4,6 @@ class Quote {
   final String author;
   final int likes;
   final DateTime createdAt;
-  final List<String> tags;
 
   /// 테마 분류 키 (`SeedTheme` 값 중 1개, 미분류는 `''`).
   final String theme;
@@ -15,7 +14,6 @@ class Quote {
     required this.author,
     required this.likes,
     required this.createdAt,
-    this.tags = const [],
     this.theme = '',
   });
 
@@ -26,7 +24,6 @@ class Quote {
       author: map['author'] ?? '',
       likes: map['likes'] ?? 0,
       createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
-      tags: List<String>.from(map['tags'] ?? const []),
       theme: map['theme'] ?? '',
     );
   }
@@ -38,7 +35,6 @@ class Quote {
       'author': author,
       'likes': likes,
       'createdAt': createdAt,
-      'tags': tags,
       'theme': theme,
     };
   }
@@ -49,7 +45,6 @@ class Quote {
     String? author,
     int? likes,
     DateTime? createdAt,
-    List<String>? tags,
     String? theme,
   }) {
     return Quote(
@@ -58,7 +53,6 @@ class Quote {
       author: author ?? this.author,
       likes: likes ?? this.likes,
       createdAt: createdAt ?? this.createdAt,
-      tags: tags ?? this.tags,
       theme: theme ?? this.theme,
     );
   }

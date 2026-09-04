@@ -65,8 +65,9 @@ class CollectionNames {
 | author    | `String`   | `author`     | `''`                       |
 | likes | `int` | `likes` | `0` |
 | createdAt | `DateTime` | `createdAt` | `DateTime.now()` |
-| tags | `List<String>` | `tags` | `[]` (MVP, `#협력` 등 해시태그) |
 | theme | `String` | `theme` | `''` (테마 미분류, `SeedTheme` 키 값 — §4.11) |
+
+> 2026-09-05: 해시태그(`tags`) 필드 제거 — 해시태그 기능 미사용 확정 (#54 작업에서 함께 제외).
 
 - **직렬화**: `fromMap` 팩토리, `toMap()`, `copyWith({id, text, author, likes, createdAt})` 제공.
   `Quote._internal` 클래스가 `implements Quote`로 실제 저장소 역할을 합니다.
@@ -83,7 +84,7 @@ class CollectionNames {
 | isFeatured | `bool`   | `isFeatured` | `false` |
 
 - **직렬화**: `fromMap` 팩토리, `toMap()` 오버라이드(`category`/`isFeatured` 포함),
-  `copyWith` 제공. `const` 생성자 (MVP에서 `super.tags` 기본값 포함).
+  `copyWith` 제공. `const` 생성자.
 - **용도**: 홈 화면 피드/추천 명언. `QuoteRepository.getRandomQuote()`,
   `getQuotesStream()`의 요소 타입.
 
@@ -128,17 +129,12 @@ class CollectionNames {
 - **컬렉션**: `users` (`CollectionNames.users`).
 - **향후 과제**: `User` 모델 클래스(`fromMap`/`toMap`/`copyWith`) 신설을 권장합니다.
 
-### 4.5 `Hashtag` / `Category` — 해시태그·카테고리
+### 4.5 `Hashtag` / `Category` — 해시태그·카테고리 (미사용 확정, 2026-09-05 제외)
 
-- **위치**: `lib/features/category/data/hashtag_repository.dart` (`HashtagRepository`)
-- **현황**: 전용 모델 클래스 없이 `String` 리스트로 다룹니다.
-- **API**:
-  ```dart
-  Stream<List<String>> getHashtagsStream();
-  Future<void> addHashtag(String hashtag);
-  Future<void> removeHashtag(String hashtag);
-  ```
-- **컬렉션**: `categories` (`CollectionNames.categories`).
+- **현황**: 해시태그 기능을 앞으로 사용하지 않기로 확정하여 워크스페이스에서 제외한다.
+  `HashtagRepository`는 #19에서 이미 제거되었고, `Quote.tags` 필드도 본 개정에서 제거했다.
+  (제거 전 위치: `lib/features/category/data/hashtag_repository.dart`)
+- **컬렉션**: `categories` (`CollectionNames.categories`) — 사용 중단.
 
 ### 4.6 `Submission` — 명언 제보/제출
 

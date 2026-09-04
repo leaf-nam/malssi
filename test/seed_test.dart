@@ -279,7 +279,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // 성장 테마 명언(seed-2)은 태그를 갖고 있지만 화면에 노출하지 않는다.
+      // 완성 화면에는 태그·안내 문구를 노출하지 않는다.
       expect(find.textContaining('#'), findsNothing);
       expect(find.textContaining('열매'), findsNothing);
       expect(find.textContaining('보관 탭에서'), findsNothing);
