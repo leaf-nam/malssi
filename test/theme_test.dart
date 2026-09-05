@@ -191,6 +191,13 @@ void main() {
             moreOrLessEquals(width, epsilon: 0.001));
       }
     });
+
+    test('trailing future weeks center today (#98)', () {
+      // 휴대폰폭(350): 오늘이 가운데 오도록 뒤에 미래 주를 붙인다.
+      final trailing = ThemeAssets.grassTrailingWeeks(350.0, 23.23);
+
+      expect(trailing, greaterThan(0));
+    });
   });
 
   group('theme selection (random)', () {
