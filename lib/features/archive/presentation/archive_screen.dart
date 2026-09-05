@@ -114,7 +114,9 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
 }
 
 /// GitHub 잔디 스타일 그리드. 열 = 주(최근 53주), 행 = 월~일.
-class _GrassGrid extends StatelessWidget {
+/// 좁으면 가로 스크롤(항상 보이는 스크롤바, #86),
+/// 넓으면 53주 전체 맞춤으로 스크롤 없이 보여준다 (#72).
+class _GrassGrid extends StatefulWidget {
   const _GrassGrid({
     required this.today,
     required this.fruitsByDateKey,
@@ -124,6 +126,19 @@ class _GrassGrid extends StatelessWidget {
   final DateTime today;
   final Map<String, Fruit> fruitsByDateKey;
   final ValueChanged<Fruit> onTapFruit;
+
+  @override
+  State<_GrassGrid> createState() => _GrassGridState();
+}
+
+class _GrassGridState extends State<_GrassGrid> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,18 +157,23 @@ class _GrassGrid extends StatelessWidget {
             ],
           );
         }
-        // 좁음: 가로 스크롤 (최신 주가 우측).
+        // 좁음: 가로 스크롤 (최신 주가 우측, 항상 보이는 스크롤바).
         // 칸을 뷰포트에 맞춰 정지 시 가장자리에 반칸이 없게 한다 (#83).
         final scrollCell = ThemeAssets.grassScrollCell(maxWidth);
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          reverse: true,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var week = 0; week < ThemeAssets.grassWeeks; week++)
-                _weekColumn(context, week, scrollCell),
-            ],
+        return Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            reverse: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var week = 0; week < ThemeAssets.grassWeeks; week++)
+                  _weekColumn(context, week, scrollCell),
+              ],
+            ),
           ),
         );
       },
@@ -164,7 +184,7 @@ class _GrassGrid extends StatelessWidget {
   Widget _weekColumn(BuildContext context, int week, double cell) {
     // 오늘이 포함된 주 월요일 기준, 52주 전 월요일부터 53개 주.
     final thisMonday =
-        today.subtract(Duration(days: today.weekday - 1));
+        widget.today.subtract(Duration(days: widget.today.weekday - 1));
     final startMonday = thisMonday.subtract(const Duration(days: 7 * 52));
     final divider = Theme.of(context).dividerColor;
 
@@ -194,10 +214,10 @@ class _GrassGrid extends StatelessWidget {
 
   Widget _cell(
       BuildContext context, DateTime date, Color divider, double cell) {
-    if (date.isAfter(today)) {
+    if (date.isAfter(widget.today)) {
       return SizedBox(width: cell, height: cell);
     }
-    final fruit = fruitsByDateKey[ArchiveScreen.dateKeyOf(date)];
+    final fruit = widget.fruitsByDateKey[ArchiveScreen.dateKeyOf(date)];
     if (fruit == null) {
       return Container(
         width: cell,
@@ -210,7 +230,7 @@ class _GrassGrid extends StatelessWidget {
     }
     return GestureDetector(
       key: ValueKey('grass-${fruit.harvestDateKey}'),
-      onTap: () => onTapFruit(fruit),
+      onTap: () => widget.onTapFruit(fruit),
       child: Container(
         width: cell,
         height: cell,

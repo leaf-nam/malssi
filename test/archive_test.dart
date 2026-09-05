@@ -251,6 +251,10 @@ void main() {
 
       // 스크롤 모드 유지 + 정지 오프셋이 열 경계의 배수 → 가장자리 반칸 없음.
       expect(horizontalScroller(), findsOneWidget);
+      // #86: 1년 전체로 이동할 수 있게 스크롤바가 항상 보인다.
+      final scrollbar =
+          tester.widget<Scrollbar>(find.byType(Scrollbar));
+      expect(scrollbar.thumbVisibility, isTrue);
       final rowElement = tester.element(
         find
             .descendant(
