@@ -223,6 +223,7 @@ class _GrassGridState extends State<_GrassGrid> {
         }
         // 좁음: 가로 스크롤 (최신 주가 우측, 항상 보이는 스크롤바).
         // 칸을 뷰포트에 맞춰 정지 시 가장자리에 반칸이 없게 한다 (#83).
+        // 스크롤바가 칸과 겹치지 않게 아래 간격을 둔다 (#91).
         final scrollCell = ThemeAssets.grassScrollCell(maxWidth);
         return Scrollbar(
           controller: _scrollController,
@@ -231,6 +232,7 @@ class _GrassGridState extends State<_GrassGrid> {
             controller: _scrollController,
             scrollDirection: Axis.horizontal,
             reverse: true,
+            padding: const EdgeInsets.only(bottom: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
