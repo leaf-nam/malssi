@@ -29,6 +29,14 @@ class AppTheme {
   static const Color cocoaMuted = Color(0xFF97897A);
   static const Color goldDeep = Color(0xFFA86E14);
 
+  // 하단 탭 탭별 배경색 (#75).
+  // - 말씨: 배경(abyss)과 동일한 검은색 (양 모드).
+  // - 정원: 흙(갈)색. 설정: 회색. 각각 라이트/다크 분리.
+  static const Color navGardenLight = Color(0xFFC9A06A);
+  static const Color navGardenDark = Color(0xFF4A3423);
+  static const Color navSettingsLight = Color(0xFFE3DED2);
+  static const Color navSettingsDark = Color(0xFF23262E);
+
   /// 명언本文. 도트풍 Galmuri11 (기존 NotoSerifKR에서 교체, #32).
   static TextStyle quoteTextStyle({double fontSize = 21}) =>
       TextStyle(

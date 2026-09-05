@@ -291,6 +291,10 @@ void main() {
       // #59: 말씨 탭 배경은 니어블랙 고정.
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       expect(scaffold.backgroundColor, AppTheme.abyss);
+      // #75: 말씨 탭 바도 배경과 동일한 검은색.
+      final nav =
+          tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
+      expect(nav.backgroundColor, AppTheme.abyss);
     });
 
     testWidgets('plant reveals the quote at once with growth below',
