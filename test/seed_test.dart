@@ -334,6 +334,31 @@ void main() {
       expect(barColor(), AppTheme.navGardenLight);
     });
 
+    testWidgets('tab bar top padding is painted with the tab color (#81)',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: MainBottomNav(currentIndex: 0),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 상단 패딩이 색상 컨테이너 안에 있어야 배경 노출 줄이 생기지 않는다.
+      expect(
+        find.descendant(
+          of: find.byType(AnimatedContainer),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Padding &&
+                w.padding == const EdgeInsets.only(top: 8),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('plant reveals the quote at once with growth below',
         (tester) async {
       final provider = _buildProvider();
