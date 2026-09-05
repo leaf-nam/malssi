@@ -260,10 +260,9 @@ void main() {
       expect(growingFlexes[0], 2);
       expect(growingFlexes[1], 1);
 
-      for (var i = 0; i < 5; i++) {
-        await tester.tap(find.text('디버그: +2시간'));
-        await tester.pumpAndSettle();
-      }
+      // 디버그 5초 간격이라 빨리감기 1번이면 완성된다 (#64).
+      await tester.tap(find.text('디버그: +2시간'));
+      await tester.pumpAndSettle();
 
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(provider.revealedQuote!.text),
@@ -292,10 +291,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
-      for (var i = 0; i < 5; i++) {
-        await tester.tap(find.text('디버그: +2시간'));
-        await tester.pumpAndSettle();
-      }
+      // 디버그 5초 간격이라 빨리감기 1번이면 완성된다 (#64).
+      await tester.tap(find.text('디버그: +2시간'));
+      await tester.pumpAndSettle();
 
       // 완성 화면에는 태그·안내 문구를 노출하지 않는다.
       expect(find.textContaining('#'), findsNothing);
@@ -322,10 +320,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
-      for (var i = 0; i < 5; i++) {
-        await tester.tap(find.text('디버그: +2시간'));
-        await tester.pumpAndSettle();
-      }
+      // 디버그 5초 간격이라 빨리감기 1번이면 완성된다 (#64).
+      await tester.tap(find.text('디버그: +2시간'));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('— 노자'));
       await tester.pumpAndSettle();

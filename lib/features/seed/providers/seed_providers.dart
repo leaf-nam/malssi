@@ -10,9 +10,10 @@ import 'package:malssi/features/seed/domain/seed.dart';
 
 /// 씨앗 탭 상태. `provider` + [ChangeNotifier] 패턴 (컨벤션 §3).
 ///
-/// 성장 플로우 (#40, #46): 심기(명언 즉시 공개) → 2시간 간격 성장(0~5단계) →
+/// 성장 플로우 (#40, #46): 심기(명언 즉시 공개) → 단계 간격 성장(0~5단계) →
 /// 완성 시 열매 수확. 명언 아래에 성장 에셋을 함께 보여준다.
-/// `enableAutoRefresh`가 켜지면 15분마다 성장을 갱신한다 (앱 실사용).
+/// `enableAutoRefresh`가 켜지면 주기적으로 성장을 갱신한다.
+/// 간격은 디버그 5초 / 릴리즈 15분 (#64).
 /// 테스트에서는 꺼둔다 (보류 타이머 방지).
 class SeedProvider extends ChangeNotifier {
   SeedProvider({
@@ -23,11 +24,16 @@ class SeedProvider extends ChangeNotifier {
   }) {
     if (enableAutoRefresh) {
       _timer = Timer.periodic(
-        const Duration(minutes: 15),
+        refreshInterval,
         (_) => refreshGrowth(),
       );
     }
   }
+
+  /// 자동 갱신 간격. 디버그 5초 / 릴리즈 15분 (#64).
+  static Duration get refreshInterval => kDebugMode
+      ? const Duration(seconds: 5)
+      : const Duration(minutes: 15);
 
   final SeedRepository _seedRepository;
   final QuoteRepository _quoteRepository;
