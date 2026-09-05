@@ -124,11 +124,28 @@ class SeedProvider extends ChangeNotifier {
   Future<void> debugAdvanceGrowth() async {
     final seed = _todaySeed;
     if (seed == null || !seed.isGrowing) return;
+    await _debugShift(const Duration(hours: Seed.stageHours));
+  }
+
+  /// 디버그용: 1단계만 진행 (#69). 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugAdvanceOneStage() async {
+    final seed = _todaySeed;
+    if (seed == null || !seed.isGrowing) return;
+    await _debugShift(Seed.stageInterval);
+  }
+
+  /// 디버그용: 즉시 완성·수확 (#69). 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugCompleteNow() async {
+    final seed = _todaySeed;
+    if (seed == null || !seed.isGrowing) return;
+    await _debugShift(Seed.stageInterval * Seed.totalStages);
+  }
+
+  Future<void> _debugShift(Duration by) async {
+    final seed = _todaySeed;
+    if (seed == null) return;
     try {
-      await _seedRepository.debugFastForward(
-        seedId: seed.id,
-        by: const Duration(hours: Seed.stageHours),
-      );
+      await _seedRepository.debugFastForward(seedId: seed.id, by: by);
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
     } catch (e) {
