@@ -7,6 +7,7 @@ import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/archive_screen.dart';
+import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/quote.dart';
@@ -15,7 +16,11 @@ import 'package:malssi/features/seed/domain/seed.dart';
 Widget _wrap(ArchiveProvider provider) {
   return MultiProvider(
     providers: [ChangeNotifierProvider.value(value: provider)],
-    child: const MaterialApp(home: ArchiveScreen()),
+    // 열매 비 애니메이션을 멈춰 pumpAndSettle이 끝나게 한다 (#89).
+    child: const TickerMode(
+      enabled: false,
+      child: MaterialApp(home: ArchiveScreen()),
+    ),
   );
 }
 
@@ -481,6 +486,83 @@ void main() {
 
       expect(find.text('모은 색깔'), findsOneWidget);
       expect(find.text('성장 1개'), findsOneWidget);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('no rain without planted fruits (#89)', (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FruitRain), findsNothing);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('rain shows the top theme fruit behind the grid (#89)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FruitRain), findsOneWidget);
+      // 배경 레이어 + 본문 구조.
+      expect(find.byType(Stack), findsWidgets);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('rain drops move diagonally over time (#89)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      // 티커를 살려 둔다 (무한 애니메이션이라 pumpAndSettle 금지).
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [ChangeNotifierProvider.value(value: provider)],
+          child: const MaterialApp(home: ArchiveScreen()),
+        ),
+      );
+      await tester.pump();
+
+      final before =
+          tester.getTopLeft(find.byKey(const ValueKey('rain-drop-0')));
+      await tester.pump(const Duration(seconds: 3));
+      final after =
+          tester.getTopLeft(find.byKey(const ValueKey('rain-drop-0')));
+
+      expect(after, isNot(before));
       ArchiveScreen.debugToday = null;
     });
 
