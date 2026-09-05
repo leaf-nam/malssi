@@ -21,6 +21,8 @@
 - BottomNav: 3탭 고정 (`말씨`/`정원`/`설정` 라벨, `eco`/`grass`/`settings` 아이콘,
   `SeedScreen`/`ArchiveScreen`/`SettingsScreen` 순서, #45).
   크기: 아이콘 30·라벨 12.5·상단 패딩 8 (#60).
+  바 배경: 말씨 `abyss`(양 모드) · 정원 흙색(라이트 `navGardenLight`/다크 `navGardenDark`) ·
+  설정 회색(라이트 `navSettingsLight`/다크 `navSettingsDark`) (#75).
   탭 추가·순서 변경 시 `feature_spec.md`와 본 문서 §6을 함께 개정하십시오.
 - Repository: `<Name>Repository` 추상 클래스 + `<Name>RepositoryImpl` 구현체
   (예: `QuoteRepository` / `QuoteRepositoryImpl`).
