@@ -225,6 +225,53 @@ void main() {
       expect(provider.plantedByDateKey.containsKey('2026-09-03'),
           isFalse);
     });
+
+    test('themeCounts groups planted fruits with topTheme first (#88)',
+        () async {
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-02',
+          text: '이틀 전',
+          at: at,
+          theme: SeedTheme.growth);
+      await _harvest(repo,
+          seedId: '2026-09-03',
+          text: '어제',
+          at: at,
+          theme: SeedTheme.vitality);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '오늘',
+          at: at,
+          theme: SeedTheme.growth);
+      // 미후기 1개는 집계에서 제외된다.
+      await _harvest(repo,
+          seedId: '2026-09-05', text: '내일', at: at, theme: SeedTheme.peace);
+      for (final id in ['2026-09-02', '2026-09-03', '2026-09-04']) {
+        await repo.updateReview(
+          fruitId: 'fruit-$id',
+          memo: '좋았다',
+          fidelityScore: 4,
+        );
+      }
+
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      expect(provider.themeCounts,
+          {SeedTheme.growth: 2, SeedTheme.vitality: 1});
+      expect(provider.topTheme, SeedTheme.growth);
+    });
+
+    test('topTheme is empty without planted fruits (#88)', () async {
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      expect(provider.themeCounts, isEmpty);
+      expect(provider.topTheme, isEmpty);
+    });
   });
 
   group('ArchiveScreen grass grid', () {
@@ -380,6 +427,37 @@ void main() {
       expect(find.text('최근 1년 · 0개의 열매'), findsOneWidget);
       expect(find.text('말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'),
           findsOneWidget);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('reviewed fruits show color stats below the grid (#88)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth);
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 후기 전에는 통계가 없다.
+      expect(find.text('모은 색깔'), findsNothing);
+
+      await provider.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('모은 색깔'), findsOneWidget);
+      expect(find.text('성장 1개'), findsOneWidget);
       ArchiveScreen.debugToday = null;
     });
 
