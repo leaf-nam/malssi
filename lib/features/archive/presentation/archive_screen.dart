@@ -54,10 +54,12 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     return Scaffold(
       // 하단 바는 셸(`AppShellView`)이 상주로 들고 있다 (#79).
       // #89: 최다 색깔 열매 비를 배경에 깔고 본문을 올린다.
+      // #107: Stack이 본문 높이에 맞춰 shrink되므로 비 영역을 화면 크기로 명시한다.
       body: Stack(
         children: [
           if (state.topTheme.isNotEmpty)
-            Positioned.fill(
+            SizedBox.fromSize(
+              size: MediaQuery.sizeOf(context),
               child: FruitRain(
                 imagePath: ThemeAssets.fruitImage(state.topTheme),
                 // #101: 비가 내용을 가리지 않게 낮게 유지한다.

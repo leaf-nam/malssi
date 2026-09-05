@@ -641,6 +641,32 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
+    testWidgets('rain fills the whole screen (#107)', (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 비 영역이 본문 높이가 아니라 화면 전체여야 한다.
+      expect(tester.getSize(find.byType(FruitRain)),
+          const Size(800, 600));
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('rain shows the top theme fruit behind the grid (#89)',
         (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
