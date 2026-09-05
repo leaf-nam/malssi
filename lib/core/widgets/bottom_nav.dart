@@ -39,13 +39,15 @@ class MainBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     // #60: 바·글씨·아이콘 확대. 상단 패딩으로 전체 높이를 키운다.
     // #77: 탭별 배경색을 애니메이션으로 전환한다.
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        color: backgroundFor(
-            currentIndex, Theme.of(context).brightness),
+    // #81: 패딩을 컨테이너 안으로 넣어 패딩 영역까지 탭 색상으로 칠한다
+    // (밖에 두면 셸 배경이 줄로 노출된다).
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      color: backgroundFor(
+          currentIndex, Theme.of(context).brightness),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.transparent,
