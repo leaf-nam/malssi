@@ -299,8 +299,9 @@ void main() {
           findsOneWidget);
       // #75: 정원 탭 바는 흙색 (테스트 기본 밝기=라이트).
       final nav =
-          tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
-      expect(nav.backgroundColor, AppTheme.navGardenLight);
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      expect((nav.decoration as BoxDecoration).color,
+          AppTheme.navGardenLight);
       ArchiveScreen.debugToday = null;
     });
 

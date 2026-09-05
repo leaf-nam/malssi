@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
@@ -292,9 +293,51 @@ void main() {
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       expect(scaffold.backgroundColor, AppTheme.abyss);
       // #75: 말씨 탭 바도 배경과 동일한 검은색.
+      // #77: 전환 애니메이션 250ms.
       final nav =
-          tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
-      expect(nav.backgroundColor, AppTheme.abyss);
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      expect((nav.decoration as BoxDecoration).color, AppTheme.abyss);
+      expect(nav.duration, const Duration(milliseconds: 250));
+    });
+
+    testWidgets('tab switch blends the bar color without sliding (#77)',
+        (tester) async {
+      Color barColor() {
+        final box = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byType(AnimatedContainer),
+            matching: find.byType(DecoratedBox),
+          ),
+        );
+        return (box.decoration as BoxDecoration).color!;
+      }
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: MainBottomNav(currentIndex: 0),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(barColor(), AppTheme.abyss);
+
+      // 탭 전환 → 애니메이션 중간에는 양쪽 끝색과 다른 보간색이다.
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: MainBottomNav(currentIndex: 1),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 125));
+
+      final mid = barColor();
+      expect(mid, isNot(AppTheme.abyss));
+      expect(mid, isNot(AppTheme.navGardenLight));
+
+      await tester.pumpAndSettle();
+      expect(barColor(), AppTheme.navGardenLight);
     });
 
     testWidgets('plant reveals the quote at once with growth below',

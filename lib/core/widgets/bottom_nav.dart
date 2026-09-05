@@ -31,22 +31,29 @@ class MainBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // #60: 바·글씨·아이콘 확대. 상단 패딩으로 전체 높이를 키운다.
+    // #77: 탭별 배경색을 애니메이션으로 전환한다.
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: backgroundFor(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        color: backgroundFor(
             currentIndex, Theme.of(context).brightness),
-        iconSize: 30,
-        selectedFontSize: 12.5,
-        unselectedFontSize: 12.5,
-        currentIndex: currentIndex,
-        onTap: (index) => context.go(_paths[index]),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.eco), label: '말씨'),
-          BottomNavigationBarItem(icon: Icon(Icons.grass), label: '정원'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
-        ],
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconSize: 30,
+          selectedFontSize: 12.5,
+          unselectedFontSize: 12.5,
+          currentIndex: currentIndex,
+          onTap: (index) => context.go(_paths[index]),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.eco), label: '말씨'),
+            BottomNavigationBarItem(icon: Icon(Icons.grass), label: '정원'),
+            BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
+          ],
+        ),
       ),
     );
   }
