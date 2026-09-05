@@ -311,6 +311,40 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
+    testWidgets('first entry centers today in scroll mode (#98)',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '오늘',
+          at: at,
+          theme: SeedTheme.growth);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 오늘 칸이 화면(390) 가운데付近에 있다.
+      final center = tester.getCenter(
+        find.byKey(const ValueKey('grass-2026-09-04')),
+      );
+      expect(center.dx, moreOrLessEquals(195.0, epsilon: 15.0));
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('scroll rests on a column boundary at phone width (#83)',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);

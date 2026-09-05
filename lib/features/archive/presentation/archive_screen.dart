@@ -214,10 +214,35 @@ class _GrassGrid extends StatefulWidget {
 class _GrassGridState extends State<_GrassGrid> {
   final _scrollController = ScrollController();
 
+  /// 첫 진입 1회에만 오늘 중앙으로 이동한다.
+  bool _centered = false;
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 53주 범위의 시작 월요일 (오늘이 포함된 주 기준 52주 전).
+  DateTime _startMonday() {
+    final today = widget.today;
+    final thisMonday =
+        today.subtract(Duration(days: today.weekday - 1));
+    return thisMonday.subtract(const Duration(days: 7 * 52));
+  }
+
+  /// 오늘 칸이 화면 가운데 오도록 초기 스크롤을 이동한다 (#98).
+  /// 스크롤 모드에서 첫 진입 1회만 호출한다. `reverse: true`라 뒤집어서 이동한다.
+  void _centerOnToday(double viewportWidth, double cell) {
+    if (!mounted || !_scrollController.hasClients) return;
+    final weekIdx =
+        widget.today.difference(_startMonday()).inDays ~/ 7;
+    final unit = cell + ThemeAssets.grassGap;
+    final weekCenter = weekIdx * unit + cell / 2;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final target =
+        (maxExtent - (weekCenter - viewportWidth / 2)).clamp(0.0, maxExtent);
+    _scrollController.jumpTo(target);
   }
 
   @override
@@ -233,14 +258,25 @@ class _GrassGridState extends State<_GrassGrid> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (var week = 0; week < ThemeAssets.grassWeeks; week++)
-                _weekColumn(context, week, cell),
+                _weekColumn(
+                    context, week, cell, ThemeAssets.grassWeeks),
             ],
           );
         }
         // 좁음: 가로 스크롤 (최신 주가 우측, 항상 보이는 스크롤바).
         // 칸을 뷰포트에 맞춰 정지 시 가장자리에 반칸이 없게 한다 (#83).
         // 스크롤바가 칸과 겹치지 않게 아래 간격을 둔다 (#91).
+        // 첫 진입에는 오늘이 가운데 오도록 이동한다 (#98).
+        // 오늘이 마지막 주라 뒤에 미래 주를 붙여야 가운데가 된다.
         final scrollCell = ThemeAssets.grassScrollCell(maxWidth);
+        final trailing =
+            ThemeAssets.grassTrailingWeeks(maxWidth, scrollCell);
+        final totalWeeks = ThemeAssets.grassWeeks + trailing;
+        if (!_centered) {
+          _centered = true;
+          WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _centerOnToday(maxWidth, scrollCell));
+        }
         return Scrollbar(
           controller: _scrollController,
           thumbVisibility: true,
@@ -252,8 +288,8 @@ class _GrassGridState extends State<_GrassGrid> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (var week = 0; week < ThemeAssets.grassWeeks; week++)
-                  _weekColumn(context, week, scrollCell),
+                for (var week = 0; week < totalWeeks; week++)
+                  _weekColumn(context, week, scrollCell, totalWeeks),
               ],
             ),
           ),
@@ -262,19 +298,15 @@ class _GrassGridState extends State<_GrassGrid> {
     );
   }
 
-  /// [week]번째 주(월~일) 열 칸.
-  Widget _weekColumn(BuildContext context, int week, double cell) {
-    // 오늘이 포함된 주 월요일 기준, 52주 전 월요일부터 53개 주.
-    final thisMonday =
-        widget.today.subtract(Duration(days: widget.today.weekday - 1));
-    final startMonday = thisMonday.subtract(const Duration(days: 7 * 52));
+  /// [week]번째 주(월~일) 열 칸. [totalWeeks]는 마지막 주 패딩 판단용.
+  Widget _weekColumn(
+      BuildContext context, int week, double cell, int totalWeeks) {
+    final startMonday = _startMonday();
     final divider = Theme.of(context).dividerColor;
 
     return Padding(
       padding: EdgeInsets.only(
-          right: week == ThemeAssets.grassWeeks - 1
-              ? 0
-              : ThemeAssets.grassGap),
+          right: week == totalWeeks - 1 ? 0 : ThemeAssets.grassGap),
       child: Column(
         children: [
           for (var day = 0; day < 7; day++)

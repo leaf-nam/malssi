@@ -118,4 +118,13 @@ abstract class ThemeAssets {
     final n = grassVisibleWeeks(maxWidth);
     return (maxWidth - (n - 1) * grassGap) / n;
   }
+
+  /// 뒤쪽 미래 주 수 (#98). 오늘이 항상 마지막 주라 가운데 정렬이 불가능하므로,
+  /// 오늘이 가운데 올 만큼 미래 빈칸을 붙인다. 미래 칸은 탭 불가 빈칸이다.
+  static int grassTrailingWeeks(double maxWidth, double cell) {
+    final unit = cell + grassGap;
+    final need = (maxWidth / 2 - cell / 2) / unit;
+    final n = need.ceil();
+    return n < 0 ? 0 : n;
+  }
 }
