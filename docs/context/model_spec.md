@@ -236,6 +236,8 @@ class CollectionNames {
   **명언은 심는 즉시 공개되며, 명언 아래에 성장 에셋이 2시간 간격으로 그려진다**
   (#46, 2026-09-05 개정 — 종전 "성장 완성 시 공개" 폐기).
   해당 테마 명언이 없으면 전체에서 랜덤 선택한다 (폴백).
+- **성장 간격**: 릴리즈 2시간, 디버그 5초 (`Seed.stageInterval`, `kDebugMode` 가드, #64).
+  자동 갱신 타이머도 디버그 5초 / 릴리즈 15분 (`SeedProvider.refreshInterval`).
 - **성장 단계 에셋** (혼합 전략, #40 — `ThemeAssets.growthImage(theme, stage)`):
   - 0~2단계: 공용 `growth_0.png`·`growth_1.png`·`growth_2.png`
     (미등록 시 테마 씨앗 이미지로 폴백).

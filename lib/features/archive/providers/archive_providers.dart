@@ -16,6 +16,15 @@ class ArchiveProvider extends ChangeNotifier {
         for (final fruit in _fruits) fruit.harvestDateKey: fruit,
       };
 
+  /// 잔디에 심어진 열매 = 후기를 남긴 열매만 (#65).
+  List<Fruit> get plantedFruits =>
+      List.unmodifiable(_fruits.where((f) => f.isReviewed));
+
+  /// 심어진 열매의 날짜키 → 열매. 잔디 그리드 표시용.
+  Map<String, Fruit> get plantedByDateKey => {
+        for (final fruit in plantedFruits) fruit.harvestDateKey: fruit,
+      };
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 

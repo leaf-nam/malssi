@@ -68,20 +68,21 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '최근 1년 · ${state.fruits.length}개의 열매',
+            // #65: 후기를 남긴 열매만 잔디로 심어진다.
+            '최근 1년 · ${state.plantedFruits.length}개의 열매',
             style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
           ),
           const SizedBox(height: 12),
           _GrassGrid(
             today: DateTime(today.year, today.month, today.day),
-            fruitsByDateKey: state.fruitsByDateKey,
+            fruitsByDateKey: state.plantedByDateKey,
             onTapFruit: (fruit) => _openDetail(context, fruit),
           ),
-          if (state.fruits.isEmpty)
+          if (state.plantedFruits.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Text(
-                '말씨 탭에서 오늘의 씨앗을 깨면 잔디가 채워져요',
+                '말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요',
                 style: TextStyle(
                     fontSize: 12, color: colors.onSurfaceVariant),
               ),
