@@ -42,17 +42,15 @@ abstract class ThemeAssets {
   /// 한글 테마명. 미등록 테마는 `'오늘의 씨앗'`.
   static String labelOf(String theme) => labels[theme] ?? '오늘의 씨앗';
 
-  /// 성장 단계 이미지 (#40, 혼합 전략).
-  /// - 0~2단계: 공용 `growth_<n>.png` (없으면 테마 씨앗 이미지로 폴백).
-  /// - 3~4단계: 테마별 `growth_<이름>_<n>.png` (없으면 테마 씨앗 이미지로 폴백).
-  /// - 5단계(열매): 기존 테마 열매 이미지 재사용.
+  /// 성장 단계 이미지 (#40, #67 — 과일별 5단계 에셋).
+  /// - 0단계: 테마 씨앗 이미지 (`<이름>_seed.png`).
+  /// - 1~5단계: `<이름>-<n>.png` (7종×5단계, 2026-09-05 확보).
   /// 미등록 테마는 `''` (호출 측 폴백).
   static String growthImage(String theme, int stage) {
-    if (stage >= 5) return fruitImage(theme);
-    if (stage <= 2) return 'assets/images/growth_$stage.png';
     final name = _fruits[theme];
     if (name == null) return seedImage(theme);
-    return 'assets/images/growth_${name}_$stage.png';
+    if (stage <= 0) return seedImage(theme);
+    return 'assets/images/$name-$stage.png';
   }
 
   /// 잔디 그리드 셀 색상. 다크 7종 (#39) + 라이트 밝은 7종 (#56).

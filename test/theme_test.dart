@@ -359,13 +359,15 @@ void main() {
     });
 
     test('growthImage maps stages with fallbacks', () {
-      // 0~2단계 공용, 3~4단계 테마별, 5단계 열매 재사용.
+      // 0단계 씨앗, 1~5단계 과일별 에셋 (#67).
+      expect(ThemeAssets.growthImage(SeedTheme.growth, 0),
+          'assets/images/lemon_seed.png');
       expect(ThemeAssets.growthImage(SeedTheme.growth, 1),
-          'assets/images/growth_1.png');
+          'assets/images/lemon-1.png');
       expect(ThemeAssets.growthImage(SeedTheme.growth, 3),
-          'assets/images/growth_lemon_3.png');
+          'assets/images/lemon-3.png');
       expect(ThemeAssets.growthImage(SeedTheme.growth, 5),
-          'assets/images/lemon.png');
+          'assets/images/lemon-5.png');
       expect(ThemeAssets.growthImage('', 3), isEmpty);
     });
   });
