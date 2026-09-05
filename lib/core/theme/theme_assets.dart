@@ -104,4 +104,18 @@ abstract class ThemeAssets {
   static double grassFitCell(double maxWidth) =>
       (((maxWidth - (grassWeeks - 1) * grassGap) / grassWeeks))
           .clamp(grassMinCell, grassMaxCell);
+
+  /// 스크롤 모드에서 한 화면에 온전히 보이는 주 수 (#83).
+  /// 정지 상태에서 양쪽 가장자리에 반칸이 생기지 않게,
+  /// 이 주 수에 딱 맞게 칸을 키운다.
+  static int grassVisibleWeeks(double maxWidth) {
+    final n = (maxWidth / (grassMinCell + grassGap)).floor();
+    return n < 1 ? 1 : n;
+  }
+
+  /// 스크롤 모드 칸 크기: [grassVisibleWeeks]개 주가 폭에 정확히 맞는다 (#83).
+  static double grassScrollCell(double maxWidth) {
+    final n = grassVisibleWeeks(maxWidth);
+    return (maxWidth - (n - 1) * grassGap) / n;
+  }
 }

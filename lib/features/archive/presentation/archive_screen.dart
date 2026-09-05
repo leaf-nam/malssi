@@ -81,7 +81,10 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Text(
-                '말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요',
+                // #84: 후기 대기 열매가 있으면 다른 안내를 보여준다.
+                state.fruits.isEmpty
+                    ? '말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'
+                    : '완성된 열매에 후기를 남기면 잔디가 심어져요',
                 style: TextStyle(
                     fontSize: 12, color: colors.onSurfaceVariant),
               ),
@@ -139,7 +142,9 @@ class _GrassGrid extends StatelessWidget {
             ],
           );
         }
-        // 좁음: 기존 가로 스크롤 (최신 주가 우측).
+        // 좁음: 가로 스크롤 (최신 주가 우측).
+        // 칸을 뷰포트에 맞춰 정지 시 가장자리에 반칸이 없게 한다 (#83).
+        final scrollCell = ThemeAssets.grassScrollCell(maxWidth);
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           reverse: true,
@@ -147,8 +152,7 @@ class _GrassGrid extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (var week = 0; week < ThemeAssets.grassWeeks; week++)
-                _weekColumn(
-                    context, week, ThemeAssets.grassMinCell),
+                _weekColumn(context, week, scrollCell),
             ],
           ),
         );

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/archive_screen.dart';
@@ -227,6 +228,86 @@ void main() {
   });
 
   group('ArchiveScreen grass grid', () {
+    Finder horizontalScroller() => find.byWidgetPredicate(
+          (w) =>
+              w is SingleChildScrollView &&
+              w.scrollDirection == Axis.horizontal,
+        );
+
+    testWidgets('scroll rests on a column boundary at phone width (#83)',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 스크롤 모드 유지 + 정지 오프셋이 열 경계의 배수 → 가장자리 반칸 없음.
+      expect(horizontalScroller(), findsOneWidget);
+      final rowElement = tester.element(
+        find
+            .descendant(
+              of: horizontalScroller(),
+              matching: find.byType(Row),
+            )
+            .first,
+      );
+      final position = Scrollable.of(rowElement).position;
+      final unit = ThemeAssets.grassScrollCell(350) + ThemeAssets.grassGap;
+      expect(position.maxScrollExtent % unit,
+          moreOrLessEquals(0.0, epsilon: 0.01));
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('wide screens fit all weeks without scrolling (#72)',
+        (tester) async {
+      tester.view.physicalSize = const Size(1600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 전체 맞춤 모드에서는 가로 스크롤 뷰가 없다.
+      expect(horizontalScroller(), findsNothing);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('pending reviews show a different guide (#84)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      // 수확만 되고 후기는 없음 → 심어지지 않음 + 다른 안내.
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '오늘', at: at);
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('최근 1년 · 0개의 열매'), findsOneWidget);
+      expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
+          findsOneWidget);
+      expect(find.text('말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'),
+          findsNothing);
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('unreviewed harvest stays unplanted until review (#65)',
         (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
