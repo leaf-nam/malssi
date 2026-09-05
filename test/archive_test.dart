@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
@@ -279,6 +280,67 @@ void main() {
       expect(provider.themeCounts, isEmpty);
       expect(provider.topTheme, isEmpty);
     });
+
+    test('firstPlantedYear tracks the earliest planted year (#99)',
+        () async {
+      var now = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => now);
+      final empty = ArchiveProvider(fruitRepository: repo);
+      await empty.load();
+      expect(empty.firstPlantedYear, isNull);
+
+      now = DateTime(2025, 5, 5, 12);
+      await _harvest(repo,
+          seedId: '2025-05-05', text: '작년', at: now);
+      now = DateTime(2026, 9, 4, 12);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '올해', at: now);
+      // 미후기는 제외된다.
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+      expect(provider.firstPlantedYear, 2026);
+
+      await repo.updateReview(
+        fruitId: 'fruit-2025-05-05',
+        memo: '좋았다',
+        fidelityScore: 5,
+      );
+      await provider.load();
+      expect(provider.firstPlantedYear, 2025);
+    });
+
+    test('plantedInYear filters by harvest year (#97)', () async {
+      var now = DateTime(2025, 5, 5, 12);
+      final repo = InMemoryFruitRepository(clock: () => now);
+      await _harvest(repo,
+          seedId: '2025-05-05', text: '작년', at: now);
+      await repo.updateReview(
+        fruitId: 'fruit-2025-05-05',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      now = DateTime(2026, 9, 4, 12);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '올해', at: now);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      expect(provider.plantedInYear(2025).single.text, '작년');
+      expect(provider.plantedInYear(2026).single.text, '올해');
+      expect(provider.plantedInYear(2024), isEmpty);
+    });
   });
 
   group('ArchiveScreen grass grid', () {
@@ -415,7 +477,7 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('최근 1년 · 0개의 열매'), findsOneWidget);
+      expect(find.text('2026 · 0개의 열매'), findsOneWidget);
       expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
           findsOneWidget);
       expect(find.text('말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'),
@@ -437,7 +499,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 후기 전에는 잔디가 심어지지 않는다.
-      expect(find.text('최근 1년 · 0개의 열매'), findsOneWidget);
+      expect(find.text('2026 · 0개의 열매'), findsOneWidget);
       expect(find.byKey(const ValueKey('grass-2026-09-04')),
           findsNothing);
 
@@ -449,7 +511,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('최근 1년 · 1개의 열매'), findsOneWidget);
+      expect(find.text('2026 · 1개의 열매'), findsOneWidget);
       expect(find.byKey(const ValueKey('grass-2026-09-04')),
           findsOneWidget);
       ArchiveScreen.debugToday = null;
@@ -473,7 +535,7 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('최근 1년 · 1개의 열매'), findsOneWidget);
+      expect(find.text('2026 · 1개의 열매'), findsOneWidget);
       expect(find.byKey(const ValueKey('grass-2026-09-04')),
           findsOneWidget);
       ArchiveScreen.debugToday = null;
@@ -488,7 +550,7 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('최근 1년 · 0개의 열매'), findsOneWidget);
+      expect(find.text('2026 · 0개의 열매'), findsOneWidget);
       expect(find.text('말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'),
           findsOneWidget);
       ArchiveScreen.debugToday = null;
@@ -642,6 +704,89 @@ void main() {
       expect(tops.reduce(max) > height, isTrue);
     });
 
+    testWidgets('year navigation shows past plantings (#99)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      var now = DateTime(2025, 5, 5, 12);
+      final repo = InMemoryFruitRepository(clock: () => now);
+      await _harvest(repo,
+          seedId: '2025-05-05', text: '작년 열매', at: now);
+      await repo.updateReview(
+        fruitId: 'fruit-2025-05-05',
+        memo: '좋았다',
+        fidelityScore: 5,
+      );
+      now = DateTime(2026, 9, 4, 12);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '올해 열매', at: now);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 당해 연도부터 보인다.
+      expect(find.text('2026 · 1개의 열매'), findsOneWidget);
+      expect(find.byKey(const ValueKey('grass-2026-09-04')),
+          findsOneWidget);
+
+      // 작년으로 이동한다.
+      await tester.tap(find.byKey(const ValueKey('year-prev')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2025 · 1개의 열매'), findsOneWidget);
+      expect(find.byKey(const ValueKey('grass-2025-05-05')),
+          findsOneWidget);
+      expect(find.byKey(const ValueKey('grass-2026-09-04')),
+          findsNothing);
+
+      // 처음 심어진 년도에서는 뒤로 더 못 간다.
+      final prev = tester.widget<IconButton>(
+        find.byKey(const ValueKey('year-prev')),
+      );
+      expect(prev.onPressed, isNull);
+
+      // 올해로 복귀한다.
+      await tester.tap(find.byKey(const ValueKey('year-next')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2026 · 1개의 열매'), findsOneWidget);
+      final next = tester.widget<IconButton>(
+        find.byKey(const ValueKey('year-next')),
+      );
+      expect(next.onPressed, isNull);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('today cell has a gold outline (#97)', (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 오늘 빈칸에 금 테두리가 정확히 1개 있다.
+      final goldCells = find.byWidgetPredicate(
+        (w) =>
+            w is Container &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).border is Border &&
+            ((w.decoration as BoxDecoration).border as Border)
+                    .top
+                    .color ==
+                AppTheme.gold,
+      );
+      expect(goldCells, findsOneWidget);
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('harvested dates show themed cells', (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final at = DateTime(2026, 9, 4, 12);
@@ -662,7 +807,7 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('최근 1년 · 1개의 열매'), findsOneWidget);
+      expect(find.text('2026 · 1개의 열매'), findsOneWidget);
       expect(find.byKey(const ValueKey('grass-2026-09-04')),
           findsOneWidget);
       ArchiveScreen.debugToday = null;

@@ -95,15 +95,35 @@ abstract class ThemeAssets {
   static const grassMinCell = 22.0;
   static const grassMaxCell = 30.0;
 
-  /// [maxWidth]에 53주 전체가 최소 칸 이상으로 들어가면 `true` (스크롤 불필요).
-  static bool grassFitsAll(double maxWidth) =>
-      ((maxWidth - (grassWeeks - 1) * grassGap) / grassWeeks) >=
-      grassMinCell;
+  /// [year]년 잔디 범위의 시작 월요일 (1월 1일이 속한 주, #97).
+  static DateTime grassYearStart(int year) {
+    final jan1 = DateTime(year, 1, 1);
+    return jan1.subtract(Duration(days: jan1.weekday - 1));
+  }
+
+  /// [year]년 범위의 주 수 (연도 밖 가장자리 포함, #97).
+  /// 12월 31일이 속한 주까지 포함한다.
+  static int grassYearWeeks(int year) {
+    final start = grassYearStart(year);
+    final dec31 = DateTime(year, 12, 31);
+    final lastStart =
+        dec31.subtract(Duration(days: dec31.weekday - 1));
+    return lastStart.difference(start).inDays ~/ 7 + 1;
+  }
+
+  /// [maxWidth]에 [weeks]주 전체가 최소 칸 이상으로 들어가면 `true`
+  /// (스크롤 불필요). [weeks] 미지정 시 53주 기준.
+  static bool grassFitsAll(double maxWidth, {int? weeks}) {
+    final w = weeks ?? grassWeeks;
+    return ((maxWidth - (w - 1) * grassGap) / w) >= grassMinCell;
+  }
 
   /// 전체 맞춤 모드의 칸 크기 (최대치로 상한, 남는 폭은 중앙 정렬).
-  static double grassFitCell(double maxWidth) =>
-      (((maxWidth - (grassWeeks - 1) * grassGap) / grassWeeks))
-          .clamp(grassMinCell, grassMaxCell);
+  static double grassFitCell(double maxWidth, {int? weeks}) {
+    final w = weeks ?? grassWeeks;
+    return (((maxWidth - (w - 1) * grassGap) / w))
+        .clamp(grassMinCell, grassMaxCell);
+  }
 
   /// 스크롤 모드에서 한 화면에 온전히 보이는 주 수 (#83).
   /// 정지 상태에서 양쪽 가장자리에 반칸이 생기지 않게,
@@ -117,14 +137,5 @@ abstract class ThemeAssets {
   static double grassScrollCell(double maxWidth) {
     final n = grassVisibleWeeks(maxWidth);
     return (maxWidth - (n - 1) * grassGap) / n;
-  }
-
-  /// 뒤쪽 미래 주 수 (#98). 오늘이 항상 마지막 주라 가운데 정렬이 불가능하므로,
-  /// 오늘이 가운데 올 만큼 미래 빈칸을 붙인다. 미래 칸은 탭 불가 빈칸이다.
-  static int grassTrailingWeeks(double maxWidth, double cell) {
-    final unit = cell + grassGap;
-    final need = (maxWidth / 2 - cell / 2) / unit;
-    final n = need.ceil();
-    return n < 0 ? 0 : n;
   }
 }
