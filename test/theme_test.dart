@@ -178,6 +178,19 @@ void main() {
       expect(ThemeAssets.grassFitCell(1400), inInclusiveRange(22.0, 30.0));
       expect(ThemeAssets.grassFitCell(10000), 30.0);
     });
+
+    test('grass scroll cells fill the viewport exactly (#83)', () {
+      for (final width in [320.0, 350.0, 390.0, 760.0]) {
+        final n = ThemeAssets.grassVisibleWeeks(width);
+        final cell = ThemeAssets.grassScrollCell(width);
+
+        expect(n, greaterThanOrEqualTo(1));
+        expect(cell, greaterThanOrEqualTo(ThemeAssets.grassMinCell));
+        // n개 주 + 간격이 폭과 정확히 일치한다 (가장자리 반칸 없음).
+        expect(n * cell + (n - 1) * ThemeAssets.grassGap,
+            moreOrLessEquals(width, epsilon: 0.001));
+      }
+    });
   });
 
   group('theme selection (random)', () {
