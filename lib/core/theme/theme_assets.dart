@@ -42,17 +42,15 @@ abstract class ThemeAssets {
   /// 한글 테마명. 미등록 테마는 `'오늘의 씨앗'`.
   static String labelOf(String theme) => labels[theme] ?? '오늘의 씨앗';
 
-  /// 성장 단계 이미지 (#40, 혼합 전략).
-  /// - 0~2단계: 공용 `growth_<n>.png` (없으면 테마 씨앗 이미지로 폴백).
-  /// - 3~4단계: 테마별 `growth_<이름>_<n>.png` (없으면 테마 씨앗 이미지로 폴백).
-  /// - 5단계(열매): 기존 테마 열매 이미지 재사용.
+  /// 성장 단계 이미지 (#40, #67 — 과일별 5단계 에셋).
+  /// - 0단계: 테마 씨앗 이미지 (`<이름>_seed.png`).
+  /// - 1~5단계: `<이름>-<n>.png` (7종×5단계, 2026-09-05 확보).
   /// 미등록 테마는 `''` (호출 측 폴백).
   static String growthImage(String theme, int stage) {
-    if (stage >= 5) return fruitImage(theme);
-    if (stage <= 2) return 'assets/images/growth_$stage.png';
     final name = _fruits[theme];
     if (name == null) return seedImage(theme);
-    return 'assets/images/growth_${name}_$stage.png';
+    if (stage <= 0) return seedImage(theme);
+    return 'assets/images/$name-$stage.png';
   }
 
   /// 잔디 그리드 셀 색상. 다크 7종 (#39) + 라이트 밝은 7종 (#56).
@@ -90,4 +88,54 @@ abstract class ThemeAssets {
       brightness == Brightness.light
           ? const Color(0xFFD8D2C7)
           : const Color(0xFF6C707E);
+
+  /// 잔디 그리드 규격 (#72).
+  static const grassWeeks = 53;
+  static const grassGap = 4.0;
+  static const grassMinCell = 22.0;
+  static const grassMaxCell = 30.0;
+
+  /// [year]년 잔디 범위의 시작 월요일 (1월 1일이 속한 주, #97).
+  static DateTime grassYearStart(int year) {
+    final jan1 = DateTime(year, 1, 1);
+    return jan1.subtract(Duration(days: jan1.weekday - 1));
+  }
+
+  /// [year]년 범위의 주 수 (연도 밖 가장자리 포함, #97).
+  /// 12월 31일이 속한 주까지 포함한다.
+  static int grassYearWeeks(int year) {
+    final start = grassYearStart(year);
+    final dec31 = DateTime(year, 12, 31);
+    final lastStart =
+        dec31.subtract(Duration(days: dec31.weekday - 1));
+    return lastStart.difference(start).inDays ~/ 7 + 1;
+  }
+
+  /// [maxWidth]에 [weeks]주 전체가 최소 칸 이상으로 들어가면 `true`
+  /// (스크롤 불필요). [weeks] 미지정 시 53주 기준.
+  static bool grassFitsAll(double maxWidth, {int? weeks}) {
+    final w = weeks ?? grassWeeks;
+    return ((maxWidth - (w - 1) * grassGap) / w) >= grassMinCell;
+  }
+
+  /// 전체 맞춤 모드의 칸 크기 (최대치로 상한, 남는 폭은 중앙 정렬).
+  static double grassFitCell(double maxWidth, {int? weeks}) {
+    final w = weeks ?? grassWeeks;
+    return (((maxWidth - (w - 1) * grassGap) / w))
+        .clamp(grassMinCell, grassMaxCell);
+  }
+
+  /// 스크롤 모드에서 한 화면에 온전히 보이는 주 수 (#83).
+  /// 정지 상태에서 양쪽 가장자리에 반칸이 생기지 않게,
+  /// 이 주 수에 딱 맞게 칸을 키운다.
+  static int grassVisibleWeeks(double maxWidth) {
+    final n = (maxWidth / (grassMinCell + grassGap)).floor();
+    return n < 1 ? 1 : n;
+  }
+
+  /// 스크롤 모드 칸 크기: [grassVisibleWeeks]개 주가 폭에 정확히 맞는다 (#83).
+  static double grassScrollCell(double maxWidth) {
+    final n = grassVisibleWeeks(maxWidth);
+    return (maxWidth - (n - 1) * grassGap) / n;
+  }
 }

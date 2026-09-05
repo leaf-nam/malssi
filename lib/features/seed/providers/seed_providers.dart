@@ -23,11 +23,14 @@ class SeedProvider extends ChangeNotifier {
   }) {
     if (enableAutoRefresh) {
       _timer = Timer.periodic(
-        const Duration(minutes: 15),
+        refreshInterval,
         (_) => refreshGrowth(),
       );
     }
   }
+
+  /// 자동 갱신 간격 (15분). 디버그·릴리즈 동일 (#95).
+  static const refreshInterval = Duration(minutes: 15);
 
   final SeedRepository _seedRepository;
   final QuoteRepository _quoteRepository;
@@ -118,11 +121,43 @@ class SeedProvider extends ChangeNotifier {
   Future<void> debugAdvanceGrowth() async {
     final seed = _todaySeed;
     if (seed == null || !seed.isGrowing) return;
+    await _debugShift(const Duration(hours: Seed.stageHours));
+  }
+
+  /// 디버그용: 1단계만 진행 (#69). 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugAdvanceOneStage() async {
+    final seed = _todaySeed;
+    if (seed == null || !seed.isGrowing) return;
+    await _debugShift(Seed.stageInterval);
+  }
+
+  /// 디버그용: 즉시 완성·수확 (#69). 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugCompleteNow() async {
+    final seed = _todaySeed;
+    if (seed == null || !seed.isGrowing) return;
+    await _debugShift(Seed.stageInterval * Seed.totalStages);
+  }
+
+  Future<void> _debugShift(Duration by) async {
+    final seed = _todaySeed;
+    if (seed == null) return;
     try {
-      await _seedRepository.debugFastForward(
-        seedId: seed.id,
-        by: const Duration(hours: Seed.stageHours),
-      );
+      await _seedRepository.debugFastForward(seedId: seed.id, by: by);
+      _todaySeed = await _seedRepository.getActiveSeed();
+      await _maybeHarvest();
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  /// 디버그용: 날짜를 하루 앞당긴다 (#95). 수확물 날짜도 함께 이동해
+  /// 잔디 날짜와 맞춘다. 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugAdvanceDay() async {
+    try {
+      await _seedRepository.debugShiftTime(const Duration(days: 1));
+      await _fruitRepository.debugShiftTime(const Duration(days: 1));
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
     } catch (e) {
@@ -175,13 +210,16 @@ class SeedProvider extends ChangeNotifier {
     _revealedQuote = harvestQuote;
   }
 
-  /// 완성 열매의 후기·점수를 저장한다 (그날의 리뷰, 덮어쓰기 허용).
+  /// 완성 열매의 후기를 저장한다 (그날의 리뷰, #41).
+  /// 첫 저장 이후에는 수정할 수 없고 읽기만 가능하다 (#71).
+  /// 빈 내용(후기 없음 + 별점 0)의 첫 저장은 무시한다 (빈 잠금 방지).
   Future<void> saveReview({
     required String memo,
     required int fidelityScore,
   }) async {
     final fruit = _completedFruit;
-    if (fruit == null) return;
+    if (fruit == null || fruit.isReviewed) return;
+    if (memo.isEmpty && fidelityScore == 0) return;
     _errorMessage = null;
     notifyListeners();
     try {

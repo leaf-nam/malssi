@@ -168,6 +168,48 @@ void main() {
         isNot(ThemeAssets.cellColor('', Brightness.dark)),
       );
     });
+
+    test('grass grid fits all weeks on wide screens (#72)', () {
+      // 휴대폰 세로폭(패딩 제외 ~350) → 스크롤 모드.
+      expect(ThemeAssets.grassFitsAll(350), isFalse);
+      // 와이드(1400) → 53주 전체 맞춤.
+      expect(ThemeAssets.grassFitsAll(1400), isTrue);
+      // 맞춤 칸은 최소~최대 범위로 상한된다.
+      expect(ThemeAssets.grassFitCell(1400), inInclusiveRange(22.0, 30.0));
+      expect(ThemeAssets.grassFitCell(10000), 30.0);
+    });
+
+    test('grass scroll cells fill the viewport exactly (#83)', () {
+      for (final width in [320.0, 350.0, 390.0, 760.0]) {
+        final n = ThemeAssets.grassVisibleWeeks(width);
+        final cell = ThemeAssets.grassScrollCell(width);
+
+        expect(n, greaterThanOrEqualTo(1));
+        expect(cell, greaterThanOrEqualTo(ThemeAssets.grassMinCell));
+        // n개 주 + 간격이 폭과 정확히 일치한다 (가장자리 반칸 없음).
+        expect(n * cell + (n - 1) * ThemeAssets.grassGap,
+            moreOrLessEquals(width, epsilon: 0.001));
+      }
+    });
+
+    test('grass year range covers Jan to Dec (#97)', () {
+      // 2026-01-01(목)이 속한 주 월요일 = 2025-12-29.
+      expect(ThemeAssets.grassYearStart(2026), DateTime(2025, 12, 29));
+      // 2026 범위: 12월 31일(목)이 속한 주까지 53주.
+      expect(ThemeAssets.grassYearWeeks(2026), 53);
+      final start = ThemeAssets.grassYearStart(2026);
+      final weeks = ThemeAssets.grassYearWeeks(2026);
+      final end = start.add(Duration(days: weeks * 7 - 1));
+      // 범위가 1월 1일과 12월 31일을 모두 포함한다.
+      expect(
+          start.isBefore(DateTime(2026, 1, 1)) ||
+              start == DateTime(2026, 1, 1),
+          isTrue);
+      expect(
+          end.isAfter(DateTime(2026, 12, 31)) ||
+              end == DateTime(2026, 12, 31),
+          isTrue);
+    });
   });
 
   group('theme selection (random)', () {
@@ -266,6 +308,8 @@ void main() {
         plantedAt: plantedAt,
       );
 
+      // 디버그·릴리즈 동일 2시간 (#95).
+      expect(Seed.stageInterval, const Duration(hours: 2));
       expect(seed.growthStageAt(plantedAt), 0);
       expect(
           seed.growthStageAt(plantedAt.add(const Duration(hours: 5))), 2);
@@ -353,13 +397,15 @@ void main() {
     });
 
     test('growthImage maps stages with fallbacks', () {
-      // 0~2단계 공용, 3~4단계 테마별, 5단계 열매 재사용.
+      // 0단계 씨앗, 1~5단계 과일별 에셋 (#67).
+      expect(ThemeAssets.growthImage(SeedTheme.growth, 0),
+          'assets/images/lemon_seed.png');
       expect(ThemeAssets.growthImage(SeedTheme.growth, 1),
-          'assets/images/growth_1.png');
+          'assets/images/lemon-1.png');
       expect(ThemeAssets.growthImage(SeedTheme.growth, 3),
-          'assets/images/growth_lemon_3.png');
+          'assets/images/lemon-3.png');
       expect(ThemeAssets.growthImage(SeedTheme.growth, 5),
-          'assets/images/lemon.png');
+          'assets/images/lemon-5.png');
       expect(ThemeAssets.growthImage('', 3), isEmpty);
     });
   });

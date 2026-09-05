@@ -86,4 +86,8 @@ class Fruit {
     final d = harvestedAt.day.toString().padLeft(2, '0');
     return '${harvestedAt.year}-$m-$d';
   }
+
+  /// 후기 작성 여부. 잔디는 후기를 남긴 열매만 심어진다 (#65).
+  /// 별점(1~5) 또는 한줄 후기 둘 중 하나라도 있으면 작성됨으로 본다.
+  bool get isReviewed => memo.isNotEmpty || fidelityScore > 0;
 }

@@ -20,6 +20,10 @@
   #19에서 제거됨.
 - BottomNav: 3탭 고정 (`말씨`/`정원`/`설정` 라벨, `eco`/`grass`/`settings` 아이콘,
   `SeedScreen`/`ArchiveScreen`/`SettingsScreen` 순서, #45).
+  크기: 아이콘 30·라벨 12.5·상단 패딩 8 (#60).
+  바 배경: 말씨 `abyss`(양 모드) · 정원 흙색(라이트 `navGardenLight`/다크 `navGardenDark`) ·
+  설정 회색(라이트 `navSettingsLight`/다크 `navSettingsDark`) (#75).
+  전환은 250ms `AnimatedContainer` (#77).
   탭 추가·순서 변경 시 `feature_spec.md`와 본 문서 §6을 함께 개정하십시오.
 - Repository: `<Name>Repository` 추상 클래스 + `<Name>RepositoryImpl` 구현체
   (예: `QuoteRepository` / `QuoteRepositoryImpl`).
@@ -45,7 +49,7 @@
 - 톤앤매너: 도트풍 **Galmuri11** (`assets/fonts/`, OFL) + 밝은 크림(라이트) / 잉크(다크).
   전역 `fontFamily`와 명언(`quoteTextStyle`) 모두 Galmuri11을 쓴다.
   런타임 폰트 다운로드는 금지 (macOS 샌드박스 차단 이슈).
-- 모드 규칙: 말씨 탭(`/`)은 **항상 다크 고정** (명언 가독성).
+- 모드 규칙: 말씨 탭(`/`)은 **항상 니어블랙(`abyss`) 고정** (명언 가독성, #59).
   나머지 화면(정원/설정)은 **설정 탭의 화면 모드(라이트/다크/시스템)**를 따른다 (#47).
   각 탭 상단 타이틀(AppBar)은 두지 않는다 (하단 탭 라벨과 중복, #49).
 - 화면 코드는 `Theme.of(context)` (`cardColor`, `colorScheme`, `dividerColor`)를 쓰고,
@@ -67,10 +71,15 @@
 
 ## 6. 라우팅
 
-- 신규 화면은 `lib/routing/app_router.dart`에 `GoRoute(path: ...)`로 등록합니다.
-  목표 라우트: `/`, `/archive`, `/settings` (+ `/auth` 잔류 여부 미정).
+- 신규 화면은 `lib/routing/app_router.dart`에 등록합니다.
+  3탭은 `StatefulShellRoute.indexedStack` 분기로 등록하고 (#79),
+  바는 셸(`AppShellView`)이 상주로 들고 있어 화면에 두지 않습니다.
+  목표 라우트: `/`, `/archive`, `/settings` (+ `/auth` 셸 외부).
   구 라우트(`/home`, `/quote-detail/:quoteId`, `/category`, `/write`, `/liked`, `/mypage`)는
   폐기 예정이며 신규 코드에서 연결하지 마십시오.
 - 경로 파라미터는 `state.pathParameters['quoteId'] ?? ''` 패턴으로 안전하게 읽습니다.
 - 화면 이동은 `context.go(...)`를 사용합니다.
-- 탭 이동은 BottomNav 3탭 경유를 원칙으로 합니다. 알림 탭 → `/` 이동도 `context.go('/')`를 사용합니다.
+- 탭 이동은 셸 바 경유를 원칙으로 합니다 (`AppShellView` → `goBranch`, #79).
+  알림 탭 → `/` 이동도 `context.go('/')`를 사용합니다.
+  셸에서는 화면이 유지되므로 탭 선택 시 명시적 새로고침이 필요합니다
+  (말씨 `refreshGrowth()`·정원 `load()` — 셸 핸들러에서 호출).

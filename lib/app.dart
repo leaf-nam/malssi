@@ -30,6 +30,8 @@ class AppShell extends StatelessWidget {
             seedRepository: seedRepository,
             quoteRepository: quoteRepository,
             fruitRepository: fruitRepository,
+            // #62: 앱 사용 중에도 15분마다 성장을 갱신한다.
+            enableAutoRefresh: true,
           )..ensureTodaySeed(),
         ),
         ChangeNotifierProvider(

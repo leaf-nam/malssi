@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
-import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
@@ -11,23 +10,42 @@ import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 
 /// 씨앗 탭 (메인). 매일 씨앗 1개 → 탭 1회 → 명언 공개.
-class SeedScreen extends StatelessWidget {
+/// 탭 진입 시마다 성장 상태를 갱신한다 (#62).
+class SeedScreen extends StatefulWidget {
   const SeedScreen({super.key});
+
+  @override
+  State<SeedScreen> createState() => _SeedScreenState();
+}
+
+class _SeedScreenState extends State<SeedScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 진입 시 갱신: 앱 사용 중에도 단계 상승·완성 수확을 반영한다.
+    // 빌드 중 notify 방지를 위해 첫 프레임 이후에 호출한다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<SeedProvider>().refreshGrowth();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<SeedProvider>();
 
     return Scaffold(
-      // 씨앗 탭(메인)은 모드와 무관하게 항상 다크 고정.
-      backgroundColor: AppTheme.ink900,
+      // 씨앗 탭(메인)은 모드와 무관하게 항상 니어블랙 고정 (#59).
+      // 하단 바는 셸(`AppShellView`)이 상주로 들고 있다 (#79).
+      backgroundColor: AppTheme.abyss,
       body: SafeArea(child: _buildBody(context, state)),
-      bottomNavigationBar: const MainBottomNav(currentIndex: 0),
     );
   }
 
   void _openReview(
       BuildContext context, SeedProvider state, Fruit fruit) {
+    // #71: 후기를 저장한 뒤에는 읽기만 가능하다.
+    final readOnly = fruit.isReviewed;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -38,8 +56,11 @@ class SeedScreen extends StatelessWidget {
         imagePath: ThemeAssets.fruitImage(fruit.theme),
         initialMemo: fruit.memo,
         initialScore: fruit.fidelityScore,
-        onSave: ({required memo, required fidelityScore}) =>
-            state.saveReview(memo: memo, fidelityScore: fidelityScore),
+        readOnly: readOnly,
+        onSave: readOnly
+            ? null
+            : ({required memo, required fidelityScore}) =>
+                state.saveReview(memo: memo, fidelityScore: fidelityScore),
       ),
     );
   }
@@ -158,6 +179,20 @@ class _LockedSeed extends StatelessWidget {
                     : const Text('씨앗 심기'),
               ),
             ),
+            if (kDebugMode) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context
+                          .read<SeedProvider>()
+                          .debugAdvanceDay(),
+                  child: const Text('디버그: +1일'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -264,12 +299,37 @@ class _GrowingSeed extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Center(
-              child: OutlinedButton(
-                onPressed: isBusy
-                    ? null
-                    : () =>
-                        context.read<SeedProvider>().debugAdvanceGrowth(),
-                child: const Text('디버그: +2시간'),
+              // #95: 날짜 이동까지 들어가므로 줄바꿈 가능하게 Wrap.
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugAdvanceOneStage(),
+                    child: const Text('디버그: +1단계'),
+                  ),
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugCompleteNow(),
+                    child: const Text('디버그: 열매 만들기'),
+                  ),
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugAdvanceDay(),
+                    child: const Text('디버그: +1일'),
+                  ),
+                ],
               ),
             ),
           ),
@@ -318,12 +378,16 @@ class _OpenedQuote extends StatelessWidget {
               ),
             ),
           if (onTapReview != null) ...[
-            const Padding(
-              padding: EdgeInsets.only(top: 8, bottom: 20),
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 20),
               child: Text(
-                '눌러서 오늘의 리뷰 남기기',
+                // #71: 저장 후에는 읽기 안내로 바뀐다.
+                fruit?.isReviewed == true
+                    ? '눌러서 오늘의 리뷰 보기'
+                    : '눌러서 오늘의 리뷰 남기기',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                style:
+                    const TextStyle(fontSize: 11, color: AppTheme.muted),
               ),
             ),
           ],

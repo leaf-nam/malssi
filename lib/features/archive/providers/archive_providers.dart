@@ -16,6 +16,48 @@ class ArchiveProvider extends ChangeNotifier {
         for (final fruit in _fruits) fruit.harvestDateKey: fruit,
       };
 
+  /// 잔디에 심어진 열매 = 후기를 남긴 열매만 (#65).
+  List<Fruit> get plantedFruits =>
+      List.unmodifiable(_fruits.where((f) => f.isReviewed));
+
+  /// 심어진 열매의 날짜키 → 열매. 잔디 그리드 표시용.
+  Map<String, Fruit> get plantedByDateKey => {
+        for (final fruit in plantedFruits) fruit.harvestDateKey: fruit,
+      };
+
+  /// 테마별 심어진 개수 (내림차순, #88). 최다 색깔(#89) 선정에 재사용한다.
+  /// 테마 미분류(`''`)는 제외한다.
+  Map<String, int> get themeCounts {
+    final counts = <String, int>{};
+    for (final fruit in plantedFruits) {
+      if (fruit.theme.isEmpty) continue;
+      counts[fruit.theme] = (counts[fruit.theme] ?? 0) + 1;
+    }
+    final entries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return Map.fromEntries(entries);
+  }
+
+  /// 가장 많이 모은 테마. 없으면 `''` (#89).
+  String get topTheme =>
+      themeCounts.isEmpty ? '' : themeCounts.keys.first;
+
+  /// 심어진 연도 중 가장 이른 연도. 없으면 null (#99).
+  int? get firstPlantedYear {
+    if (plantedFruits.isEmpty) return null;
+    var minYear = plantedFruits.first.harvestedAt.year;
+    for (final fruit in plantedFruits) {
+      if (fruit.harvestedAt.year < minYear) {
+        minYear = fruit.harvestedAt.year;
+      }
+    }
+    return minYear;
+  }
+
+  /// [year]년에 심어진 열매 (수확일 기준, #97).
+  List<Fruit> plantedInYear(int year) => List.unmodifiable(
+      plantedFruits.where((f) => f.harvestedAt.year == year));
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 

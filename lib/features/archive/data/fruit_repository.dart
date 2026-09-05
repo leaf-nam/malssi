@@ -17,6 +17,9 @@ abstract class FruitRepository {
     required String memo,
     required int fidelityScore,
   });
+
+  /// 디버그용: 저장소 시각을 [by]만큼 앞당긴다 (날짜 이동, #95).
+  Future<void> debugShiftTime(Duration by);
 }
 
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
@@ -24,7 +27,7 @@ class InMemoryFruitRepository implements FruitRepository {
   InMemoryFruitRepository({DateTime Function()? clock})
       : _clock = clock ?? DateTime.now;
 
-  final DateTime Function() _clock;
+  DateTime Function() _clock;
   final List<Fruit> _fruits = [];
 
   @override
@@ -73,5 +76,11 @@ class InMemoryFruitRepository implements FruitRepository {
         .copyWith(memo: memo, fidelityScore: fidelityScore);
     _fruits[index] = updated;
     return updated;
+  }
+
+  @override
+  Future<void> debugShiftTime(Duration by) async {
+    final base = _clock;
+    _clock = () => base().add(by);
   }
 }

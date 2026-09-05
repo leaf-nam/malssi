@@ -236,14 +236,17 @@ class CollectionNames {
   **명언은 심는 즉시 공개되며, 명언 아래에 성장 에셋이 2시간 간격으로 그려진다**
   (#46, 2026-09-05 개정 — 종전 "성장 완성 시 공개" 폐기).
   해당 테마 명언이 없으면 전체에서 랜덤 선택한다 (폴백).
-- **성장 단계 에셋** (혼합 전략, #40 — `ThemeAssets.growthImage(theme, stage)`):
-  - 0~2단계: 공용 `growth_0.png`·`growth_1.png`·`growth_2.png`
-    (미등록 시 테마 씨앗 이미지로 폴백).
-  - 3~4단계: 테마별 `growth_<이름>_3.png`·`growth_<이름>_4.png`
-    (`<이름>`은 strawberry/orange/lemon/kiwi/blueberry/grape/grapefruit,
-    미등록 시 테마 씨앗 이미지로 폴백).
-  - 5단계(열매): 기존 테마 열매 이미지 재사용 (신규 에셋 불필요).
-  - 필요 신규 에셋: 공용 3개 + 테마별 14개 = 17개.
+- **성장 간격**: 2시간 (`Seed.stageInterval`, #95에서 디버그 5초 폐기).
+  자동 갱신 타이머 15분 (`SeedProvider.refreshInterval`).
+  디버그 날짜 이동: `debugShiftTime()` (씨앗·수확물 저장소 시각 이동).
+- **성장 단계 에셋** (과일별 5단계, #67 — 2026-09-05 확보, 35개):
+  - 0단계: 테마 씨앗 이미지 (`<이름>_seed.png`, 기존).
+  - 1~5단계: `<이름>-<n>.png`
+    (`<이름>`은 strawberry/orange/lemon/kiwi/blueberry/grape/grapefruit).
+  - 완성 화면의 열매는 기존 테마 열매 이미지 (`<이름>.png`) 그대로 재사용.
+  - 종전 혼합 전략(공용 `growth_<n>.png` + `growth_<이름>_<n>.png`, 17개)은 폐기
+    (해당 파일 없이 과일별 에셋으로 대체됨).
+  - 매핑: `ThemeAssets.growthImage(theme, stage)`.
 - **정규 키** (7종, `lib/core/constants/seed_themes.dart`의 `SeedTheme`로 상수화됨):
   `vitality` / `happiness` / `growth` / `health` / `peace` / `relationship` / `wisdom`.
 

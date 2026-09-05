@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
@@ -204,9 +206,111 @@ void main() {
       expect(provider.completedFruit!.fidelityScore, 5);
       expect(provider.errorMessage, isNull);
     });
+
+    test('saveReview locks after the first save (#71)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+      expect(provider.completedFruit, isNotNull);
+
+      await provider.saveReview(memo: '첫 후기', fidelityScore: 4);
+      expect(provider.completedFruit!.memo, '첫 후기');
+
+      // 두 번째 저장은 무시된다 (수정 잠금).
+      await provider.saveReview(memo: '바꾼 후기', fidelityScore: 1);
+      expect(provider.completedFruit!.memo, '첫 후기');
+      expect(provider.completedFruit!.fidelityScore, 4);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('saveReview ignores an empty first save (#71)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+
+      await provider.saveReview(memo: '', fidelityScore: 0);
+
+      expect(provider.completedFruit!.isReviewed, isFalse);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('debugAdvanceOneStage rises exactly one stage (#69)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      expect(provider.todaySeed!.growthStage, 0);
+
+      await provider.debugAdvanceOneStage();
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.todaySeed!.growthStage, 1);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('debugCompleteNow harvests immediately (#69)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
+
+      await provider.debugCompleteNow();
+
+      expect(provider.todaySeed!.isComplete, isTrue);
+      expect(provider.revealedQuote, isNotNull);
+      expect(provider.completedFruit, isNotNull);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('debugAdvanceDay expires locked seeds and creates a new one (#95)',
+        () async {
+      final provider = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 12));
+      await provider.ensureTodaySeed();
+      expect(provider.todaySeed!.id, '2026-09-04');
+
+      await provider.debugAdvanceDay();
+
+      expect(provider.todaySeed!.id, '2026-09-05');
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('debugAdvanceDay completes grown seeds with harvest (#95)',
+        () async {
+      final provider = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 12));
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await provider.debugAdvanceDay();
+
+      // 하루(24시간)가 지나면 완성·수확된다. 만료되지 않는다.
+      expect(provider.todaySeed!.id, '2026-09-04');
+      expect(provider.todaySeed!.isComplete, isTrue);
+      expect(provider.revealedQuote, isNotNull);
+      expect(provider.completedFruit, isNotNull);
+      expect(provider.errorMessage, isNull);
+    });
   });
 
   group('SeedScreen', () {
+    testWidgets('entering the tab refreshes growth state (#62)',
+        (tester) async {
+      // 사전 준비 없이 진입 → 화면이 직접 갱신해 씨앗을 준비한다.
+      final provider = _buildProvider();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
     testWidgets('locked seed shows the plant button', (tester) async {
       final provider = _buildProvider();
       await provider.ensureTodaySeed();
@@ -214,8 +318,76 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('말씨'), findsOneWidget);
       expect(find.text('씨앗 심기'), findsOneWidget);
+      // #59: 말씨 탭 배경은 니어블랙 고정.
+      // (하단 바는 셸이 상주로 들고 있어 화면 트리에 없음, #79.)
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+      expect(scaffold.backgroundColor, AppTheme.abyss);
+    });
+
+    testWidgets('tab switch blends the bar color without sliding (#77)',
+        (tester) async {
+      Color barColor() {
+        final box = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byType(AnimatedContainer),
+            matching: find.byType(DecoratedBox),
+          ),
+        );
+        return (box.decoration as BoxDecoration).color!;
+      }
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: MainBottomNav(currentIndex: 0),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(barColor(), AppTheme.abyss);
+
+      // 탭 전환 → 애니메이션 중간에는 양쪽 끝색과 다른 보간색이다.
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: MainBottomNav(currentIndex: 1),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 125));
+
+      final mid = barColor();
+      expect(mid, isNot(AppTheme.abyss));
+      expect(mid, isNot(AppTheme.navGardenLight));
+
+      await tester.pumpAndSettle();
+      expect(barColor(), AppTheme.navGardenLight);
+    });
+
+    testWidgets('tab bar top padding is painted with the tab color (#81)',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: MainBottomNav(currentIndex: 0),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 상단 패딩이 색상 컨테이너 안에 있어야 배경 노출 줄이 생기지 않는다.
+      expect(
+        find.descendant(
+          of: find.byType(AnimatedContainer),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Padding &&
+                w.padding == const EdgeInsets.only(top: 8),
+          ),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('plant reveals the quote at once with growth below',
@@ -234,7 +406,7 @@ void main() {
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
       // #57: 성장 형태(에셋)만 보이고 단계·안내 문구는 없다.
-      expect(find.textContaining('단계'), findsNothing);
+      expect(find.textContaining('단계 성장 중'), findsNothing);
       expect(find.textContaining('2시간마다'), findsNothing);
       expect(find.byType(Image), findsOneWidget);
       // #51: 명언 영역(2/3) : 성장 에셋(1/3).
@@ -245,11 +417,54 @@ void main() {
       expect(growingFlexes[0], 2);
       expect(growingFlexes[1], 1);
 
-      for (var i = 0; i < 5; i++) {
-        await tester.tap(find.text('디버그: +2시간'));
-        await tester.pumpAndSettle();
-      }
+      // #64: 디버그 5초 간격이라 +1단계는 1단계만 오른다.
+      await tester.tap(find.text('디버그: +1단계'));
+      await tester.pumpAndSettle();
 
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.todaySeed!.growthStage, 1);
+
+      // #69: 열매 만들기는 남은 단계 전부 진행해 즉시 완성한다.
+      await tester.tap(find.text('디버그: 열매 만들기'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isComplete, isTrue);
+      expect(find.textContaining(provider.revealedQuote!.text),
+          findsOneWidget);
+    });
+
+    testWidgets('locked screen advances the day (#95)', (tester) async {
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 12));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(find.text('2026-09-04'), findsOneWidget);
+
+      await tester.tap(find.text('디버그: +1일'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2026-09-05'), findsOneWidget);
+      expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
+    testWidgets('advancing the day completes grown seeds (#95)',
+        (tester) async {
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 12));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('디버그: +1일'));
+      await tester.pumpAndSettle();
+
+      // 하루가 지나면 완성 화면으로 바뀐다 (명언은 그대로).
+      expect(provider.todaySeed!.id, '2026-09-04');
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
@@ -277,10 +492,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
-      for (var i = 0; i < 5; i++) {
-        await tester.tap(find.text('디버그: +2시간'));
-        await tester.pumpAndSettle();
-      }
+      // #69: 열매 만들기로 즉시 완성한다.
+      await tester.tap(find.text('디버그: 열매 만들기'));
+      await tester.pumpAndSettle();
 
       // 완성 화면에는 태그·안내 문구를 노출하지 않는다.
       expect(find.textContaining('#'), findsNothing);
@@ -307,10 +521,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
-      for (var i = 0; i < 5; i++) {
-        await tester.tap(find.text('디버그: +2시간'));
-        await tester.pumpAndSettle();
-      }
+      // #69: 열매 만들기로 즉시 완성한다.
+      await tester.tap(find.text('디버그: 열매 만들기'));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('— 노자'));
       await tester.pumpAndSettle();
@@ -325,6 +538,15 @@ void main() {
       expect(provider.completedFruit!.memo, '오늘 잘 지켰다');
       expect(provider.completedFruit!.fidelityScore, 5);
       expect(find.text('후기 저장하기'), findsNothing);
+
+      // #71: 저장 후에는 읽기만 된다.
+      expect(find.text('눌러서 오늘의 리뷰 보기'), findsOneWidget);
+      await tester.tap(find.text('— 노자'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('오늘 잘 지켰다'), findsOneWidget);
+      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
     });
   });
 }

@@ -164,7 +164,6 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('설정'), findsOneWidget);
       expect(find.text('씨앗 생성 시간'), findsOneWidget);
       expect(find.text('08:00 ›'), findsOneWidget);
       expect(find.text('화면 모드'), findsOneWidget);

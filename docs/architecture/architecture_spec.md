@@ -18,9 +18,12 @@
   `MultiProvider(providers: [...])` (현재 비어 있음, core 서비스 주입 예정)로 감싼
   `MaterialApp.router`를 제공합니다.
 - **라우팅**: `lib/routing/app_router.dart`의 `appRouter`(`GoRouter`, `initialLocation: '/'`).
-  3탭 체제 목표 라우트: `/` (`SeedScreen`, 메인), `/archive` (`ArchiveScreen`, 보관),
-  `/settings` (`SettingsScreen`, 설정). `/auth` (LoginScreen) 잔류 여부는
-  설정 저장 방식 결정 시 확정한다.
+  3탭은 `StatefulShellRoute.indexedStack` + `AppShellView` 셸 구조 (#79):
+  `MainBottomNav` 1개가 셸에 상주하고 `goBranch`로 내용만 교체한다.
+  탭별 분기: `/` (`SeedScreen`, 말씨), `/archive` (`ArchiveScreen`, 정원),
+  `/settings` (`SettingsScreen`, 설정). `/auth` (LoginScreen)는 셸 밖에 둔다.
+  셸에서는 화면이 계속 살아있어 탭 진입 시 `initState`가 돌지 않으므로,
+  셸 탭 핸들러에서 명시적으로 새로고침한다 (말씨 `refreshGrowth()`·정원 `load()`, #62 계승).
   구 라우트(`/home`, `/quote-detail/:quoteId`, `/category`, `/write`, `/liked`, `/mypage`)는
   구현 브랜치에서 제거 예정이며, 현 코드에는 아직 남아 있다.
 - **상태 관리 (혼용 상태)**: `provider`(`AppShell`의 `MultiProvider`,

@@ -21,8 +21,12 @@ class Seed {
   /// 최종 단계 (열매).
   static const maxGrowthStage = 5;
 
-  /// 단계 상승 간격 (시간).
+  /// 단계 상승 간격 (시간). 디버그 빨리감기 단위로도 사용.
   static const stageHours = 2;
+
+  /// 단계 상승 간격. 디버그·릴리즈 동일하게 2시간이다 (#95).
+  /// 디버그에서는 버튼(`+1단계`/`열매 만들기`)으로 당긴다.
+  static const stageInterval = Duration(hours: stageHours);
 
   const Seed({
     required this.id,
@@ -102,7 +106,8 @@ class Seed {
   /// [now] 기준 성장 단계. `growing`이 아니면 저장된 단계 그대로.
   int growthStageAt(DateTime now) {
     if (!isGrowing) return growthStage;
-    final elapsed = now.difference(plantedAt).inHours ~/ Seed.stageHours;
+    final elapsed =
+        now.difference(plantedAt).inSeconds ~/ stageInterval.inSeconds;
     return elapsed.clamp(0, Seed.maxGrowthStage);
   }
 }
