@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class Seed {
   final String id;
   final String dateKey;
@@ -23,14 +21,12 @@ class Seed {
   /// 최종 단계 (열매).
   static const maxGrowthStage = 5;
 
-  /// 단계 상승 간격 (시간, 릴리즈 기준). 디버그 빨리감기 단위로도 사용.
+  /// 단계 상승 간격 (시간). 디버그 빨리감기 단위로도 사용.
   static const stageHours = 2;
 
-  /// 단계 상승 간격. 디버그에서는 5초, 릴리즈에서는 2시간 (#64).
-  /// 테스트(`flutter test`)는 디버그 모드로 실행되므로 5초 기준이다.
-  static Duration get stageInterval => kDebugMode
-      ? const Duration(seconds: 5)
-      : const Duration(hours: stageHours);
+  /// 단계 상승 간격. 디버그·릴리즈 동일하게 2시간이다 (#95).
+  /// 디버그에서는 버튼(`+1단계`/`열매 만들기`)으로 당긴다.
+  static const stageInterval = Duration(hours: stageHours);
 
   const Seed({
     required this.id,

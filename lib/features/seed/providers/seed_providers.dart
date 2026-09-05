@@ -10,10 +10,9 @@ import 'package:malssi/features/seed/domain/seed.dart';
 
 /// 씨앗 탭 상태. `provider` + [ChangeNotifier] 패턴 (컨벤션 §3).
 ///
-/// 성장 플로우 (#40, #46): 심기(명언 즉시 공개) → 단계 간격 성장(0~5단계) →
+/// 성장 플로우 (#40, #46): 심기(명언 즉시 공개) → 2시간 간격 성장(0~5단계) →
 /// 완성 시 열매 수확. 명언 아래에 성장 에셋을 함께 보여준다.
-/// `enableAutoRefresh`가 켜지면 주기적으로 성장을 갱신한다.
-/// 간격은 디버그 5초 / 릴리즈 15분 (#64).
+/// `enableAutoRefresh`가 켜지면 15분마다 성장을 갱신한다 (앱 실사용).
 /// 테스트에서는 꺼둔다 (보류 타이머 방지).
 class SeedProvider extends ChangeNotifier {
   SeedProvider({
@@ -30,10 +29,8 @@ class SeedProvider extends ChangeNotifier {
     }
   }
 
-  /// 자동 갱신 간격. 디버그 5초 / 릴리즈 15분 (#64).
-  static Duration get refreshInterval => kDebugMode
-      ? const Duration(seconds: 5)
-      : const Duration(minutes: 15);
+  /// 자동 갱신 간격 (15분). 디버그·릴리즈 동일 (#95).
+  static const refreshInterval = Duration(minutes: 15);
 
   final SeedRepository _seedRepository;
   final QuoteRepository _quoteRepository;
@@ -146,6 +143,21 @@ class SeedProvider extends ChangeNotifier {
     if (seed == null) return;
     try {
       await _seedRepository.debugFastForward(seedId: seed.id, by: by);
+      _todaySeed = await _seedRepository.getActiveSeed();
+      await _maybeHarvest();
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  /// 디버그용: 날짜를 하루 앞당긴다 (#95). 수확물 날짜도 함께 이동해
+  /// 잔디 날짜와 맞춘다. 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugAdvanceDay() async {
+    try {
+      await _seedRepository.debugShiftTime(const Duration(days: 1));
+      await _fruitRepository.debugShiftTime(const Duration(days: 1));
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
     } catch (e) {
