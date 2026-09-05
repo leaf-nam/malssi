@@ -343,6 +343,47 @@ void main() {
     });
   });
 
+  group('FruitRain layout', () {
+    test('drops do not overlap on a phone screen (#100)', () {
+      final specs = FruitRain.layoutDrops(
+        width: 350,
+        height: 800,
+        random: Random(42),
+      );
+
+      expect(specs.length, FruitRain.dropCount);
+      for (final spec in specs) {
+        expect(spec.size,
+            inInclusiveRange(FruitRain.minSize, FruitRain.maxSize));
+      }
+      // 이웃 중심 간격이 두 방울 반지름 합 + 여유 이상이다.
+      for (var i = 0; i < specs.length; i++) {
+        for (var j = i + 1; j < specs.length; j++) {
+          final distance =
+              (specs[i].center - specs[j].center).distance;
+          final minGap =
+              (specs[i].size + specs[j].size) / 2 + FruitRain.margin;
+          expect(distance, greaterThanOrEqualTo(minGap - 0.01));
+        }
+      }
+    });
+
+    test('phases spread drops across the full height (#103)', () {
+      final specs = FruitRain.layoutDrops(
+        width: 350,
+        height: 800,
+        random: Random(7),
+      );
+
+      final phases = specs.map((s) => s.phase).toList()..sort();
+      expect(phases.first, moreOrLessEquals(0.0));
+      for (var i = 1; i < phases.length; i++) {
+        expect(phases[i] - phases[i - 1],
+            moreOrLessEquals(1 / FruitRain.dropCount, epsilon: 0.001));
+      }
+    });
+  });
+
   group('ArchiveScreen grass grid', () {
     Finder horizontalScroller() => find.byWidgetPredicate(
           (w) =>
@@ -685,13 +726,13 @@ void main() {
       var inBounds = true;
       // 14초 한 주기를 0.5초씩 전진하며 전 방울 위치를 확인한다.
       // 테스트에서는 이미지가 로드 실패해 0으로 그려지지만,
-      // 배치는 모델 크기(최대 48) 기준이므로 그 밴드로 검증한다.
+      // 배치는 모델 크기(최대 64) 기준이므로 그 밴드로 검증한다.
       for (var i = 0; i <= 28; i++) {
         await tester.pump(const Duration(milliseconds: 500));
         for (var d = 0; d < FruitRain.dropCount; d++) {
           final pos = tester
               .getTopLeft(find.byKey(ValueKey('rain-drop-$d')));
-          if (pos.dx < -49.0 || pos.dx > width + 1) {
+          if (pos.dx < -65.0 || pos.dx > width + 1) {
             inBounds = false;
           }
           tops.add(pos.dy);

@@ -60,10 +60,11 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             Positioned.fill(
               child: FruitRain(
                 imagePath: ThemeAssets.fruitImage(state.topTheme),
+                // #101: 비가 내용을 가리지 않게 낮게 유지한다.
                 opacity:
                     Theme.of(context).brightness == Brightness.light
-                        ? 0.16
-                        : 0.22,
+                        ? 0.14
+                        : 0.20,
               ),
             ),
           SafeArea(child: _buildBody(context, state)),
