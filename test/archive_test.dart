@@ -281,6 +281,29 @@ void main() {
               w.scrollDirection == Axis.horizontal,
         );
 
+    testWidgets('scrollbar sits below the cells without overlap (#91)',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      final scroller = tester.widget<SingleChildScrollView>(
+        horizontalScroller(),
+      );
+      expect(scroller.padding,
+          const EdgeInsets.only(bottom: 12));
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('scroll rests on a column boundary at phone width (#83)',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
