@@ -292,9 +292,11 @@ void main() {
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       expect(scaffold.backgroundColor, AppTheme.abyss);
       // #75: 말씨 탭 바도 배경과 동일한 검은색.
+      // #77: 전환 애니메이션 250ms.
       final nav =
-          tester.widget<BottomNavigationBar>(find.byType(BottomNavigationBar));
-      expect(nav.backgroundColor, AppTheme.abyss);
+          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
+      expect((nav.decoration as BoxDecoration).color, AppTheme.abyss);
+      expect(nav.duration, const Duration(milliseconds: 250));
     });
 
     testWidgets('plant reveals the quote at once with growth below',
