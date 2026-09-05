@@ -25,6 +25,23 @@ class ArchiveProvider extends ChangeNotifier {
         for (final fruit in plantedFruits) fruit.harvestDateKey: fruit,
       };
 
+  /// 테마별 심어진 개수 (내림차순, #88). 최다 색깔(#89) 선정에 재사용한다.
+  /// 테마 미분류(`''`)는 제외한다.
+  Map<String, int> get themeCounts {
+    final counts = <String, int>{};
+    for (final fruit in plantedFruits) {
+      if (fruit.theme.isEmpty) continue;
+      counts[fruit.theme] = (counts[fruit.theme] ?? 0) + 1;
+    }
+    final entries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return Map.fromEntries(entries);
+  }
+
+  /// 가장 많이 모은 테마. 없으면 `''` (#89).
+  String get topTheme =>
+      themeCounts.isEmpty ? '' : themeCounts.keys.first;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 

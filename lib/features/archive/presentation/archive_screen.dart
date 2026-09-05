@@ -89,6 +89,10 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                     fontSize: 12, color: colors.onSurfaceVariant),
               ),
             ),
+          if (state.plantedFruits.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            _ThemeStats(counts: state.themeCounts),
+          ],
         ],
       ),
     );
@@ -109,6 +113,66 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         initialScore: fruit.fidelityScore,
         readOnly: true,
       ),
+    );
+  }
+}
+
+/// 모은 색깔·색깔별 개수 통계 (#88). 심어진(후기 완료) 기준, 보유 테마만 내림차순.
+class _ThemeStats extends StatelessWidget {
+  const _ThemeStats({required this.counts});
+
+  final Map<String, int> counts;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final brightness = Theme.of(context).brightness;
+    final divider = Theme.of(context).dividerColor;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '모은 색깔',
+          style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final entry in counts.entries)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  border: Border.all(color: divider),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: ThemeAssets.cellColor(
+                            entry.key, brightness),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${ThemeAssets.labelOf(entry.key)} ${entry.value}개',
+                      style: TextStyle(
+                          fontSize: 12, color: colors.onSurface),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
