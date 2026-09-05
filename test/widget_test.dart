@@ -36,7 +36,7 @@ void main() {
 
     expect(find.byType(BottomNavigationBar), findsOneWidget);
     expect(barColor(), AppTheme.navGardenLight);
-    expect(find.text('최근 1년 · 0개의 열매'), findsOneWidget);
+    expect(find.textContaining('0개의 열매'), findsOneWidget);
 
     // 설정 탭: 회색으로 블렌딩된다.
     await tester.tap(find.text('설정'));

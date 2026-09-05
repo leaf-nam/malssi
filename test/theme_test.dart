@@ -192,11 +192,23 @@ void main() {
       }
     });
 
-    test('trailing future weeks center today (#98)', () {
-      // 휴대폰폭(350): 오늘이 가운데 오도록 뒤에 미래 주를 붙인다.
-      final trailing = ThemeAssets.grassTrailingWeeks(350.0, 23.23);
-
-      expect(trailing, greaterThan(0));
+    test('grass year range covers Jan to Dec (#97)', () {
+      // 2026-01-01(목)이 속한 주 월요일 = 2025-12-29.
+      expect(ThemeAssets.grassYearStart(2026), DateTime(2025, 12, 29));
+      // 2026 범위: 12월 31일(목)이 속한 주까지 53주.
+      expect(ThemeAssets.grassYearWeeks(2026), 53);
+      final start = ThemeAssets.grassYearStart(2026);
+      final weeks = ThemeAssets.grassYearWeeks(2026);
+      final end = start.add(Duration(days: weeks * 7 - 1));
+      // 범위가 1월 1일과 12월 31일을 모두 포함한다.
+      expect(
+          start.isBefore(DateTime(2026, 1, 1)) ||
+              start == DateTime(2026, 1, 1),
+          isTrue);
+      expect(
+          end.isAfter(DateTime(2026, 12, 31)) ||
+              end == DateTime(2026, 12, 31),
+          isTrue);
     });
   });
 

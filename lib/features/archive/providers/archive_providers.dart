@@ -42,6 +42,22 @@ class ArchiveProvider extends ChangeNotifier {
   String get topTheme =>
       themeCounts.isEmpty ? '' : themeCounts.keys.first;
 
+  /// 심어진 연도 중 가장 이른 연도. 없으면 null (#99).
+  int? get firstPlantedYear {
+    if (plantedFruits.isEmpty) return null;
+    var minYear = plantedFruits.first.harvestedAt.year;
+    for (final fruit in plantedFruits) {
+      if (fruit.harvestedAt.year < minYear) {
+        minYear = fruit.harvestedAt.year;
+      }
+    }
+    return minYear;
+  }
+
+  /// [year]년에 심어진 열매 (수확일 기준, #97).
+  List<Fruit> plantedInYear(int year) => List.unmodifiable(
+      plantedFruits.where((f) => f.harvestedAt.year == year));
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 

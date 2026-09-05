@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
@@ -43,6 +44,9 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     });
   }
 
+  /// 선택 연도. null이면 올해 (#99).
+  int? _selectedYear;
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ArchiveProvider>();
@@ -77,19 +81,54 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
       return Center(child: Text('Error: ${state.errorMessage}'));
     }
     final today = ArchiveScreen.debugToday ?? DateTime.now();
+    final viewYear = _selectedYear ?? today.year;
+    final firstYear = state.firstPlantedYear;
+    final yearCount = state.plantedInYear(viewYear).length;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            // #65: 후기를 남긴 열매만 잔디로 심어진다.
-            '최근 1년 · ${state.plantedFruits.length}개의 열매',
-            style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                // #65: 후기를 남긴 열매만 잔디로 심어진다.
+                // #97: 선택 연도 기준 개수.
+                '$viewYear · $yearCount개의 열매',
+                style:
+                    TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+              ),
+              // #99: 처음 심어진 년도까지 돌아갈 수 있다.
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    key: const ValueKey('year-prev'),
+                    icon: const Icon(Icons.chevron_left),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: firstYear != null && viewYear > firstYear
+                        ? () => setState(
+                            () => _selectedYear = viewYear - 1)
+                        : null,
+                  ),
+                  IconButton(
+                    key: const ValueKey('year-next'),
+                    icon: const Icon(Icons.chevron_right),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: viewYear < today.year
+                        ? () => setState(
+                            () => _selectedYear = viewYear + 1)
+                        : null,
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           _GrassGrid(
             today: DateTime(today.year, today.month, today.day),
+            year: viewYear,
             fruitsByDateKey: state.plantedByDateKey,
             onTapFruit: (fruit) => _openDetail(context, fruit),
           ),
@@ -193,17 +232,22 @@ class _ThemeStats extends StatelessWidget {
   }
 }
 
-/// GitHub 잔디 스타일 그리드. 열 = 주(최근 53주), 행 = 월~일.
+/// GitHub 잔디 스타일 그리드. 열 = 주, 행 = 월~일.
+/// [year]년 범위(1월 1일이 속한 주~다음 해 시작 주)를 보여준다 (#97, #99).
 /// 좁으면 가로 스크롤(항상 보이는 스크롤바, #86),
-/// 넓으면 53주 전체 맞춤으로 스크롤 없이 보여준다 (#72).
+/// 넓으면 전체 맞춤으로 스크롤 없이 보여준다 (#72).
 class _GrassGrid extends StatefulWidget {
   const _GrassGrid({
     required this.today,
+    required this.year,
     required this.fruitsByDateKey,
     required this.onTapFruit,
   });
 
   final DateTime today;
+
+  /// 표시 연도.
+  final int year;
   final Map<String, Fruit> fruitsByDateKey;
   final ValueChanged<Fruit> onTapFruit;
 
@@ -214,7 +258,7 @@ class _GrassGrid extends StatefulWidget {
 class _GrassGridState extends State<_GrassGrid> {
   final _scrollController = ScrollController();
 
-  /// 첫 진입 1회에만 오늘 중앙으로 이동한다.
+  /// 첫 진입 1회에만 오늘 중앙으로 이동한다 (당해 연도만).
   bool _centered = false;
 
   @override
@@ -223,20 +267,17 @@ class _GrassGridState extends State<_GrassGrid> {
     super.dispose();
   }
 
-  /// 53주 범위의 시작 월요일 (오늘이 포함된 주 기준 52주 전).
-  DateTime _startMonday() {
-    final today = widget.today;
-    final thisMonday =
-        today.subtract(Duration(days: today.weekday - 1));
-    return thisMonday.subtract(const Duration(days: 7 * 52));
-  }
+  /// 표시 연도 범위의 시작 월요일과 주 수.
+  DateTime get _rangeStart => ThemeAssets.grassYearStart(widget.year);
+  int get _columnCount => ThemeAssets.grassYearWeeks(widget.year);
 
   /// 오늘 칸이 화면 가운데 오도록 초기 스크롤을 이동한다 (#98).
-  /// 스크롤 모드에서 첫 진입 1회만 호출한다. `reverse: true`라 뒤집어서 이동한다.
+  /// 스크롤 모드 + 당해 연도에서 첫 진입 1회만 호출한다.
+  /// `reverse: true`라 뒤집어서 이동한다.
   void _centerOnToday(double viewportWidth, double cell) {
     if (!mounted || !_scrollController.hasClients) return;
     final weekIdx =
-        widget.today.difference(_startMonday()).inDays ~/ 7;
+        widget.today.difference(_rangeStart).inDays ~/ 7;
     final unit = cell + ThemeAssets.grassGap;
     final weekCenter = weekIdx * unit + cell / 2;
     final maxExtent = _scrollController.position.maxScrollExtent;
@@ -250,29 +291,27 @@ class _GrassGridState extends State<_GrassGrid> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
-        if (ThemeAssets.grassFitsAll(maxWidth)) {
-          // 와이드: 53주 전체 맞춤, 스크롤 없음 (#72).
-          final cell = ThemeAssets.grassFitCell(maxWidth);
+        final totalWeeks = _columnCount;
+        if (ThemeAssets.grassFitsAll(maxWidth, weeks: totalWeeks)) {
+          // 와이드: 전체 맞춤, 스크롤 없음 (#72).
+          final cell =
+              ThemeAssets.grassFitCell(maxWidth, weeks: totalWeeks);
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (var week = 0; week < ThemeAssets.grassWeeks; week++)
+              for (var week = 0; week < totalWeeks; week++)
                 _weekColumn(
-                    context, week, cell, ThemeAssets.grassWeeks),
+                    context, week, cell, totalWeeks),
             ],
           );
         }
         // 좁음: 가로 스크롤 (최신 주가 우측, 항상 보이는 스크롤바).
         // 칸을 뷰포트에 맞춰 정지 시 가장자리에 반칸이 없게 한다 (#83).
         // 스크롤바가 칸과 겹치지 않게 아래 간격을 둔다 (#91).
-        // 첫 진입에는 오늘이 가운데 오도록 이동한다 (#98).
-        // 오늘이 마지막 주라 뒤에 미래 주를 붙여야 가운데가 된다.
+        // 첫 진입에는 오늘이 가운데 오도록 이동한다 (당해 연도만, #98).
         final scrollCell = ThemeAssets.grassScrollCell(maxWidth);
-        final trailing =
-            ThemeAssets.grassTrailingWeeks(maxWidth, scrollCell);
-        final totalWeeks = ThemeAssets.grassWeeks + trailing;
-        if (!_centered) {
+        if (!_centered && widget.year == widget.today.year) {
           _centered = true;
           WidgetsBinding.instance.addPostFrameCallback(
               (_) => _centerOnToday(maxWidth, scrollCell));
@@ -301,7 +340,7 @@ class _GrassGridState extends State<_GrassGrid> {
   /// [week]번째 주(월~일) 열 칸. [totalWeeks]는 마지막 주 패딩 판단용.
   Widget _weekColumn(
       BuildContext context, int week, double cell, int totalWeeks) {
-    final startMonday = _startMonday();
+    final startMonday = _rangeStart;
     final divider = Theme.of(context).dividerColor;
 
     return Padding(
@@ -328,8 +367,22 @@ class _GrassGridState extends State<_GrassGrid> {
 
   Widget _cell(
       BuildContext context, DateTime date, Color divider, double cell) {
-    if (date.isAfter(widget.today)) {
+    final todayKey = ArchiveScreen.dateKeyOf(widget.today);
+    final isToday = ArchiveScreen.dateKeyOf(date) == todayKey;
+    // 연도 밖 가장자리는 빈 공간으로 둔다.
+    if (date.year != widget.year) {
       return SizedBox(width: cell, height: cell);
+    }
+    // 미래 날짜는 빈칸으로 보여주되 탭은 불가하다 (#97).
+    if (date.isAfter(widget.today)) {
+      return Container(
+        width: cell,
+        height: cell,
+        decoration: BoxDecoration(
+          border: Border.all(color: divider),
+          borderRadius: BorderRadius.circular(5),
+        ),
+      );
     }
     final fruit = widget.fruitsByDateKey[ArchiveScreen.dateKeyOf(date)];
     if (fruit == null) {
@@ -337,7 +390,9 @@ class _GrassGridState extends State<_GrassGrid> {
         width: cell,
         height: cell,
         decoration: BoxDecoration(
-          border: Border.all(color: divider),
+          border: Border.all(
+              color: isToday ? AppTheme.gold : divider,
+              width: isToday ? 2 : 1),
           borderRadius: BorderRadius.circular(5),
         ),
       );
@@ -352,6 +407,9 @@ class _GrassGridState extends State<_GrassGrid> {
           // #56: 라이트 테마에서는 밝은 열매색, 다크에서는 다크톤.
           color: ThemeAssets.cellColor(
               fruit.theme, Theme.of(context).brightness),
+          border: isToday
+              ? Border.all(color: AppTheme.gold, width: 2)
+              : null,
           borderRadius: BorderRadius.circular(5),
         ),
       ),
