@@ -278,8 +278,7 @@ void main() {
   });
 
   group('growth stages', () {
-    test('growthStageAt rises every 5 seconds in debug and caps at 5',
-        () async {
+    test('growthStageAt rises every 2 hours and caps at 5', () {
       final plantedAt = DateTime(2026, 9, 4, 12);
       final seed = Seed(
         id: '2026-09-04',
@@ -290,15 +289,13 @@ void main() {
         plantedAt: plantedAt,
       );
 
-      // 테스트는 디버그 모드이므로 5초 간격 (#64).
-      expect(Seed.stageInterval, const Duration(seconds: 5));
+      // 디버그·릴리즈 동일 2시간 (#95).
+      expect(Seed.stageInterval, const Duration(hours: 2));
       expect(seed.growthStageAt(plantedAt), 0);
       expect(
-          seed.growthStageAt(plantedAt.add(const Duration(seconds: 11))),
-          2);
+          seed.growthStageAt(plantedAt.add(const Duration(hours: 5))), 2);
       expect(
-          seed.growthStageAt(plantedAt.add(const Duration(seconds: 26))),
-          5);
+          seed.growthStageAt(plantedAt.add(const Duration(hours: 11))), 5);
     });
 
     test('growthStageAt keeps stored stage when not growing', () {
@@ -361,8 +358,7 @@ void main() {
     });
 
     test('getActiveSeed carries over growing seeds past midnight', () async {
-      // 디버그 5초 간격이므로 자정 전후 초 단위로 검증한다.
-      var now = DateTime(2026, 9, 4, 23, 59, 55);
+      var now = DateTime(2026, 9, 4, 20);
       final repo = InMemorySeedRepository(
         clock: () => now,
         themePicker: () => SeedTheme.growth,
@@ -372,10 +368,10 @@ void main() {
       final seed = await repo.getTodaySeed();
       await repo.plantSeed(seedId: seed.id, quote: quote);
 
-      now = DateTime(2026, 9, 5, 0, 0, 8);
+      now = DateTime(2026, 9, 5, 1);
       final active = await repo.getActiveSeed();
 
-      // 심은 씨앗은 만료되지 않고 이월된다 (13초 경과 → 2단계).
+      // 심은 씨앗은 만료되지 않고 이월된다 (5시간 경과 → 2단계).
       expect(active.id, '2026-09-04');
       expect(active.isGrowing, isTrue);
       expect(active.growthStage, 2);

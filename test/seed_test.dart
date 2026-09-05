@@ -266,6 +266,37 @@ void main() {
       expect(provider.completedFruit, isNotNull);
       expect(provider.errorMessage, isNull);
     });
+
+    test('debugAdvanceDay expires locked seeds and creates a new one (#95)',
+        () async {
+      final provider = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 12));
+      await provider.ensureTodaySeed();
+      expect(provider.todaySeed!.id, '2026-09-04');
+
+      await provider.debugAdvanceDay();
+
+      expect(provider.todaySeed!.id, '2026-09-05');
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('debugAdvanceDay completes grown seeds with harvest (#95)',
+        () async {
+      final provider = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 12));
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await provider.debugAdvanceDay();
+
+      // 하루(24시간)가 지나면 완성·수확된다. 만료되지 않는다.
+      expect(provider.todaySeed!.id, '2026-09-04');
+      expect(provider.todaySeed!.isComplete, isTrue);
+      expect(provider.revealedQuote, isNotNull);
+      expect(provider.completedFruit, isNotNull);
+      expect(provider.errorMessage, isNull);
+    });
   });
 
   group('SeedScreen', () {
@@ -397,6 +428,43 @@ void main() {
       await tester.tap(find.text('디버그: 열매 만들기'));
       await tester.pumpAndSettle();
 
+      expect(provider.todaySeed!.isComplete, isTrue);
+      expect(find.textContaining(provider.revealedQuote!.text),
+          findsOneWidget);
+    });
+
+    testWidgets('locked screen advances the day (#95)', (tester) async {
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 12));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(find.text('2026-09-04'), findsOneWidget);
+
+      await tester.tap(find.text('디버그: +1일'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2026-09-05'), findsOneWidget);
+      expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
+    testWidgets('advancing the day completes grown seeds (#95)',
+        (tester) async {
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 12));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('디버그: +1일'));
+      await tester.pumpAndSettle();
+
+      // 하루가 지나면 완성 화면으로 바뀐다 (명언은 그대로).
+      expect(provider.todaySeed!.id, '2026-09-04');
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);

@@ -30,6 +30,9 @@ abstract class SeedRepository {
   /// 디버그용: 심은 시각을 [by]만큼 앞당긴다 (성장 빨리감기).
   Future<Seed> debugFastForward(
       {required String seedId, required Duration by});
+
+  /// 디버그용: 저장소 시각을 [by]만큼 앞당긴다 (날짜 이동, #95).
+  Future<void> debugShiftTime(Duration by);
 }
 
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
@@ -41,7 +44,7 @@ class InMemorySeedRepository implements SeedRepository {
       : _clock = clock ?? DateTime.now,
         _themePicker = themePicker ?? _randomTheme;
 
-  final DateTime Function() _clock;
+  DateTime Function() _clock;
   final String Function() _themePicker;
   final Map<String, Seed> _seeds = {};
 
@@ -161,5 +164,11 @@ class InMemorySeedRepository implements SeedRepository {
     _seeds[seedId] = shifted;
     await refreshGrowth();
     return _seeds[seedId]!;
+  }
+
+  @override
+  Future<void> debugShiftTime(Duration by) async {
+    final base = _clock;
+    _clock = () => base().add(by);
   }
 }

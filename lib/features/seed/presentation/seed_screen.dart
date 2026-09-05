@@ -179,6 +179,20 @@ class _LockedSeed extends StatelessWidget {
                     : const Text('씨앗 심기'),
               ),
             ),
+            if (kDebugMode) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context
+                          .read<SeedProvider>()
+                          .debugAdvanceDay(),
+                  child: const Text('디버그: +1일'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -285,8 +299,11 @@ class _GrowingSeed extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              // #95: 날짜 이동까지 들어가므로 줄바꿈 가능하게 Wrap.
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   OutlinedButton(
                     onPressed: isBusy
@@ -296,7 +313,6 @@ class _GrowingSeed extends StatelessWidget {
                             .debugAdvanceOneStage(),
                     child: const Text('디버그: +1단계'),
                   ),
-                  const SizedBox(width: 8),
                   OutlinedButton(
                     onPressed: isBusy
                         ? null
@@ -304,6 +320,14 @@ class _GrowingSeed extends StatelessWidget {
                             .read<SeedProvider>()
                             .debugCompleteNow(),
                     child: const Text('디버그: 열매 만들기'),
+                  ),
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugAdvanceDay(),
+                    child: const Text('디버그: +1일'),
                   ),
                 ],
               ),
