@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -564,6 +566,46 @@ void main() {
 
       expect(after, isNot(before));
       ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('drops stay within bounds across the full cycle (#94)',
+        (tester) async {
+      const width = 300.0;
+      const height = 600.0;
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: width,
+              height: height,
+              child: FruitRain(imagePath: 'x', opacity: 1),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final tops = <double>[];
+      var inBounds = true;
+      // 14초 한 주기를 0.5초씩 전진하며 전 방울 위치를 확인한다.
+      // 테스트에서는 이미지가 로드 실패해 0으로 그려지지만,
+      // 배치는 모델 크기(최대 48) 기준이므로 그 밴드로 검증한다.
+      for (var i = 0; i <= 28; i++) {
+        await tester.pump(const Duration(milliseconds: 500));
+        for (var d = 0; d < FruitRain.dropCount; d++) {
+          final pos = tester
+              .getTopLeft(find.byKey(ValueKey('rain-drop-$d')));
+          if (pos.dx < -49.0 || pos.dx > width + 1) {
+            inBounds = false;
+          }
+          tops.add(pos.dy);
+        }
+      }
+
+      // 가로 범위를 벗어나지 않고, 세로는 화면 전체를 오간다.
+      expect(inBounds, isTrue);
+      expect(tops.reduce(min) < 0, isTrue);
+      expect(tops.reduce(max) > height, isTrue);
     });
 
     testWidgets('harvested dates show themed cells', (tester) async {

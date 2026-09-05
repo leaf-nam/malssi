@@ -109,22 +109,29 @@ class _FruitRainState extends State<FruitRain>
     // 0~1 진행률. 화면 위에서 시작해 아래로 빠져나간다.
     final progress = (t * drop.speed + drop.phase) % 1.0;
     final top = -drop.size + progress * (height + drop.size * 2);
-    final left = drop.x * width -
-        progress * height * FruitRain.slant -
-        drop.size / 2;
+    // 가로 이동은 순환시킨다. 순환 경계(p=0/1)에서는 방울이 화면 밖에 있어
+    // 보이지 않으므로 끊김이 보이지 않는다 (#94).
+    final spanX = width + drop.size;
+    final left = (drop.x * spanX -
+                progress * (height * FruitRain.slant + drop.size)) %
+            spanX -
+        drop.size;
 
     return Positioned(
       key: ValueKey('rain-drop-$index'),
       left: left,
       top: top,
-      child: Opacity(
-        opacity: widget.opacity,
-        child: Image.asset(
-          widget.imagePath,
-          width: drop.size,
-          height: drop.size,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      // 방울별 리페인트 격리로 끊김을 줄인다.
+      child: RepaintBoundary(
+        child: Opacity(
+          opacity: widget.opacity,
+          child: Image.asset(
+            widget.imagePath,
+            width: drop.size,
+            height: drop.size,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
         ),
       ),
     );
