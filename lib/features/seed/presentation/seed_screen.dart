@@ -45,6 +45,8 @@ class _SeedScreenState extends State<SeedScreen> {
 
   void _openReview(
       BuildContext context, SeedProvider state, Fruit fruit) {
+    // #71: 후기를 저장한 뒤에는 읽기만 가능하다.
+    final readOnly = fruit.isReviewed;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -55,8 +57,11 @@ class _SeedScreenState extends State<SeedScreen> {
         imagePath: ThemeAssets.fruitImage(fruit.theme),
         initialMemo: fruit.memo,
         initialScore: fruit.fidelityScore,
-        onSave: ({required memo, required fidelityScore}) =>
-            state.saveReview(memo: memo, fidelityScore: fidelityScore),
+        readOnly: readOnly,
+        onSave: readOnly
+            ? null
+            : ({required memo, required fidelityScore}) =>
+                state.saveReview(memo: memo, fidelityScore: fidelityScore),
       ),
     );
   }
@@ -350,12 +355,16 @@ class _OpenedQuote extends StatelessWidget {
               ),
             ),
           if (onTapReview != null) ...[
-            const Padding(
-              padding: EdgeInsets.only(top: 8, bottom: 20),
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 20),
               child: Text(
-                '눌러서 오늘의 리뷰 남기기',
+                // #71: 저장 후에는 읽기 안내로 바뀐다.
+                fruit?.isReviewed == true
+                    ? '눌러서 오늘의 리뷰 보기'
+                    : '눌러서 오늘의 리뷰 남기기',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                style:
+                    const TextStyle(fontSize: 11, color: AppTheme.muted),
               ),
             ),
           ],
