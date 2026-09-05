@@ -205,6 +205,35 @@ void main() {
       expect(provider.completedFruit!.fidelityScore, 5);
       expect(provider.errorMessage, isNull);
     });
+
+    test('debugAdvanceOneStage rises exactly one stage (#69)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      expect(provider.todaySeed!.growthStage, 0);
+
+      await provider.debugAdvanceOneStage();
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.todaySeed!.growthStage, 1);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('debugCompleteNow harvests immediately (#69)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
+
+      await provider.debugCompleteNow();
+
+      expect(provider.todaySeed!.isComplete, isTrue);
+      expect(provider.revealedQuote, isNotNull);
+      expect(provider.completedFruit, isNotNull);
+      expect(provider.errorMessage, isNull);
+    });
   });
 
   group('SeedScreen', () {
@@ -249,7 +278,7 @@ void main() {
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
       // #57: 성장 형태(에셋)만 보이고 단계·안내 문구는 없다.
-      expect(find.textContaining('단계'), findsNothing);
+      expect(find.textContaining('단계 성장 중'), findsNothing);
       expect(find.textContaining('2시간마다'), findsNothing);
       expect(find.byType(Image), findsOneWidget);
       // #51: 명언 영역(2/3) : 성장 에셋(1/3).
@@ -260,8 +289,15 @@ void main() {
       expect(growingFlexes[0], 2);
       expect(growingFlexes[1], 1);
 
-      // 디버그 5초 간격이라 빨리감기 1번이면 완성된다 (#64).
-      await tester.tap(find.text('디버그: +2시간'));
+      // #64: 디버그 5초 간격이라 +1단계는 1단계만 오른다.
+      await tester.tap(find.text('디버그: +1단계'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.todaySeed!.growthStage, 1);
+
+      // #69: 열매 만들기는 남은 단계 전부 진행해 즉시 완성한다.
+      await tester.tap(find.text('디버그: 열매 만들기'));
       await tester.pumpAndSettle();
 
       expect(provider.todaySeed!.isComplete, isTrue);
@@ -291,8 +327,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
-      // 디버그 5초 간격이라 빨리감기 1번이면 완성된다 (#64).
-      await tester.tap(find.text('디버그: +2시간'));
+      // #69: 열매 만들기로 즉시 완성한다.
+      await tester.tap(find.text('디버그: 열매 만들기'));
       await tester.pumpAndSettle();
 
       // 완성 화면에는 태그·안내 문구를 노출하지 않는다.
@@ -320,8 +356,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
-      // 디버그 5초 간격이라 빨리감기 1번이면 완성된다 (#64).
-      await tester.tap(find.text('디버그: +2시간'));
+      // #69: 열매 만들기로 즉시 완성한다.
+      await tester.tap(find.text('디버그: 열매 만들기'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('— 노자'));

@@ -281,12 +281,27 @@ class _GrowingSeed extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Center(
-              child: OutlinedButton(
-                onPressed: isBusy
-                    ? null
-                    : () =>
-                        context.read<SeedProvider>().debugAdvanceGrowth(),
-                child: const Text('디버그: +2시간'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugAdvanceOneStage(),
+                    child: const Text('디버그: +1단계'),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugCompleteNow(),
+                    child: const Text('디버그: 열매 만들기'),
+                  ),
+                ],
               ),
             ),
           ),
