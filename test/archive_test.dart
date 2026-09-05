@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +9,7 @@ import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/archive_screen.dart';
+import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/quote.dart';
@@ -15,7 +18,11 @@ import 'package:malssi/features/seed/domain/seed.dart';
 Widget _wrap(ArchiveProvider provider) {
   return MultiProvider(
     providers: [ChangeNotifierProvider.value(value: provider)],
-    child: const MaterialApp(home: ArchiveScreen()),
+    // 열매 비 애니메이션을 멈춰 pumpAndSettle이 끝나게 한다 (#89).
+    child: const TickerMode(
+      enabled: false,
+      child: MaterialApp(home: ArchiveScreen()),
+    ),
   );
 }
 
@@ -482,6 +489,123 @@ void main() {
       expect(find.text('모은 색깔'), findsOneWidget);
       expect(find.text('성장 1개'), findsOneWidget);
       ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('no rain without planted fruits (#89)', (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FruitRain), findsNothing);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('rain shows the top theme fruit behind the grid (#89)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FruitRain), findsOneWidget);
+      // 배경 레이어 + 본문 구조.
+      expect(find.byType(Stack), findsWidgets);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('rain drops move diagonally over time (#89)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      // 티커를 살려 둔다 (무한 애니메이션이라 pumpAndSettle 금지).
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [ChangeNotifierProvider.value(value: provider)],
+          child: const MaterialApp(home: ArchiveScreen()),
+        ),
+      );
+      await tester.pump();
+
+      final before =
+          tester.getTopLeft(find.byKey(const ValueKey('rain-drop-0')));
+      await tester.pump(const Duration(seconds: 3));
+      final after =
+          tester.getTopLeft(find.byKey(const ValueKey('rain-drop-0')));
+
+      expect(after, isNot(before));
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('drops stay within bounds across the full cycle (#94)',
+        (tester) async {
+      const width = 300.0;
+      const height = 600.0;
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: width,
+              height: height,
+              child: FruitRain(imagePath: 'x', opacity: 1),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final tops = <double>[];
+      var inBounds = true;
+      // 14초 한 주기를 0.5초씩 전진하며 전 방울 위치를 확인한다.
+      // 테스트에서는 이미지가 로드 실패해 0으로 그려지지만,
+      // 배치는 모델 크기(최대 48) 기준이므로 그 밴드로 검증한다.
+      for (var i = 0; i <= 28; i++) {
+        await tester.pump(const Duration(milliseconds: 500));
+        for (var d = 0; d < FruitRain.dropCount; d++) {
+          final pos = tester
+              .getTopLeft(find.byKey(ValueKey('rain-drop-$d')));
+          if (pos.dx < -49.0 || pos.dx > width + 1) {
+            inBounds = false;
+          }
+          tops.add(pos.dy);
+        }
+      }
+
+      // 가로 범위를 벗어나지 않고, 세로는 화면 전체를 오간다.
+      expect(inBounds, isTrue);
+      expect(tops.reduce(min) < 0, isTrue);
+      expect(tops.reduce(max) > height, isTrue);
     });
 
     testWidgets('harvested dates show themed cells', (tester) async {
