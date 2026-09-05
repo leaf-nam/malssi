@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
-import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
 
@@ -14,8 +13,8 @@ class SettingsScreen extends StatelessWidget {
     final state = context.watch<SettingsProvider>();
 
     return Scaffold(
+      // 하단 바는 셸(`AppShellView`)이 상주로 들고 있다 (#79).
       body: SafeArea(child: _buildBody(context, state)),
-      bottomNavigationBar: const MainBottomNav(currentIndex: 2),
     );
   }
 

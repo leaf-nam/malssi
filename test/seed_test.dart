@@ -287,17 +287,11 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('말씨'), findsOneWidget);
       expect(find.text('씨앗 심기'), findsOneWidget);
       // #59: 말씨 탭 배경은 니어블랙 고정.
+      // (하단 바는 셸이 상주로 들고 있어 화면 트리에 없음, #79.)
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       expect(scaffold.backgroundColor, AppTheme.abyss);
-      // #75: 말씨 탭 바도 배경과 동일한 검은색.
-      // #77: 전환 애니메이션 250ms.
-      final nav =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
-      expect((nav.decoration as BoxDecoration).color, AppTheme.abyss);
-      expect(nav.duration, const Duration(milliseconds: 250));
     });
 
     testWidgets('tab switch blends the bar color without sliding (#77)',

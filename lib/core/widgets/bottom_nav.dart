@@ -7,9 +7,16 @@ import 'package:malssi/core/theme/app_theme.dart';
 /// 바 배경은 탭별·모드별로 다르다 (#75): 말씨=배경과 동일한 검은색,
 /// 정원=흙색, 설정=회색.
 class MainBottomNav extends StatelessWidget {
-  const MainBottomNav({super.key, required this.currentIndex});
+  const MainBottomNav({
+    super.key,
+    required this.currentIndex,
+    this.onTap,
+  });
 
   final int currentIndex;
+
+  /// 탭 선택 콜백. 없으면 `context.go`로 이동한다.
+  final ValueChanged<int>? onTap;
 
   static const _paths = ['/', '/archive', '/settings'];
 
@@ -47,7 +54,14 @@ class MainBottomNav extends StatelessWidget {
           selectedFontSize: 12.5,
           unselectedFontSize: 12.5,
           currentIndex: currentIndex,
-          onTap: (index) => context.go(_paths[index]),
+          onTap: (index) {
+            final tap = onTap;
+            if (tap != null) {
+              tap(index);
+            } else {
+              context.go(_paths[index]);
+            }
+          },
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.eco), label: '말씨'),
             BottomNavigationBarItem(icon: Icon(Icons.grass), label: '정원'),
