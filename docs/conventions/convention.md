@@ -71,10 +71,15 @@
 
 ## 6. 라우팅
 
-- 신규 화면은 `lib/routing/app_router.dart`에 `GoRoute(path: ...)`로 등록합니다.
-  목표 라우트: `/`, `/archive`, `/settings` (+ `/auth` 잔류 여부 미정).
+- 신규 화면은 `lib/routing/app_router.dart`에 등록합니다.
+  3탭은 `StatefulShellRoute.indexedStack` 분기로 등록하고 (#79),
+  바는 셸(`AppShellView`)이 상주로 들고 있어 화면에 두지 않습니다.
+  목표 라우트: `/`, `/archive`, `/settings` (+ `/auth` 셸 외부).
   구 라우트(`/home`, `/quote-detail/:quoteId`, `/category`, `/write`, `/liked`, `/mypage`)는
   폐기 예정이며 신규 코드에서 연결하지 마십시오.
 - 경로 파라미터는 `state.pathParameters['quoteId'] ?? ''` 패턴으로 안전하게 읽습니다.
 - 화면 이동은 `context.go(...)`를 사용합니다.
-- 탭 이동은 BottomNav 3탭 경유를 원칙으로 합니다. 알림 탭 → `/` 이동도 `context.go('/')`를 사용합니다.
+- 탭 이동은 셸 바 경유를 원칙으로 합니다 (`AppShellView` → `goBranch`, #79).
+  알림 탭 → `/` 이동도 `context.go('/')`를 사용합니다.
+  셸에서는 화면이 유지되므로 탭 선택 시 명시적 새로고침이 필요합니다
+  (말씨 `refreshGrowth()`·정원 `load()` — 셸 핸들러에서 호출).

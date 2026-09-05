@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
-import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
@@ -48,8 +47,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     final state = context.watch<ArchiveProvider>();
 
     return Scaffold(
+      // 하단 바는 셸(`AppShellView`)이 상주로 들고 있다 (#79).
       body: SafeArea(child: _buildBody(context, state)),
-      bottomNavigationBar: const MainBottomNav(currentIndex: 1),
     );
   }
 

@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
-import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/archive_screen.dart';
@@ -293,15 +292,9 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('정원'), findsOneWidget);
       expect(find.text('최근 1년 · 0개의 열매'), findsOneWidget);
       expect(find.text('말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'),
           findsOneWidget);
-      // #75: 정원 탭 바는 흙색 (테스트 기본 밝기=라이트).
-      final nav =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
-      expect((nav.decoration as BoxDecoration).color,
-          AppTheme.navGardenLight);
       ArchiveScreen.debugToday = null;
     });
 

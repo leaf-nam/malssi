@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 import 'package:malssi/features/settings/presentation/settings_screen.dart';
@@ -165,17 +164,11 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      expect(find.text('설정'), findsOneWidget);
       expect(find.text('씨앗 생성 시간'), findsOneWidget);
       expect(find.text('08:00 ›'), findsOneWidget);
       expect(find.text('화면 모드'), findsOneWidget);
       expect(find.text('다크'), findsOneWidget);
       expect(find.byType(Switch), findsOneWidget);
-      // #75: 설정 탭 바는 회색 (테스트 기본 밝기=라이트).
-      final nav =
-          tester.widget<AnimatedContainer>(find.byType(AnimatedContainer));
-      expect((nav.decoration as BoxDecoration).color,
-          AppTheme.navSettingsLight);
     });
 
     testWidgets('toggling the switch disables notifications', (tester) async {
