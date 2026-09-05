@@ -206,6 +206,37 @@ void main() {
       expect(provider.errorMessage, isNull);
     });
 
+    test('saveReview locks after the first save (#71)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+      expect(provider.completedFruit, isNotNull);
+
+      await provider.saveReview(memo: '첫 후기', fidelityScore: 4);
+      expect(provider.completedFruit!.memo, '첫 후기');
+
+      // 두 번째 저장은 무시된다 (수정 잠금).
+      await provider.saveReview(memo: '바꾼 후기', fidelityScore: 1);
+      expect(provider.completedFruit!.memo, '첫 후기');
+      expect(provider.completedFruit!.fidelityScore, 4);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('saveReview ignores an empty first save (#71)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+
+      await provider.saveReview(memo: '', fidelityScore: 0);
+
+      expect(provider.completedFruit!.isReviewed, isFalse);
+      expect(provider.errorMessage, isNull);
+    });
+
     test('debugAdvanceOneStage rises exactly one stage (#69)', () async {
       final provider = _buildProvider();
 
@@ -373,6 +404,15 @@ void main() {
       expect(provider.completedFruit!.memo, '오늘 잘 지켰다');
       expect(provider.completedFruit!.fidelityScore, 5);
       expect(find.text('후기 저장하기'), findsNothing);
+
+      // #71: 저장 후에는 읽기만 된다.
+      expect(find.text('눌러서 오늘의 리뷰 보기'), findsOneWidget);
+      await tester.tap(find.text('— 노자'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('오늘 잘 지켰다'), findsOneWidget);
+      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
     });
   });
 }

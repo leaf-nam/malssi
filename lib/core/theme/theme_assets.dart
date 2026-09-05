@@ -88,4 +88,20 @@ abstract class ThemeAssets {
       brightness == Brightness.light
           ? const Color(0xFFD8D2C7)
           : const Color(0xFF6C707E);
+
+  /// 잔디 그리드 규격 (#72).
+  static const grassWeeks = 53;
+  static const grassGap = 4.0;
+  static const grassMinCell = 22.0;
+  static const grassMaxCell = 30.0;
+
+  /// [maxWidth]에 53주 전체가 최소 칸 이상으로 들어가면 `true` (스크롤 불필요).
+  static bool grassFitsAll(double maxWidth) =>
+      ((maxWidth - (grassWeeks - 1) * grassGap) / grassWeeks) >=
+      grassMinCell;
+
+  /// 전체 맞춤 모드의 칸 크기 (최대치로 상한, 남는 폭은 중앙 정렬).
+  static double grassFitCell(double maxWidth) =>
+      (((maxWidth - (grassWeeks - 1) * grassGap) / grassWeeks))
+          .clamp(grassMinCell, grassMaxCell);
 }

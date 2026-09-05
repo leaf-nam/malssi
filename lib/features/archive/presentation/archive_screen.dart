@@ -123,41 +123,65 @@ class _GrassGrid extends StatelessWidget {
   final Map<String, Fruit> fruitsByDateKey;
   final ValueChanged<Fruit> onTapFruit;
 
-  static const _cellSize = 22.0;
-  static const _cellGap = 4.0;
-
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        if (ThemeAssets.grassFitsAll(maxWidth)) {
+          // 와이드: 53주 전체 맞춤, 스크롤 없음 (#72).
+          final cell = ThemeAssets.grassFitCell(maxWidth);
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var week = 0; week < ThemeAssets.grassWeeks; week++)
+                _weekColumn(context, week, cell),
+            ],
+          );
+        }
+        // 좁음: 기존 가로 스크롤 (최신 주가 우측).
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          reverse: true,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var week = 0; week < ThemeAssets.grassWeeks; week++)
+                _weekColumn(
+                    context, week, ThemeAssets.grassMinCell),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// [week]번째 주(월~일) 열 칸.
+  Widget _weekColumn(BuildContext context, int week, double cell) {
     // 오늘이 포함된 주 월요일 기준, 52주 전 월요일부터 53개 주.
     final thisMonday =
         today.subtract(Duration(days: today.weekday - 1));
     final startMonday = thisMonday.subtract(const Duration(days: 7 * 52));
     final divider = Theme.of(context).dividerColor;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      reverse: true,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: EdgeInsets.only(
+          right: week == ThemeAssets.grassWeeks - 1
+              ? 0
+              : ThemeAssets.grassGap),
+      child: Column(
         children: [
-          for (var week = 0; week < 53; week++)
+          for (var day = 0; day < 7; day++)
             Padding(
               padding: EdgeInsets.only(
-                  right: week == 52 ? 0 : _cellGap),
-              child: Column(
-                children: [
-                  for (var day = 0; day < 7; day++)
-                    Padding(
-                      padding: EdgeInsets.only(
-                          bottom: day == 6 ? 0 : _cellGap),
-                      child: _cell(
-                        context,
-                        startMonday.add(
-                            Duration(days: week * 7 + day)),
-                        divider,
-                      ),
-                    ),
-                ],
+                  bottom:
+                      day == 6 ? 0 : ThemeAssets.grassGap),
+              child: _cell(
+                context,
+                startMonday.add(Duration(days: week * 7 + day)),
+                divider,
+                cell,
               ),
             ),
         ],
@@ -166,15 +190,15 @@ class _GrassGrid extends StatelessWidget {
   }
 
   Widget _cell(
-      BuildContext context, DateTime date, Color divider) {
+      BuildContext context, DateTime date, Color divider, double cell) {
     if (date.isAfter(today)) {
-      return const SizedBox(width: _cellSize, height: _cellSize);
+      return SizedBox(width: cell, height: cell);
     }
     final fruit = fruitsByDateKey[ArchiveScreen.dateKeyOf(date)];
     if (fruit == null) {
       return Container(
-        width: _cellSize,
-        height: _cellSize,
+        width: cell,
+        height: cell,
         decoration: BoxDecoration(
           border: Border.all(color: divider),
           borderRadius: BorderRadius.circular(5),
@@ -185,8 +209,8 @@ class _GrassGrid extends StatelessWidget {
       key: ValueKey('grass-${fruit.harvestDateKey}'),
       onTap: () => onTapFruit(fruit),
       child: Container(
-        width: _cellSize,
-        height: _cellSize,
+        width: cell,
+        height: cell,
         decoration: BoxDecoration(
           // #56: 라이트 테마에서는 밝은 열매색, 다크에서는 다크톤.
           color: ThemeAssets.cellColor(

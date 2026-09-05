@@ -198,13 +198,16 @@ class SeedProvider extends ChangeNotifier {
     _revealedQuote = harvestQuote;
   }
 
-  /// 완성 열매의 후기·점수를 저장한다 (그날의 리뷰, 덮어쓰기 허용).
+  /// 완성 열매의 후기를 저장한다 (그날의 리뷰, #41).
+  /// 첫 저장 이후에는 수정할 수 없고 읽기만 가능하다 (#71).
+  /// 빈 내용(후기 없음 + 별점 0)의 첫 저장은 무시한다 (빈 잠금 방지).
   Future<void> saveReview({
     required String memo,
     required int fidelityScore,
   }) async {
     final fruit = _completedFruit;
-    if (fruit == null) return;
+    if (fruit == null || fruit.isReviewed) return;
+    if (memo.isEmpty && fidelityScore == 0) return;
     _errorMessage = null;
     notifyListeners();
     try {

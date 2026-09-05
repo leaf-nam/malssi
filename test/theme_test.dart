@@ -168,6 +168,16 @@ void main() {
         isNot(ThemeAssets.cellColor('', Brightness.dark)),
       );
     });
+
+    test('grass grid fits all weeks on wide screens (#72)', () {
+      // 휴대폰 세로폭(패딩 제외 ~350) → 스크롤 모드.
+      expect(ThemeAssets.grassFitsAll(350), isFalse);
+      // 와이드(1400) → 53주 전체 맞춤.
+      expect(ThemeAssets.grassFitsAll(1400), isTrue);
+      // 맞춤 칸은 최소~최대 범위로 상한된다.
+      expect(ThemeAssets.grassFitCell(1400), inInclusiveRange(22.0, 30.0));
+      expect(ThemeAssets.grassFitCell(10000), 30.0);
+    });
   });
 
   group('theme selection (random)', () {
