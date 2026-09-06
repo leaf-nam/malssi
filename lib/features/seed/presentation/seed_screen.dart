@@ -190,6 +190,18 @@ class _LockedSeed extends StatelessWidget {
                       ? null
                       : () => context
                           .read<SeedProvider>()
+                          .debugAdvanceHours(1),
+                  child: const Text('디버그: +1시간'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context
+                          .read<SeedProvider>()
                           .debugAdvanceDay(),
                   child: const Text('디버그: +1일'),
                 ),
@@ -323,6 +335,15 @@ class _GrowingSeed extends StatelessWidget {
                             .debugCompleteNow(),
                     child: const Text('디버그: 열매 만들기'),
                   ),
+                  // #115: 공용 시계를 미뤄 전체 플로우를 검증한다.
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugAdvanceHours(1),
+                    child: const Text('디버그: +1시간'),
+                  ),
                   OutlinedButton(
                     onPressed: isBusy
                         ? null
@@ -396,17 +417,33 @@ class _OpenedQuote extends StatelessWidget {
             ),
           ],
           // #109: 완성 상태에서도 날짜를 옮길 수 있어야 다음 날 씨앗을 볼 수 있다.
+          // #115: 공용 시계를 미뤄 전체 플로우를 검증한다.
           if (kDebugMode) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Center(
-                child: OutlinedButton(
-                  onPressed: isBusy
-                      ? null
-                      : () => context
-                          .read<SeedProvider>()
-                          .debugAdvanceDay(),
-                  child: const Text('디버그: +1일'),
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton(
+                      onPressed: isBusy
+                          ? null
+                          : () => context
+                              .read<SeedProvider>()
+                              .debugAdvanceHours(1),
+                      child: const Text('디버그: +1시간'),
+                    ),
+                    OutlinedButton(
+                      onPressed: isBusy
+                          ? null
+                          : () => context
+                              .read<SeedProvider>()
+                              .debugAdvanceDay(),
+                      child: const Text('디버그: +1일'),
+                    ),
+                  ],
                 ),
               ),
             ),

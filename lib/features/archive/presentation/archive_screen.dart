@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
@@ -88,7 +89,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     if (state.errorMessage != null && state.fruits.isEmpty) {
       return Center(child: Text('Error: ${state.errorMessage}'));
     }
-    final today = ArchiveScreen.debugToday ?? DateTime.now();
+    // #115: 정원 오늘이 디버그 시간 이동을 따라간다 (테스트 고정 우선).
+    final today = ArchiveScreen.debugToday ?? DebugClock.now();
     final viewYear = _selectedYear ?? today.year;
     final firstYear = state.firstPlantedYear;
     final yearCount = state.plantedInYear(viewYear).length;
