@@ -58,6 +58,8 @@
   강조 `goldDeep`; 다크 배경 `ink900`, 강조 `gold`.
   잔디 셀 색상은 테마 7종 × 모드 2종 (`ThemeAssets.cellColor(theme, brightness)` —
   라이트는 밝은 열매색, 다크는 다크톤, #56).
+  빨강(활력)·분홍(지혜)은 육안 구분되도록 벌려 둔다 (#117).
+  오늘 칸 테두리는 오늘 씨앗 테마색, 미확정 시 금색 폴백 (#117).
   BottomNav 색상은 하드코딩하지 않고 `bottomNavigationBarTheme`을 따른다.
 
 ## 5. 에러/로딩 처리 패턴
