@@ -274,12 +274,12 @@ REHOME = {
 # 분류 순서 변경에 영향받지 않는다.
 KEEP_KEYS = {
     'vitality': [
-        '02b55668e49c', '182b45802831', '1f3a2190da91', '21e23433b335',
+        '02b55668e49c', '182b45802831', '21e23433b335',
         '2753fb4223dc', '278e2635b1c9', '29d67b3e75ae', '2cd724204935',
-        '3087d6d01c1c', '39fdf8850853', '4793ef1bb05f', '4dd8fa936d4f',
-        '59e56583033f', '5a7ca16cff06', '71962723fd15', '91c4b8fd9020',
+        '3087d6d01c1c', '39fdf8850853', '4793ef1bb05f',
+        '5a7ca16cff06', '71962723fd15', '91c4b8fd9020',
         '986017b01e6c', 'abe25b1f67c9', 'bcfcce53aa97', 'd13c14f23356',
-        'd2aa28aefb2b', 'dde25728358f', 'e1f65f99905b', 'e67a318018cc',
+        'dde25728358f', 'e67a318018cc',
         'f74b0a85f0a6',
     ],
     'health': [
@@ -289,28 +289,28 @@ KEEP_KEYS = {
     ],
     'growth': [
         '0013fab48217', '02a5b5889ad1', '229634780c20', '268f0721f089',
-        '27b1dfd6f0e6', '3e9c09d354a8', '43f011ad92be', '47a81ed5f452',
+        '27b1dfd6f0e6', '43f011ad92be', '47a81ed5f452',
         '521b54078958', '5e5a5476740b', '636b7dbf5b39', '6436a3aa12c9',
         '72fb89303ca8', '78e236dfb079', '79ccf3b00d24', '8056f5718020',
         '81189ec84277', '8b3ad65f05d3', '96d96cc99f35', 'b3a7e3881c89',
         'b68cf33cb1be', 'be0aba265541', 'c0a83a901c7c', 'c17663c67870',
         'cc12bb7ee9d0', 'd7f08d3104f7', 'da752bd0bcb5', 'edb5b261cb40',
-        'f0508e29b68e', 'f870629bbbf8', 'fde2c9167573',
+        'f870629bbbf8', 'fde2c9167573',
     ],
     'relationship': [
-        '1be2cb665ef3', '22993d1c47ff', '25ec696c15ba', '2700c2730c1d',
+        '1be2cb665ef3', '22993d1c47ff', '25ec696c15ba',
         '41cf9a60863e', '520fdd1b1c9d', '5225916bf66e', '5c68382f69a0',
-        '5cc2a608a8dc', '6a3a5d50b841', '770dec299929', '779c6fac5661',
+        '5cc2a608a8dc', '770dec299929', '779c6fac5661',
         '7afa95386d65', '8b14a3dab622', '8cdde556706c', '8dbeedfb36fc',
-        '903cfedfdf52', 'bd2d141bcdc9', 'c83b0243cf12', 'ce7fb9f5651a',
+        '903cfedfdf52', 'ce7fb9f5651a',
         'd45765f42f4d', 'db78c7dbc5f8', 'e41495206b50', 'f08e91a48a55',
         'f3b799826b6f',
     ],
     'wisdom': [
         '03197e069ddc', '042fa16dfe2c', '0922bfcf6568', '0b3f49a8c856',
-        '0b698e77e337', '0bda659bf859', '1763f2fb4205', '2f874e8fc550',
-        '33ad4aeb5665', '3df18cf37bc0', '4070b1e76ca3', '553b0ac8f912',
-        '585ad89baa4f', '5d01bc65dfdd', '64fc2bda365e', '694b7e1f499a',
+        '0b698e77e337', '1763f2fb4205', '2f874e8fc550',
+        '33ad4aeb5665', '3df18cf37bc0', '4070b1e76ca3',
+        '5d01bc65dfdd', '64fc2bda365e', '694b7e1f499a',
         '727a836b5187', '7bd270638660', '7c4c8fa1f67f', '867427e2a727',
         'a286ff0a84cc', 'aa84de9f5e3b', 'c7b470d1bf29', 'ca30e8f9f554',
         'cc36247cbd94', 'cc4de8d4f6cd', 'e455be678eb6', 'ebf3e2f30d0f',
@@ -326,7 +326,6 @@ KEEP_KEYS = {
         'cb562786c413', 'ead400915b39', 'f6dd2ed6dbbe',
     ],
 }
-
 # 단축: 핵심 문장만 남긴 표시용 문구 (원문은 full에 보존).
 # 선정된 키에만 적용된다.
 SHORTEN = {
@@ -371,8 +370,6 @@ SHORTEN = {
         '사람은 다른 사람들을 위해 여기에 있다는 것이다. 무엇보다도 '
         '우리 자신에게 행복을 주는 사람들의 웃음과 안녕을 위해서.',
 }
-
-
 def normalize(text):
     return text.replace('&mdash;', '—').replace('<br/>', '\n').replace('<br>', '\n')
 

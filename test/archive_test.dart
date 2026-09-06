@@ -1023,6 +1023,22 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
+    testWidgets('shows the quote attribution footer (#123)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 정원 하단 구석에 작게 출처가 있다.
+      expect(find.textContaining('위키인용집'), findsOneWidget);
+      expect(find.textContaining('CC BY-SA'), findsOneWidget);
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('harvested dates show themed cells', (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final at = DateTime(2026, 9, 4, 12);

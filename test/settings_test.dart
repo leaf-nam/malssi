@@ -213,8 +213,6 @@ void main() {
       expect(find.text('다크'), findsOneWidget);
       expect(find.text('열매 비 효과'), findsOneWidget);
       expect(find.byType(Switch), findsNWidgets(2));
-      // #123: CC BY-SA 명언 출처 표시.
-      expect(find.textContaining('위키인용집'), findsOneWidget);
     });
 
     testWidgets('toggling the switch disables notifications', (tester) async {
