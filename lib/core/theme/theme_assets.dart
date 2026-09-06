@@ -65,24 +65,25 @@ abstract class ThemeAssets {
   /// 다크톤 7종 (#39).
   /// #117: 빨강(활력)과 분홍(지혜)이 겹쳐 보여서 빨강은 진한 순빨강,
   /// 분홍은 선명한 핫핑크로 벌렸다 (나머지 5종과 충돌 없음).
+  /// #120: 파랑(평온)과 남색(관계)이 겹쳐 보여서 관계는 보라로 바꿨다.
   static const _darkCells = {
     SeedTheme.vitality: Color(0xFFB3261E),
     SeedTheme.happiness: Color(0xFFAC6F08),
     SeedTheme.growth: Color(0xFFA47D06),
     SeedTheme.health: Color(0xFF188A42),
     SeedTheme.peace: Color(0xFF295BAC),
-    SeedTheme.relationship: Color(0xFF4547A9),
+    SeedTheme.relationship: Color(0xFF7B1FA2),
     SeedTheme.wisdom: Color(0xFFE84393),
   };
 
-  /// 라이트용 밝은 열매 7종 (#56, #117에서 빨강/분홍 조정).
+  /// 라이트용 밝은 열매 7종 (#56, #117에서 빨강/분홍, #120에서 관계 조정).
   static const _lightCells = {
     SeedTheme.vitality: Color(0xFFE03131),
     SeedTheme.happiness: Color(0xFFF2994A),
     SeedTheme.growth: Color(0xFFF2C94C),
     SeedTheme.health: Color(0xFF6FCF97),
     SeedTheme.peace: Color(0xFF5B8DEF),
-    SeedTheme.relationship: Color(0xFF9B7EDE),
+    SeedTheme.relationship: Color(0xFF9C4DCC),
     SeedTheme.wisdom: Color(0xFFF5609B),
   };
 

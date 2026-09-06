@@ -144,7 +144,7 @@
 | 🟡 성장 | 노란 씨앗 | 🍋 레몬 | `lemon_seed.png` / `lemon.png` |
 | 🟢 건강 | 초록 씨앗 | 🥝 키위 | `kiwi_seed.png` / `kiwi.png` |
 | 🔵 평온 | 파란 씨앗 | 🫐 블루베리 | `blueberry_seed.png` / `blueberry.png` |
-| 🟦 관계 | 남색 씨앗 | 🍇 포도 | `grape_seed.png` / `grape.png` |
+| 🟪 관계 | 보라 씨앗 | 🍇 포도 | `grape_seed.png` / `grape.png` |
 | 🩷 지혜 | 분홍 자몽 씨앗 | 자몽 | `grapefruit_seed.png` / `grapefruit.png` |
 
 > 변경 이력: 초안의 `보라 지혜 → 블랙베리`는 `분홍 지혜 → 자몽`으로 교체.
