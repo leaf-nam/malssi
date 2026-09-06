@@ -643,6 +643,53 @@ void main() {
       expect(provider.todaySeed!.growthStage, 1);
     });
 
+    testWidgets('growing quote shows its source on demand (#123)',
+        (tester) async {
+      final quote = Quote(
+        id: 'q-source',
+        text: '시간을 아껴라',
+        author: '작자',
+        likes: 0,
+        createdAt: DateTime(2026, 1, 1),
+        theme: SeedTheme.growth,
+        source: '한국어 위키인용집 (CC BY-SA 4.0)',
+      );
+      final provider = SeedProvider(
+        seedRepository: InMemorySeedRepository(
+            themePicker: () => SeedTheme.growth),
+        quoteRepository: InMemoryQuoteRepository(seed: [quote]),
+        fruitRepository: InMemoryFruitRepository(),
+      );
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+
+      // 출처가 있는 명언에만 출처 버튼이 있다.
+      await tester.tap(find.text('출처'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('명언 출처'), findsOneWidget);
+      expect(find.text('한국어 위키인용집 (CC BY-SA 4.0)'),
+          findsOneWidget);
+    });
+
+    testWidgets('quote without source hides the source button (#123)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+
+      // 기본 7시드에는 출처가 없어 버튼이 없다.
+      expect(find.text('출처'), findsNothing);
+    });
+
     testWidgets('locked seed shows the themed seed image', (tester) async {
       final provider =
           _buildProvider(themePicker: () => SeedTheme.growth);

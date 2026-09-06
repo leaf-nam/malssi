@@ -13,6 +13,9 @@ from collections import Counter
 SRC = 'assets/docs/wikiquote.json'
 DST = 'assets/docs/quotes.json'
 
+# 배치 단위 출처 표기 (#123). 위키 외 명언이 생기면 항목별 source로 관리한다.
+SOURCE = '한국어 위키인용집 (CC BY-SA 4.0)'
+
 THEMES = [
     'vitality', 'happiness', 'growth', 'health',
     'peace', 'relationship', 'wisdom',
@@ -449,6 +452,7 @@ def main():
                 'text': display,
                 'author': author,
                 'theme': theme,
+                'source': SOURCE,
             }
             if key[:12] in SHORTEN:
                 entry['text'] = SHORTEN[key[:12]]

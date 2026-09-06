@@ -199,6 +199,7 @@ class SeedProvider extends ChangeNotifier {
           likes: 0,
           createdAt: fruit.harvestedAt,
           theme: fruit.theme,
+          source: fruit.source,
         );
         return;
       }
@@ -274,6 +275,7 @@ class SeedProvider extends ChangeNotifier {
           likes: 0,
           createdAt: fruit.harvestedAt,
           theme: fruit.theme,
+          source: fruit.source,
         );
         return;
       }

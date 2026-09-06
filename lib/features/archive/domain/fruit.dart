@@ -15,6 +15,10 @@ class Fruit {
   /// 그날의 점수 (0~5, `0` = 미평가).
   final int fidelityScore;
 
+  /// 수확 시점의 출처 스냅샷 (`Quote.source` 복사, #123).
+  /// 비어 있으면 출처 버튼을 노출하지 않는다.
+  final String source;
+
   const Fruit({
     required this.id,
     required this.seedId,
@@ -25,6 +29,7 @@ class Fruit {
     this.theme = '',
     this.memo = '',
     this.fidelityScore = 0,
+    this.source = '',
   });
 
   factory Fruit.fromMap(Map<String, dynamic> map) {
@@ -39,6 +44,7 @@ class Fruit {
       theme: map['theme'] ?? '',
       memo: map['memo'] ?? '',
       fidelityScore: map['fidelityScore'] ?? 0,
+      source: map['source'] ?? '',
     );
   }
 
@@ -53,6 +59,7 @@ class Fruit {
       'theme': theme,
       'memo': memo,
       'fidelityScore': fidelityScore,
+      'source': source,
     };
   }
 
@@ -66,6 +73,7 @@ class Fruit {
     String? theme,
     String? memo,
     int? fidelityScore,
+    String? source,
   }) {
     return Fruit(
       id: id ?? this.id,
@@ -77,6 +85,7 @@ class Fruit {
       theme: theme ?? this.theme,
       memo: memo ?? this.memo,
       fidelityScore: fidelityScore ?? this.fidelityScore,
+      source: source ?? this.source,
     );
   }
 

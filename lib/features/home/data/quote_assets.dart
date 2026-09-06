@@ -38,6 +38,7 @@ abstract class QuoteAssets {
     final text = entry['text'];
     final author = entry['author'];
     final theme = entry['theme'];
+    final source = entry['source'];
     if (id is! String || id.isEmpty) {
       throw FormatException('invalid id: $entry');
     }
@@ -50,6 +51,9 @@ abstract class QuoteAssets {
     if (theme is! String || !SeedTheme.isValid(theme)) {
       throw FormatException('invalid theme: $entry');
     }
+    if (source is! String) {
+      throw FormatException('invalid source: $entry');
+    }
     return Quote(
       id: id,
       text: text,
@@ -58,6 +62,7 @@ abstract class QuoteAssets {
       // 원문에 날짜가 없어 에셋 확정일로 둔다.
       createdAt: DateTime(2026, 9, 6),
       theme: theme,
+      source: source,
     );
   }
 }

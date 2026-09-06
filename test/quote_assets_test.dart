@@ -9,23 +9,66 @@ import 'package:malssi/features/home/data/quote_assets.dart';
 void main() {
   group('QuoteAssets.parseQuotes', () {
     test('parses entries and rejects bad themes', () {
+      const source = '한국어 위키인용집 (CC BY-SA 4.0)';
       final quotes = QuoteAssets.parseQuotes(jsonEncode([
-        {'id': 'a', 'text': 't', 'author': 'a', 'theme': 'growth'},
+        {
+          'id': 'a',
+          'text': 't',
+          'author': 'a',
+          'theme': 'growth',
+          'source': source
+        },
       ]));
 
       expect(quotes.single.theme, 'growth');
+      expect(quotes.single.source, source);
       expect(
         () => QuoteAssets.parseQuotes(jsonEncode([
-          {'id': 'a', 'text': 't', 'author': 'a', 'theme': 'nope'},
-        ])),
+              {
+                'id': 'a',
+                'text': 't',
+                'author': 'a',
+                'theme': 'nope',
+                'source': source
+              }
+            ])),
         throwsFormatException,
       );
       expect(
         () => QuoteAssets.parseQuotes(jsonEncode([
-          {'id': 'a', 'text': '', 'author': 'a', 'theme': 'growth'},
-        ])),
+              {
+                'id': 'a',
+                'text': '',
+                'author': 'a',
+                'theme': 'growth',
+                'source': source
+              }
+            ])),
         throwsFormatException,
       );
+      expect(
+        () => QuoteAssets.parseQuotes(jsonEncode([
+              {
+                'id': 'a',
+                'text': 't',
+                'author': 'a',
+                'theme': 'growth',
+                'source': 7
+              }
+            ])),
+        throwsFormatException,
+      );
+    });
+
+    test('harvested quotes keep their source (#123)', () {
+      final quotes = QuoteAssets.parseQuotes(
+        File('assets/docs/quotes.json').readAsStringSync(),
+      );
+
+      expect(quotes, isNotEmpty);
+      for (final quote in quotes) {
+        expect(quote.source.isNotEmpty, isTrue);
+      }
     });
   });
 

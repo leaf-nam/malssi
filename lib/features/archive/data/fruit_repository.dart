@@ -47,6 +47,7 @@ class InMemoryFruitRepository implements FruitRepository {
       author: quote.author,
       harvestedAt: _clock(),
       theme: quote.theme,
+      source: quote.source,
     );
     _fruits.add(fruit);
     return fruit;

@@ -1023,20 +1023,54 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
-    testWidgets('shows the quote attribution footer (#123)',
+    testWidgets('review sheet shows the quote source (#123)',
         (tester) async {
-      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
-      final provider = ArchiveProvider(
-          fruitRepository: InMemoryFruitRepository());
-      await provider.load();
-
-      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              readOnly: true,
+              source: '한국어 위키인용집 (CC BY-SA 4.0)',
+            ),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // 정원 하단 구석에 작게 출처가 있다.
-      expect(find.textContaining('위키인용집'), findsOneWidget);
-      expect(find.textContaining('CC BY-SA'), findsOneWidget);
-      ArchiveScreen.debugToday = null;
+      await tester.tap(find.text('출처'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('명언 출처'), findsOneWidget);
+      expect(find.text('한국어 위키인용집 (CC BY-SA 4.0)'),
+          findsOneWidget);
+    });
+
+    testWidgets('review sheet hides the source button without source',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              readOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('출처'), findsNothing);
     });
 
     testWidgets('harvested dates show themed cells', (tester) async {

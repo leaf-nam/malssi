@@ -8,6 +8,10 @@ class Quote {
   /// 테마 분류 키 (`SeedTheme` 값 중 1개, 미분류는 `''`).
   final String theme;
 
+  /// 명언 출처 표시문 (예: `한국어 위키인용집 (CC BY-SA 4.0)`).
+  /// 비어 있으면 출처 버튼을 노출하지 않는다 (#123).
+  final String source;
+
   const Quote({
     required this.id,
     required this.text,
@@ -15,6 +19,7 @@ class Quote {
     required this.likes,
     required this.createdAt,
     this.theme = '',
+    this.source = '',
   });
 
   factory Quote.fromMap(Map<String, dynamic> map) {
@@ -25,6 +30,7 @@ class Quote {
       likes: map['likes'] ?? 0,
       createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
       theme: map['theme'] ?? '',
+      source: map['source'] ?? '',
     );
   }
 
@@ -36,6 +42,7 @@ class Quote {
       'likes': likes,
       'createdAt': createdAt,
       'theme': theme,
+      'source': source,
     };
   }
 
@@ -46,6 +53,7 @@ class Quote {
     int? likes,
     DateTime? createdAt,
     String? theme,
+    String? source,
   }) {
     return Quote(
       id: id ?? this.id,
@@ -54,6 +62,7 @@ class Quote {
       likes: likes ?? this.likes,
       createdAt: createdAt ?? this.createdAt,
       theme: theme ?? this.theme,
+      source: source ?? this.source,
     );
   }
 }
