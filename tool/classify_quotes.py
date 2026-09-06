@@ -250,32 +250,85 @@ PRIORITY = [
     'growth', 'vitality', 'wisdom',
 ]
 
-# 큐레이션 (2026-09-06, #123 후속).
-# REMOVE: 단편 메모·영문 중복·학술 해설·노골적 폭력/혐오·노골적 성적 내용·정보성 장문.
-# SHORTEN: 핵심 문장만 남긴 표시용 문구 (원문은 full에 보존).
-REMOVE = {
-    '78a4e90d5f55', '3eeb4e7c6335', '418c71998065', '460deebd8f24',
-    'c6e26e709f24', 'ddcb0f918a64', '7ed3a28e39d8', '8f9cfbdf58d0',
-    '7c6ff8547a2a', '01f9ee6dfeeb', '897547307f26', '681b761fa6d1',
-    '44d320251ebf', '04bd950be929', '4279657f6a8a', '81942ec4f048',
-    'cbd7cee58b71', 'ccca825f4bc0', '60d817b9410d', 'e25e35dccc61',
-    '7a4a31583ee3', 'cf0063036d28', '4c966824ae18', '5c276688d9ef',
-    '35ee1f5384b1', 'd28756c1c28b', '797afcd3798a', 'd7dbe47a4336',
-    'e1b0dd7569be', '0b2e7745cd10', '95e498da97dc', 'e4e718c16fd3',
-    '7d1ac8e00efe', '66db2e6a7dab', '048e4b6107d5', '93a36cde9636',
-    '9fd8f1a1ee59', 'fad32241147b', '68cdaaa1b3b0', 'aa114958c037',
-    '1539d93f534f', '577732644b04', 'd3f439d1b1f4', 'c3eb3ba5fceb',
-    'c9b8803c4c53', '76c43485b539', 'ec00e6f17fcf', '0ab32314cc28',
-    '5f6ea7fa5149', '5a3fc7528cc5', '05b8fee5e26e', '1448753da06d',
-    '176a8f276f55', 'ab3f3c3e075b', '4c8acaf9fe17', '103b79437bd6',
-    'e0b370046763', 'af026ba95bb9', 'a28157830eb1', '914d414d883c',
-    'f9260502c256', '390b973c0d31', 'fbc5efbcd7a0', '4e675e2a5e65',
-    'edbe754c6a4f', '7b2875460655', '16c73c5e49e0', '34c19ce70f2e',
-    '1e0f25b1a8d1', 'c1c76cd093c2', '70e9a89d3443', 'a28412105d36',
-    'f9a153ffcc28', '1e801072d88b', 'cab2ed30dc3d', '324aab681e9f',
-    '849193525f2b', '4364d57d51df', 'f6a27778f4cb', '03c2cd9b9d27',
+# 테마 이사 (분류 후 적용).
+# 원래 테마에서 어울리지 않아 더 맞는 테마로 옮긴다.
+REHOME = {
+    '1f3a2190da91': 'vitality',
+    '59e56583033f': 'vitality',
+    'e1f65f99905b': 'vitality',
+    '8b3ad65f05d3': 'growth',
+    '8056f5718020': 'growth',
+    '8cdde556706c': 'relationship',
+    '8b14a3dab622': 'relationship',
+    '22993d1c47ff': 'relationship',
+    '64fc2bda365e': 'wisdom',
+    '727a836b5187': 'wisdom',
+    'e455be678eb6': 'wisdom',
+    'a286ff0a84cc': 'wisdom',
+    'fb887bbad15b': 'wisdom',
 }
 
+# 엄선 확정 키 집합 (2026-09-06 전수 판독 #123 후속).
+# 테마별 30内外 목표. 들어오지 못한 것은 카테고리 불일치·단편·
+# 정보성·극단 사유로 제외. 순번(KEEP) 대신 명시적 키로 고정해
+# 분류 순서 변경에 영향받지 않는다.
+KEEP_KEYS = {
+    'vitality': [
+        '02b55668e49c', '182b45802831', '1f3a2190da91', '21e23433b335',
+        '2753fb4223dc', '278e2635b1c9', '29d67b3e75ae', '2cd724204935',
+        '3087d6d01c1c', '39fdf8850853', '4793ef1bb05f', '4dd8fa936d4f',
+        '59e56583033f', '5a7ca16cff06', '71962723fd15', '91c4b8fd9020',
+        '986017b01e6c', 'abe25b1f67c9', 'bcfcce53aa97', 'd13c14f23356',
+        'd2aa28aefb2b', 'dde25728358f', 'e1f65f99905b', 'e67a318018cc',
+        'f74b0a85f0a6',
+    ],
+    'health': [
+        '11b18ae6a102', '44038ae771af', '4a95b30e8a52', '503e7dce66e6',
+        '745a9824bbbe', '765d345806df', 'a15ba48b2205', 'a760b759c5ce',
+        'b32de1f8f65c', 'b44fa7ddc689', 'be1cb713fa6c', 'f604a11b80bf',
+    ],
+    'growth': [
+        '0013fab48217', '02a5b5889ad1', '229634780c20', '268f0721f089',
+        '27b1dfd6f0e6', '3e9c09d354a8', '43f011ad92be', '47a81ed5f452',
+        '521b54078958', '5e5a5476740b', '636b7dbf5b39', '6436a3aa12c9',
+        '72fb89303ca8', '78e236dfb079', '79ccf3b00d24', '8056f5718020',
+        '81189ec84277', '8b3ad65f05d3', '96d96cc99f35', 'b3a7e3881c89',
+        'b68cf33cb1be', 'be0aba265541', 'c0a83a901c7c', 'c17663c67870',
+        'cc12bb7ee9d0', 'd7f08d3104f7', 'da752bd0bcb5', 'edb5b261cb40',
+        'f0508e29b68e', 'f870629bbbf8', 'fde2c9167573',
+    ],
+    'relationship': [
+        '1be2cb665ef3', '22993d1c47ff', '25ec696c15ba', '2700c2730c1d',
+        '41cf9a60863e', '520fdd1b1c9d', '5225916bf66e', '5c68382f69a0',
+        '5cc2a608a8dc', '6a3a5d50b841', '770dec299929', '779c6fac5661',
+        '7afa95386d65', '8b14a3dab622', '8cdde556706c', '8dbeedfb36fc',
+        '903cfedfdf52', 'bd2d141bcdc9', 'c83b0243cf12', 'ce7fb9f5651a',
+        'd45765f42f4d', 'db78c7dbc5f8', 'e41495206b50', 'f08e91a48a55',
+        'f3b799826b6f',
+    ],
+    'wisdom': [
+        '03197e069ddc', '042fa16dfe2c', '0922bfcf6568', '0b3f49a8c856',
+        '0b698e77e337', '0bda659bf859', '1763f2fb4205', '2f874e8fc550',
+        '33ad4aeb5665', '3df18cf37bc0', '4070b1e76ca3', '553b0ac8f912',
+        '585ad89baa4f', '5d01bc65dfdd', '64fc2bda365e', '694b7e1f499a',
+        '727a836b5187', '7bd270638660', '7c4c8fa1f67f', '867427e2a727',
+        'a286ff0a84cc', 'aa84de9f5e3b', 'c7b470d1bf29', 'ca30e8f9f554',
+        'cc36247cbd94', 'cc4de8d4f6cd', 'e455be678eb6', 'ebf3e2f30d0f',
+        'efff6818836c', 'fb887bbad15b', 'fbedd2ed4200', 'fc54062ef87f',
+    ],
+    'peace': [
+        '0e8e9292ada4', '44196273233b', '89b78a3709b9', 'ae256f74c737',
+        'b222f67feb95', 'be6162d49588', 'f32e22b616dc',
+    ],
+    'happiness': [
+        '0068ddd3a229', '17e74e19205c', '3c1fa24f3824', '70bdea7ce4c6',
+        '904009d02bef', '9243ddc04a90', 'a41e59e6a86f', 'c1d12bcae6aa',
+        'cb562786c413', 'ead400915b39', 'f6dd2ed6dbbe',
+    ],
+}
+
+# 단축: 핵심 문장만 남긴 표시용 문구 (원문은 full에 보존).
+# 선정된 키에만 적용된다.
 SHORTEN = {
     '078ab0363538': '무엇이든 지나치지 말라.',
     'ff799aea4792':
@@ -314,6 +367,9 @@ SHORTEN = {
         '우리가 서로 친절하게 대하고, 우리가 아는 유일한 보금자리인 '
         '창백한 푸른 점을 소중히 보존하는 것이 우리의 의무임을 '
         '강조하고 있는 것입니다.',
+    'ead400915b39':
+        '사람은 다른 사람들을 위해 여기에 있다는 것이다. 무엇보다도 '
+        '우리 자신에게 행복을 주는 사람들의 웃음과 안녕을 위해서.',
 }
 
 
@@ -347,13 +403,10 @@ def main():
     unmatched = []
     tied_total = 0
     dist = Counter()
-    removed = 0
     shortened = 0
+    staged = []
     for d in data:
         key = d['dedup_key']
-        if key[:12] in REMOVE:
-            removed += 1
-            continue
         text = d['quote']
         theme = OVERRIDES.get(key[:12])
         scores = {}
@@ -364,20 +417,38 @@ def main():
                 continue
             if len([t for t, s in scores.items() if s == max(scores.values())]) > 1:
                 tied_total += 1
-        dist[theme] += 1
-        display = normalize(text)
-        entry = {
-            'id': key,
-            'text': display,
-            'author': d.get('author', ''),
-            'theme': theme,
-        }
-        if key[:12] in SHORTEN:
-            entry['text'] = SHORTEN[key[:12]]
-            entry['full'] = display
-            shortened += 1
-        out.append(entry)
-    print(f'total={len(data)} classified={len(out)} unmatched={len(unmatched)} tied={tied_total} removed={removed} shortened={shortened}')
+        theme = REHOME.get(key[:12], theme)
+        staged.append((key, text, d.get('author', ''), theme))
+    by_theme = {}
+    for key, text, author, theme in staged:
+        by_theme.setdefault(theme, []).append((key, text, author))
+    for theme in by_theme:
+        by_theme[theme].sort(key=lambda e: e[0])
+    for theme, entries in by_theme.items():
+        keep_keys = set(KEEP_KEYS.get(theme, []))
+        for key, text, author in entries:
+            if key[:12] not in keep_keys:
+                continue
+            dist[theme] += 1
+            display = normalize(text)
+            entry = {
+                'id': key,
+                'text': display,
+                'author': author,
+                'theme': theme,
+            }
+            if key[:12] in SHORTEN:
+                entry['text'] = SHORTEN[key[:12]]
+                entry['full'] = display
+                shortened += 1
+            out.append(entry)
+    # 선정 무결성: 키 존재를 검증한다.
+    all_keys = {k[:12] for k, _, _, _ in staged}
+    for theme, keys in KEEP_KEYS.items():
+        assert all(k in all_keys for k in keys), f'KEEP_KEYS missing: {theme}'
+    for prefix in REHOME:
+        assert prefix in all_keys, f'REHOME missing: {prefix}'
+    print(f'total={len(data)} selected={len(out)} unmatched={len(unmatched)} tied={tied_total} shortened={shortened}')
     print('dist:', dict(dist))
     if unmatched:
         print(f'--- unmatched samples (max 15) ---')

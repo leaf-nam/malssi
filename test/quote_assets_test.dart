@@ -62,8 +62,10 @@ void main() {
       for (final quote in quotes) {
         counts[quote.theme] = (counts[quote.theme] ?? 0) + 1;
       }
+      // 엄선 후 규모: 전件 100件 이상, 테마별 5件 이상을 유지한다.
+      expect(quotes.length, greaterThanOrEqualTo(100));
       for (final theme in SeedTheme.values) {
-        expect(counts[theme] ?? 0, greaterThanOrEqualTo(20));
+        expect(counts[theme] ?? 0, greaterThanOrEqualTo(5));
       }
     });
   });
