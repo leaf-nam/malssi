@@ -169,8 +169,10 @@ void main() {
       );
     });
 
-    test('red and pink cells are clearly distinct (#117)', () {
-      // 채널 차이 합으로 구분도를 본다 (구 팔레트 <60, 신 팔레트 >170).
+    test('easily confused pairs stay distinct (#117, #120)', () {
+      // 채널 차이 합으로 구분도를 본다.
+      // 빨강·분홍: 구 팔레트 <60, 신 팔레트 >170.
+      // 파랑·보라: 구 팔레트 <100, 신 팔레트 >150.
       int channelGap(Color a, Color b) =>
           (a.r * 255 - b.r * 255).abs().round() +
           (a.g * 255 - b.g * 255).abs().round() +
@@ -178,8 +180,12 @@ void main() {
       for (final brightness in [Brightness.dark, Brightness.light]) {
         final red = ThemeAssets.cellColor(SeedTheme.vitality, brightness);
         final pink = ThemeAssets.cellColor(SeedTheme.wisdom, brightness);
+        final blue = ThemeAssets.cellColor(SeedTheme.peace, brightness);
+        final purple =
+            ThemeAssets.cellColor(SeedTheme.relationship, brightness);
 
         expect(channelGap(red, pink), greaterThan(150));
+        expect(channelGap(blue, purple), greaterThan(150));
       }
     });
 
