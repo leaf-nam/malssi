@@ -85,6 +85,7 @@ class _SeedScreenState extends State<SeedScreen> {
         onTapReview: fruit == null
             ? null
             : () => _openReview(context, state, fruit),
+        isBusy: state.isLoading,
       );
     }
     if (seed.isGrowing) {
@@ -103,6 +104,7 @@ class _SeedScreenState extends State<SeedScreen> {
         onTapReview: fruit == null
             ? null
             : () => _openReview(context, state, fruit),
+        isBusy: state.isLoading,
       );
     }
     return _LockedSeed(
@@ -343,11 +345,13 @@ class _OpenedQuote extends StatelessWidget {
     required this.quote,
     required this.fruit,
     required this.onTapReview,
+    required this.isBusy,
   });
 
   final Quote quote;
   final Fruit? fruit;
   final VoidCallback? onTapReview;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -388,6 +392,22 @@ class _OpenedQuote extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style:
                     const TextStyle(fontSize: 11, color: AppTheme.muted),
+              ),
+            ),
+          ],
+          // #109: 완성 상태에서도 날짜를 옮길 수 있어야 다음 날 씨앗을 볼 수 있다.
+          if (kDebugMode) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Center(
+                child: OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context
+                          .read<SeedProvider>()
+                          .debugAdvanceDay(),
+                  child: const Text('디버그: +1일'),
+                ),
               ),
             ),
           ],

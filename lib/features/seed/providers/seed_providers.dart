@@ -168,11 +168,13 @@ class SeedProvider extends ChangeNotifier {
   }
 
   /// 완성된 씨앗의 열매가 없으면 수확하고 명언을 공개한다.
+  /// 이월된 미수확 완성도 함께 자동 수확해 보관에 남긴다 (#109).
   Future<void> _maybeHarvest() async {
     final seed = _todaySeed;
     if (seed == null || !seed.isComplete || seed.quoteId.isEmpty) {
       // 완성 전이면 기존 복원(구 opened 호환)만 시도한다.
       await _restoreRevealedQuote();
+      await _harvestStaleCompletes();
       return;
     }
     final fruits = await _fruitRepository.getFruits();
@@ -208,6 +210,26 @@ class SeedProvider extends ChangeNotifier {
       }
     }
     _revealedQuote = harvestQuote;
+    await _harvestStaleCompletes();
+  }
+
+  /// 일자 변경선으로 자리를 양보한 과거 `complete` 중 미수확분을 자동 수확한다
+  /// (#109). 어제 키운 열매가 증발하지 않고 보관에 남는다.
+  /// 현재 표시 중인 씨앗은 [_maybeHarvest]가 담당하므로 이미 수확된 것은 건너뛴다.
+  Future<void> _harvestStaleCompletes() async {
+    final seeds = await _seedRepository.getSeedsStream().first;
+    final fruits = await _fruitRepository.getFruits();
+    final harvestedSeedIds = {for (final fruit in fruits) fruit.seedId};
+    for (final seed in seeds) {
+      if (!seed.isComplete || seed.quoteId.isEmpty) continue;
+      if (harvestedSeedIds.contains(seed.id)) continue;
+      final planted = _plantedQuote;
+      final quote = (planted != null && planted.id == seed.quoteId)
+          ? planted
+          : await _findPlantedQuote(seed);
+      await _fruitRepository.harvestFromSeed(seed: seed, quote: quote);
+      harvestedSeedIds.add(seed.id);
+    }
   }
 
   /// 완성 열매의 후기를 저장한다 (그날의 리뷰, #41).

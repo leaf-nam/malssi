@@ -9,8 +9,9 @@ abstract class SeedRepository {
   /// 미심김(`locked`) 씨앗만 자정에 만료시킨다. `growing` 씨앗은 이월된다.
   Future<Seed> getTodaySeed();
 
-  /// 진행 중인 씨앗: `growing` 중 최신 1개 → 미수확 `complete` 최신 1개 →
+  /// 진행 중인 씨앗: `growing` 중 최신 1개 → 당일 `complete` 최신 1개 →
   /// 없으면 오늘 씨앗. 성장 갱신을 먼저 수행한다.
+  /// 일자 변경선 (#109): 지난 `complete`는 오늘 씨앗에 양보한다.
   Future<Seed> getActiveSeed();
 
   Stream<List<Seed>> getSeedsStream();
@@ -88,8 +89,11 @@ class InMemorySeedRepository implements SeedRepository {
         .toList()
       ..sort((a, b) => b.dateKey.compareTo(a.dateKey));
     if (growing.isNotEmpty) return growing.first;
+    // 일자 변경선 (#109): 당일 완성이면 표시하고,
+    // 지난 완성이면 오늘 씨앗에 양보한다.
+    final todayKey = Seed.dateKeyFor(_clock());
     final complete = _seeds.values
-        .where((s) => s.isComplete)
+        .where((s) => s.isComplete && s.dateKey == todayKey)
         .toList()
       ..sort((a, b) => b.dateKey.compareTo(a.dateKey));
     if (complete.isNotEmpty) return complete.first;
