@@ -280,7 +280,7 @@ class CollectionNames {
 | `HashtagRepository` (제거됨, #19) | — | 구 `category` 화면과 함께 제거 |
 | `SubmissionRepository` (제거됨, #19) | — | 구 `my_quote` 화면과 함께 제거 |
 | `SeedRepository` (신규) | `lib/features/seed/data/` (예정)                      | `getTodaySeed`, `getSeedsStream`, `openSeed`                                   |
-| `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순), `updateReview` (후기·점수 저장) |
+| `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순), `updateReview` (후기·점수 저장), `pruneUnreviewedBeforeToday` (이월 만료 폐기, #113) |
 | `SettingsRepository` (신규) | `lib/features/settings/data/` (예정)              | `getSettingsStream`, `updateSeedTime`, `setNotifyEnabled`                      |
 
 > `home_providers.dart`는 `QuoteRepositoryImpl()`을 참조하지만 해당 구현체가
