@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/core/services/debug_clock.dart';
+import 'package:malssi/core/services/local_store.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
 
@@ -42,13 +43,44 @@ abstract class SeedRepository {
 /// 일자별 씨앗 테마는 **랜덤**으로 부여한다 (중복 허용, 2026-09-04 확정).
 /// [themePicker]를 주면 테마 선택을 고정할 수 있다 (테스트용).
 class InMemorySeedRepository implements SeedRepository {
-  InMemorySeedRepository({DateTime Function()? clock, String Function()? themePicker})
+  InMemorySeedRepository(
+      {DateTime Function()? clock,
+      String Function()? themePicker,
+      this._store})
       : _clock = clock ?? DebugClock.now,
         _themePicker = themePicker ?? _randomTheme;
 
   DateTime Function() _clock;
   final String Function() _themePicker;
   final Map<String, Seed> _seeds = {};
+
+  /// 로컬 저장소 (#122). `null`이면 순수 인메모리로 동작한다 (테스트 기본값).
+  final LocalStore? _store;
+
+  static const _dateKeys = {'createdAt', 'plantedAt'};
+
+  /// 저장된 씨앗들을 불러온다. 저장소 미연결·빈 저장소에서는 아무 일도 없다.
+  /// `main()` 시작 시 1회 호출한다.
+  Future<void> load() async {
+    final store = _store;
+    if (store == null) return;
+    final raws = await store.readList(StoreKeys.seeds);
+    _seeds
+      ..clear()
+      ..addEntries(raws.map((raw) {
+        final seed = Seed.fromMap(decodeDates(raw, _dateKeys));
+        return MapEntry(seed.id, seed);
+      }));
+  }
+
+  Future<void> _persist() async {
+    final store = _store;
+    if (store == null) return;
+    await store.writeList(StoreKeys.seeds, [
+      for (final seed in _seeds.values)
+        encodeDates(seed.toMap(), _dateKeys),
+    ]);
+  }
 
   static String _randomTheme() {
     final values = SeedTheme.values;
@@ -65,7 +97,7 @@ class InMemorySeedRepository implements SeedRepository {
       }
     }
     final now = _clock();
-    return _seeds.putIfAbsent(
+    final seed = _seeds.putIfAbsent(
       todayKey,
       () {
         final createdAt = now;
@@ -80,6 +112,8 @@ class InMemorySeedRepository implements SeedRepository {
         );
       },
     );
+    await _persist();
+    return seed;
   }
 
   @override
@@ -118,6 +152,7 @@ class InMemorySeedRepository implements SeedRepository {
     final opened =
         seed.copyWith(quoteId: quote.id, status: SeedStatus.opened);
     _seeds[seedId] = opened;
+    await _persist();
     return opened;
   }
 
@@ -138,6 +173,7 @@ class InMemorySeedRepository implements SeedRepository {
       plantedAt: _clock(),
     );
     _seeds[seedId] = planted;
+    await _persist();
     return planted;
   }
 
@@ -155,6 +191,7 @@ class InMemorySeedRepository implements SeedRepository {
             : SeedStatus.growing,
       );
     }
+    await _persist();
   }
 
   @override

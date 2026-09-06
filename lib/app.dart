@@ -15,16 +15,32 @@ import 'package:malssi/routing/app_router.dart';
 
 class AppShell extends StatelessWidget {
   /// 번들 명언 에셋 로드분. 비어 있으면 저장소가 기본 7시드로 동작한다 (#123).
-  const AppShell({super.key, this.initialQuotes = const []});
+  const AppShell({
+    super.key,
+    this.initialQuotes = const [],
+    this.seedRepository,
+    this.fruitRepository,
+    this.settingsRepository,
+    this.quoteRepository,
+  });
 
   final List<Quote> initialQuotes;
+
+  /// 외부 주입 저장소. `null`이면 인메모리 기본값으로 만든다.
+  /// `main()`에서는 로컬 저장소 연결본을 넘긴다 (#122).
+  final SeedRepository? seedRepository;
+  final FruitRepository? fruitRepository;
+  final SettingsRepository? settingsRepository;
+  final QuoteRepository? quoteRepository;
 
   @override
   Widget build(BuildContext context) {
     final quoteRepository =
-        InMemoryQuoteRepository(seed: initialQuotes);
-    final seedRepository = InMemorySeedRepository();
-    final fruitRepository = InMemoryFruitRepository();
+        this.quoteRepository ?? InMemoryQuoteRepository(seed: initialQuotes);
+    final seedRepository =
+        this.seedRepository ?? InMemorySeedRepository();
+    final fruitRepository =
+        this.fruitRepository ?? InMemoryFruitRepository();
     return MultiProvider(
       providers: [
         Provider<QuoteRepository>.value(value: quoteRepository),
@@ -45,7 +61,8 @@ class AppShell extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => SettingsProvider(
-            settingsRepository: InMemorySettingsRepository(),
+            settingsRepository:
+                settingsRepository ?? InMemorySettingsRepository(),
             onSettingsChanged:
                 ({required hour, required minute, required enabled}) async {
               if (enabled) {

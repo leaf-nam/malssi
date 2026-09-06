@@ -1,3 +1,4 @@
+import 'package:malssi/core/services/local_store.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 
 abstract class SettingsRepository {
@@ -19,7 +20,7 @@ abstract class SettingsRepository {
 
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
 class InMemorySettingsRepository implements SettingsRepository {
-  InMemorySettingsRepository({AppSettings? initial})
+  InMemorySettingsRepository({AppSettings? initial, this._store})
       : _settings = initial ??
             const AppSettings(
               seedTime: AppSettings.defaultSeedTime,
@@ -27,6 +28,28 @@ class InMemorySettingsRepository implements SettingsRepository {
             );
 
   AppSettings _settings;
+
+  /// 로컬 저장소 (#122). `null`이면 순수 인메모리로 동작한다 (테스트 기본값).
+  final LocalStore? _store;
+
+  /// 저장된 설정을 불러온다. 저장소 미연결·빈 저장소에서는 기본값을 유지한다.
+  /// `main()` 시작 시 1회 호출한다.
+  Future<void> load() async {
+    final store = _store;
+    if (store == null) return;
+    final raw = await store.readMap(StoreKeys.settings);
+    if (raw.isEmpty) return;
+    _settings = AppSettings.fromMap(Map<String, dynamic>.from(raw));
+  }
+
+  Future<AppSettings> _save(AppSettings next) async {
+    _settings = next;
+    final store = _store;
+    if (store != null) {
+      await store.writeMap(StoreKeys.settings, next.toMap());
+    }
+    return _settings;
+  }
 
   @override
   Future<AppSettings> getSettings() async => _settings;
@@ -39,14 +62,12 @@ class InMemorySettingsRepository implements SettingsRepository {
     if (!AppSettings.isValidSeedTime(seedTime)) {
       throw ArgumentError('Invalid seedTime (expected HH:mm): $seedTime');
     }
-    _settings = _settings.copyWith(seedTime: seedTime);
-    return _settings;
+    return _save(_settings.copyWith(seedTime: seedTime));
   }
 
   @override
   Future<AppSettings> setNotifyEnabled(bool enabled) async {
-    _settings = _settings.copyWith(notifyEnabled: enabled);
-    return _settings;
+    return _save(_settings.copyWith(notifyEnabled: enabled));
   }
 
   @override
@@ -54,13 +75,11 @@ class InMemorySettingsRepository implements SettingsRepository {
     if (!AppSettings.isValidThemeMode(themeMode)) {
       throw ArgumentError('Invalid themeMode: $themeMode');
     }
-    _settings = _settings.copyWith(themeMode: themeMode);
-    return _settings;
+    return _save(_settings.copyWith(themeMode: themeMode));
   }
 
   @override
   Future<AppSettings> setFruitRainEnabled(bool enabled) async {
-    _settings = _settings.copyWith(fruitRainEnabled: enabled);
-    return _settings;
+    return _save(_settings.copyWith(fruitRainEnabled: enabled));
   }
 }
