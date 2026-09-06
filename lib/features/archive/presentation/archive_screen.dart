@@ -133,18 +133,16 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                             () => _selectedYear = viewYear + 1)
                         : null,
                   ),
-                  // #126: 오늘로 이동. 올해 보기에서는 비활성화한다.
+                  // #126: 오늘로 이동. 올해 보기에서도 중앙으로 이동한다.
                   IconButton(
                     key: const ValueKey('today-button'),
                     tooltip: '오늘로 이동',
                     icon: const Icon(Icons.today),
                     visualDensity: VisualDensity.compact,
-                    onPressed: viewYear == today.year
-                        ? null
-                        : () => setState(() {
-                              _selectedYear = null;
-                              _centerTick++;
-                            }),
+                    onPressed: () => setState(() {
+                      _selectedYear = null;
+                      _centerTick++;
+                    }),
                   ),
                 ],
               ),

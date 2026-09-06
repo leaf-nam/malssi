@@ -992,13 +992,14 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      // 올해 보기에서는 오늘 버튼이 비활성화되어 있다.
       IconButton todayButton() => tester.widget<IconButton>(
             find.byKey(const ValueKey('today-button')),
           );
-      expect(todayButton().onPressed, isNull);
 
-      // 작년으로 이동하면 버튼이 켜진다.
+      // 올해 보기에서도 버튼이 켜져 있다.
+      expect(todayButton().onPressed, isNotNull);
+
+      // 작년으로 이동하면 올해 복귀 + 버튼 유지.
       await tester.tap(find.byKey(const ValueKey('year-prev')));
       await tester.pumpAndSettle();
 
@@ -1010,7 +1011,48 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('2026 · 1개의 열매'), findsOneWidget);
-      expect(todayButton().onPressed, isNull);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('today button recenters scrolled grid (#126)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '올해 열매', at: at);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      double gridPixels() => tester
+          .state<ScrollableState>(find.byWidgetPredicate(
+              (w) => w is Scrollable && w.axis == Axis.horizontal))
+          .position
+          .pixels;
+      final centered = gridPixels();
+
+      // 옆으로 스크롤해서 오늘에서 멀어진다.
+      await tester.drag(
+          find.byWidgetPredicate(
+              (w) => w is Scrollable && w.axis == Axis.horizontal),
+          const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      expect(gridPixels(), isNot(centered));
+
+      // 올해 보기에서도 오늘 버튼을 누르면 중앙으로 돌아온다.
+      await tester.tap(find.byKey(const ValueKey('today-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2026 · 1개의 열매'), findsOneWidget);
+      expect(gridPixels(), centered);
       ArchiveScreen.debugToday = null;
     });
 
