@@ -14,14 +14,20 @@ import 'package:malssi/features/archive/presentation/archive_screen.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
+import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
+import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
+import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
 
 /// #108: 정원 화면은 열매 비 on/off 설정을 함께 본다.
 /// [settings]를 주지 않으면 미로드 상태(기본값 on) provider를 쓴다.
-Widget _wrap(ArchiveProvider provider, {SettingsProvider? settings}) {
+/// #117: 오늘 테두리에 오늘 씨앗 테마를 함께 본다.
+/// [seed]를 주지 않으면 미로드 상태(금색 폴백) provider를 쓴다.
+Widget _wrap(ArchiveProvider provider,
+    {SettingsProvider? settings, SeedProvider? seed}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: provider),
@@ -29,6 +35,14 @@ Widget _wrap(ArchiveProvider provider, {SettingsProvider? settings}) {
         value: settings ??
             SettingsProvider(
               settingsRepository: InMemorySettingsRepository(),
+            ),
+      ),
+      ChangeNotifierProvider.value(
+        value: seed ??
+            SeedProvider(
+              seedRepository: InMemorySeedRepository(),
+              quoteRepository: InMemoryQuoteRepository(),
+              fruitRepository: InMemoryFruitRepository(),
             ),
       ),
     ],
@@ -828,6 +842,13 @@ void main() {
                 settingsRepository: InMemorySettingsRepository(),
               ),
             ),
+            ChangeNotifierProvider(
+              create: (_) => SeedProvider(
+                seedRepository: InMemorySeedRepository(),
+                quoteRepository: InMemoryQuoteRepository(),
+                fruitRepository: InMemoryFruitRepository(),
+              ),
+            ),
           ],
           child: const MaterialApp(home: ArchiveScreen()),
         ),
@@ -952,7 +973,7 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      // 오늘 빈칸에 금 테두리가 정확히 1개 있다.
+      // 오늘 씨앗이 없으면 금 테두리 폴백이 정확히 1개 있다 (#117).
       final goldCells = find.byWidgetPredicate(
         (w) =>
             w is Container &&
@@ -964,6 +985,41 @@ void main() {
                 AppTheme.gold,
       );
       expect(goldCells, findsOneWidget);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('today outline follows the seed theme (#117)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final seedProvider = SeedProvider(
+        seedRepository: InMemorySeedRepository(
+          themePicker: () => SeedTheme.vitality,
+        ),
+        quoteRepository: InMemoryQuoteRepository(),
+        fruitRepository: InMemoryFruitRepository(),
+      );
+      await seedProvider.ensureTodaySeed();
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider, seed: seedProvider));
+      await tester.pumpAndSettle();
+
+      // 오늘 빈칸 테두리가 오늘 씨앗 테마색이다 (테스트 기본 라이트 모드).
+      final expected =
+          ThemeAssets.cellColor(SeedTheme.vitality, Brightness.light);
+      bool borderIs(Color color, Widget w) =>
+          w is Container &&
+          w.decoration is BoxDecoration &&
+          (w.decoration as BoxDecoration).border is Border &&
+          ((w.decoration as BoxDecoration).border as Border).top.color ==
+              color;
+      expect(find.byWidgetPredicate((w) => borderIs(expected, w)),
+          findsOneWidget);
+      // 금색 폴백은 나타나지 않는다.
+      expect(find.byWidgetPredicate((w) => borderIs(AppTheme.gold, w)),
+          findsNothing);
       ArchiveScreen.debugToday = null;
     });
 

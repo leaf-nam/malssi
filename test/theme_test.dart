@@ -169,6 +169,20 @@ void main() {
       );
     });
 
+    test('red and pink cells are clearly distinct (#117)', () {
+      // 채널 차이 합으로 구분도를 본다 (구 팔레트 <60, 신 팔레트 >170).
+      int channelGap(Color a, Color b) =>
+          (a.r * 255 - b.r * 255).abs().round() +
+          (a.g * 255 - b.g * 255).abs().round() +
+          (a.b * 255 - b.b * 255).abs().round();
+      for (final brightness in [Brightness.dark, Brightness.light]) {
+        final red = ThemeAssets.cellColor(SeedTheme.vitality, brightness);
+        final pink = ThemeAssets.cellColor(SeedTheme.wisdom, brightness);
+
+        expect(channelGap(red, pink), greaterThan(150));
+      }
+    });
+
     test('grass grid fits all weeks on wide screens (#72)', () {
       // 휴대폰 세로폭(패딩 제외 ~350) → 스크롤 모드.
       expect(ThemeAssets.grassFitsAll(350), isFalse);

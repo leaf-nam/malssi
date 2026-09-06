@@ -7,6 +7,7 @@ import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
+import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
 
 /// 보관 탭. 1년 단위 잔디 그리드로 수확 현황을 보여준다.
@@ -94,6 +95,10 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     final viewYear = _selectedYear ?? today.year;
     final firstYear = state.firstPlantedYear;
     final yearCount = state.plantedInYear(viewYear).length;
+    // #117: 오늘 테두리는 오늘 도착한 씨앗의 테마색으로 표시한다.
+    // 씨앗이 아직 없으면 기존 금색 폴백.
+    final todayTheme =
+        context.watch<SeedProvider>().todaySeed?.theme;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
@@ -140,6 +145,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             today: DateTime(today.year, today.month, today.day),
             year: viewYear,
             fruitsByDateKey: state.plantedByDateKey,
+            todayTheme: todayTheme,
             onTapFruit: (fruit) => _openDetail(context, fruit),
           ),
           if (state.plantedFruits.isEmpty)
@@ -251,6 +257,7 @@ class _GrassGrid extends StatefulWidget {
     required this.today,
     required this.year,
     required this.fruitsByDateKey,
+    required this.todayTheme,
     required this.onTapFruit,
   });
 
@@ -259,6 +266,10 @@ class _GrassGrid extends StatefulWidget {
   /// 표시 연도.
   final int year;
   final Map<String, Fruit> fruitsByDateKey;
+
+  /// 오늘 도착한 씨앗의 테마. 오늘 테두리 색으로 쓴다 (#117).
+  /// `null`/빈 값이면 금색 폴백.
+  final String? todayTheme;
   final ValueChanged<Fruit> onTapFruit;
 
   @override
@@ -379,6 +390,12 @@ class _GrassGridState extends State<_GrassGrid> {
       BuildContext context, DateTime date, Color divider, double cell) {
     final todayKey = ArchiveScreen.dateKeyOf(widget.today);
     final isToday = ArchiveScreen.dateKeyOf(date) == todayKey;
+    // #117: 오늘 테두리는 오늘 씨앗의 테마색, 미확정이면 금색 폴백.
+    final todayTheme = widget.todayTheme;
+    final outline = (todayTheme == null || todayTheme.isEmpty)
+        ? AppTheme.gold
+        : ThemeAssets.cellColor(
+            todayTheme, Theme.of(context).brightness);
     // 연도 밖 가장자리는 빈 공간으로 둔다.
     if (date.year != widget.year) {
       return SizedBox(width: cell, height: cell);
@@ -401,7 +418,7 @@ class _GrassGridState extends State<_GrassGrid> {
         height: cell,
         decoration: BoxDecoration(
           border: Border.all(
-              color: isToday ? AppTheme.gold : divider,
+              color: isToday ? outline : divider,
               width: isToday ? 2 : 1),
           borderRadius: BorderRadius.circular(5),
         ),
@@ -418,7 +435,7 @@ class _GrassGridState extends State<_GrassGrid> {
           color: ThemeAssets.cellColor(
               fruit.theme, Theme.of(context).brightness),
           border: isToday
-              ? Border.all(color: AppTheme.gold, width: 2)
+              ? Border.all(color: outline, width: 2)
               : null,
           borderRadius: BorderRadius.circular(5),
         ),
