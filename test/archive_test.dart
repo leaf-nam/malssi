@@ -60,6 +60,7 @@ Future<void> _harvest(
   required String text,
   required DateTime at,
   String theme = '',
+  String source = '',
 }) {
   return repo.harvestFromSeed(
     seed: Seed(
@@ -78,6 +79,7 @@ Future<void> _harvest(
       likes: 0,
       createdAt: at,
       theme: theme,
+      source: source,
     ),
   );
 }
@@ -1023,6 +1025,56 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
+    testWidgets('review sheet shows the quote source (#123)',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              readOnly: true,
+              source: '한국어 위키인용집 (CC BY-SA 4.0)',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('출처'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('명언 출처'), findsOneWidget);
+      expect(find.text('한국어 위키인용집 (CC BY-SA 4.0)'),
+          findsOneWidget);
+    });
+
+    testWidgets('review sheet hides the source button without source',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              readOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('출처'), findsNothing);
+    });
+
     testWidgets('harvested dates show themed cells', (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final at = DateTime(2026, 9, 4, 12);
@@ -1079,6 +1131,37 @@ void main() {
       // #48: 보관에서는 저장 UI가 없다.
       expect(find.text('후기 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('detail card exposes the quote source button (#123)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth,
+          source: '한국어 위키인용집 (CC BY-SA 4.0)');
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester
+          .tap(find.byKey(const ValueKey('grass-2026-09-04')));
+      await tester.pumpAndSettle();
+
+      // 날짜별 명언 조회에서 출처가 전달된다.
+      // (다이얼로그 동작은 후기 카드 단독 테스트에서 검증.)
+      expect(find.text('출처'), findsOneWidget);
       ArchiveScreen.debugToday = null;
     });
 

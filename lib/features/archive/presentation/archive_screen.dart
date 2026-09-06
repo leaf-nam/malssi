@@ -183,6 +183,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         initialMemo: fruit.memo,
         initialScore: fruit.fidelityScore,
         readOnly: true,
+        // #123: 날짜별 명언 조회에서도 출처를 볼 수 있다.
+        source: fruit.source,
       ),
     );
   }

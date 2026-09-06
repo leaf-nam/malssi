@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/widgets/source_dialog.dart';
 
 /// 열매 리뷰 카드 (별점 + 한줄 후기).
 /// 메인(완성 열매 탭)에서는 작성용으로, 보관(잔디 상세)에서는 읽기 전용으로 쓴다.
@@ -16,6 +17,8 @@ class FruitReviewSheet extends StatefulWidget {
     required this.initialScore,
     this.readOnly = false,
     this.onSave,
+    // #123: 명언별 출처. 비어 있으면 출처 버튼을 숨긴다.
+    this.source = '',
   }) : assert(readOnly || onSave != null,
             '작성 모드에서는 onSave가 필요합니다.');
 
@@ -25,6 +28,7 @@ class FruitReviewSheet extends StatefulWidget {
   final String imagePath;
   final String initialMemo;
   final int initialScore;
+  final String source;
 
   /// `true`면 별점·후기를 표시만 하고 입력 UI를 숨긴다.
   final bool readOnly;
@@ -104,6 +108,11 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            if (widget.source.isNotEmpty)
+              QuoteSourceButton(
+                source: widget.source,
+                color: colors.onSurfaceVariant,
+              ),
             const SizedBox(height: 16),
             const Text('오늘의 점수', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 8),

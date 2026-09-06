@@ -66,6 +66,7 @@ class CollectionNames {
 | likes | `int` | `likes` | `0` |
 | createdAt | `DateTime` | `createdAt` | `DateTime.now()` |
 | theme | `String` | `theme` | `''` (테마 미분류, `SeedTheme` 키 값 — §4.11) |
+| source | `String` | `source` | `''` (명언 출처 표시문, 비어 있으면 출처 버튼 숨김, #123) |
 
 > 2026-09-05: 해시태그(`tags`) 필드 제거 — 해시태그 기능 미사용 확정 (#54 작업에서 함께 제외).
 
@@ -201,8 +202,9 @@ class CollectionNames {
 | theme       | `String`   | `theme`      | `''` (수확 시점 `Quote.theme` 스냅샷 — §4.11) |
 | memo        | `String`   | `memo`       | `''` (그날의 후기, 미작성) |
 | fidelityScore | `int`    | `fidelityScore` | `0` (그날의 점수 0~5, `0` = 미평가) |
+| source      | `String`   | `source`     | `''` (수확 시점 `Quote.source` 스냅샷, #123) |
 
-- **스냅샷 규칙**: `text`/`author`/`theme`은 수확 시점의 `Quote` 복사본이다.
+- **스냅샷 규칙**: `text`/`author`/`theme`/`source`은 수확 시점의 `Quote` 복사본이다.
   원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
   `memo`/`fidelityScore`는 말씨 탭의 완성 열매 흐름에서 작성하고 (#41),
   보관 상세 카드에서는 읽기만 한다 (#48).
@@ -237,6 +239,14 @@ class CollectionNames {
   **명언은 심는 즉시 공개되며, 명언 아래에 성장 에셋이 2시간 간격으로 그려진다**
   (#46, 2026-09-05 개정 — 종전 "성장 완성 시 공개" 폐기).
   해당 테마 명언이 없으면 전체에서 랜덤 선택한다 (폴백).
+- **명언 원천** (#123): `assets/docs/quotes.json` 108件 (원본 `wikiquote.json`
+  719件에서 엄선 — 페미니즘 사상·인용부호 포함·생존 인물 등 제외,
+  카테고리 불일치·단편·정보성·극단 제외, 250자 초과는 핵심문장으로 단축,
+  한국어 위키인용집, CC BY-SA 4.0).
+  항목별 `source`로 출처를 관리하고, 명언이 보이는 위치(말씨 탭·후기 카드)의
+  출처 버튼으로 확인한다.
+  `tool/classify_quotes.py`로 7테마 분류·선정. 앱 시작 시 `QuoteAssets`로 읽어
+  명언 풀로 사용하고, 로드 실패 시 기본 7시드로 동작한다.
 - **성장 간격**: 2시간 (`Seed.stageInterval`, #95에서 디버그 5초 폐기).
   자동 갱신 타이머 15분 (`SeedProvider.refreshInterval`).
   디버그 날짜 이동: `debugShiftTime()` (씨앗·수확물 저장소 시각 이동).

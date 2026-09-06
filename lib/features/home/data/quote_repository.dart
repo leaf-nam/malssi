@@ -21,7 +21,9 @@ abstract class QuoteRepository {
 /// In-memory implementation used until the Firestore backend is connected.
 /// Seed data only; no persistence across restarts.
 class InMemoryQuoteRepository implements QuoteRepository {
-  InMemoryQuoteRepository({List<Quote>? seed}) : _quotes = List.of(seed ?? _defaultSeed);
+  InMemoryQuoteRepository({List<Quote>? seed})
+      : _quotes = List.of(
+            seed == null || seed.isEmpty ? _defaultSeed : seed);
 
   static final List<Quote> _defaultSeed = [
     Quote(

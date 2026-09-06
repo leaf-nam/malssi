@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
+import 'package:malssi/core/widgets/source_dialog.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
@@ -57,6 +58,8 @@ class _SeedScreenState extends State<SeedScreen> {
         initialMemo: fruit.memo,
         initialScore: fruit.fidelityScore,
         readOnly: readOnly,
+        // #123: 명언별 출처를 후기 카드에서도 볼 수 있다.
+        source: fruit.source,
         onSave: readOnly
             ? null
             : ({required memo, required fidelityScore}) =>
@@ -216,6 +219,7 @@ class _LockedSeed extends StatelessWidget {
 
 /// 명언 + 저자 블록. 성장/완성 화면에서 재사용한다.
 /// 잠금 상태 명언 노출(후속)에도 그대로 얹을 수 있도록 분리했다 (#51).
+/// 출처가 비어 있지 않으면 저자 오른쪽 구석에 작게 출처 버튼을 보여준다 (#123).
 class _QuoteBlock extends StatelessWidget {
   const _QuoteBlock({required this.quote});
 
@@ -241,6 +245,11 @@ class _QuoteBlock extends StatelessWidget {
             color: AppTheme.paper,
           ),
         ),
+        if (quote.source.isNotEmpty)
+          QuoteSourceButton(
+            source: quote.source,
+            color: AppTheme.muted,
+          ),
       ],
     );
   }
