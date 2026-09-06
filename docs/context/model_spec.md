@@ -237,6 +237,10 @@ class CollectionNames {
   **명언은 심는 즉시 공개되며, 명언 아래에 성장 에셋이 2시간 간격으로 그려진다**
   (#46, 2026-09-05 개정 — 종전 "성장 완성 시 공개" 폐기).
   해당 테마 명언이 없으면 전체에서 랜덤 선택한다 (폴백).
+- **명언 원천** (#123): `assets/docs/quotes.json` 719件 (원본 `wikiquote.json`,
+  한국어 위키인용집, CC BY-SA 4.0 — 설정 탭에 출처 표시).
+  `tool/classify_quotes.py`로 7테마 분류. 앱 시작 시 `QuoteAssets`로 읽어
+  명언 풀로 사용하고, 로드 실패 시 기본 7시드로 동작한다.
 - **성장 간격**: 2시간 (`Seed.stageInterval`, #95에서 디버그 5초 폐기).
   자동 갱신 타이머 15분 (`SeedProvider.refreshInterval`).
   디버그 날짜 이동: `debugShiftTime()` (씨앗·수확물 저장소 시각 이동).

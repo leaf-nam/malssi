@@ -6,6 +6,7 @@ import 'package:malssi/features/auth/data/dummy_auth_service.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
+import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
@@ -13,11 +14,15 @@ import 'package:malssi/features/settings/providers/settings_providers.dart';
 import 'package:malssi/routing/app_router.dart';
 
 class AppShell extends StatelessWidget {
-  const AppShell({super.key});
+  /// 번들 명언 에셋 로드분. 비어 있으면 저장소가 기본 7시드로 동작한다 (#123).
+  const AppShell({super.key, this.initialQuotes = const []});
+
+  final List<Quote> initialQuotes;
 
   @override
   Widget build(BuildContext context) {
-    final quoteRepository = InMemoryQuoteRepository();
+    final quoteRepository =
+        InMemoryQuoteRepository(seed: initialQuotes);
     final seedRepository = InMemorySeedRepository();
     final fruitRepository = InMemoryFruitRepository();
     return MultiProvider(

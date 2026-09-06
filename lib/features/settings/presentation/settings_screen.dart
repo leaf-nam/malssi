@@ -80,6 +80,14 @@ class SettingsScreen extends StatelessWidget {
             style: TextStyle(fontSize: 11.5, color: AppTheme.muted),
           ),
         ),
+        // #123: CC BY-SA 4.0 명언 출처 표시 의무.
+        const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+            '명언 출처: 한국어 위키인용집 (CC BY-SA 4.0)',
+            style: TextStyle(fontSize: 11.5, color: AppTheme.muted),
+          ),
+        ),
       ],
     );
   }
