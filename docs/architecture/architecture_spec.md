@@ -36,13 +36,16 @@
   구 repository (`QuoteRepository`, `UserRepository`, `HashtagRepository`,
   `SubmissionRepository`) 중 `QuoteRepository`는 씨앗의 명언 원천 조회 용도로만 유지하고
   나머지는 구 화면과 함께 폐기 예정 (`feature_spec.md` §5 참조).
-- **저장 계층**: Firestore 컬렉션 9종 (`auth/quotes/comments/categories/submissions/users` +
-  신규 `seeds/fruits/settings`, `CollectionNames` 참조).
-  구 컬렉션(`comments/categories/submissions`)은 구 화면 폐기 후 사용처가 없으며,
-  데이터 마이그레이션/삭제는 별도 이슈로 분리한다.
+- **저장 계층**: 로컬 저장 (`SharedPreferences` + JSON, #122).
+  `seeds`/`fruits`/`settings`를 `CollectionNames` 키 그대로 저장하고
+  (`LocalStore`, `core/services/local_store.dart`),
+  `InMemory*` 저장소가 변경마다 저장·시작 시 복원한다.
+  구 컬렉션(`comments/categories/submissions`)의 데이터 처리는 별도 이슈로 분리한다.
   Firebase Auth는 `DummyAuthService`로 대체 중.
-- **저장 계층**: Firestore 컬렉션 9종 (`auth/quotes/comments/categories/submissions/users` +
-  신규 `seeds/fruits/settings`, `CollectionNames` 및 `FirestoreRefs` 참조).
+- **저장 계층**: 로컬 저장 (`SharedPreferences` + JSON, #122).
+  `seeds`/`fruits`/`settings`를 `CollectionNames` 키 그대로 저장하고
+  (`LocalStore`, `core/services/local_store.dart`),
+  `InMemory*` 저장소가 변경마다 저장·시작 시 복원한다.
   구 컬렉션(`comments/categories/submissions`)의 데이터 처리는 별도 이슈로 분리한다.
   Firebase Auth는 `DummyAuthService`로 대체 중.
 - **공용 서비스 (싱글톤)**: `AdService` (보상형 광고 로드/표시 스텁),
@@ -125,6 +128,7 @@ lib/
 | `go_router` | `^13.2.0` | 라우팅 | `appRouter` |
 | `firebase_core` | `^2.24.2` | Firebase 초기화 | Auth/Firestore 연동 예정 |
 | `flutter_local_notifications` | `^16.1.0` | 로컬 알림 | `NotificationService` |
+| `shared_preferences` | `^2.5.5` | 로컬 지속화 | `LocalStore` (씨앗·열매·설정, #122) |
 | `riverpod` (`dev`) | `^2.4.9` | 상태 관리 (혼용) | 정식 의존성 승격 여부 이슈 분리 |
 | `build_runner` (`dev`) | `^2.4.6` | 코드 생성 | — |
 | `flutter_test` (`dev`) | SDK | 테스트 | `flutter test` |
@@ -172,8 +176,11 @@ lib/
    구 컬렉션(`comments`/`categories`/`submissions`) 데이터 처리는 별도 이슈로 분리.
 3. **`NotificationService` 일일 반복 확장**: `scheduleDailySeedNotification()` 등
    매일 `seedTime` 발송 + 알림 탭 → `/` 이동 연결, 권한 요청 플로우, 타임존 처리.
-4. **설정 저장 방식 결정**: Firestore `settings` vs 로컬 저장, `/auth` 잔류 여부,
-   비로그인 시 폴백 규칙 확정.
+4. **저장 방식 결정** (#122에서 로컬로 확정): `seeds`/`fruits`/`settings`는
+   `SharedPreferences` + JSON (`LocalStore`, `core/services/local_store.dart`)에
+   저장한다. `InMemory*` 저장소가 `store` 연결 시 변경마다 저장하고,
+   `main()` 시작 시 1회 복원한다. Firestore 연동은 동기화·공유 수요 발생 시
+   별도 이슈로 분리한다. `/auth` 잔류 여부, 비로그인 시 폴백 규칙은 미확정.
 5. **충실도 기록 + 성장 연출 (후속)**: `Fruit`에 `fidelityScore`/`memo` 추가,
    씨앗→식물 성장 단계 UI, 열매 상세 화면 (`feature_spec.md` §1·§2 향후 과제 참조).
 6. **`riverpod` 의존성 정리**: `dev_dependencies` → 정식 `dependencies` 승격 여부 결정.

@@ -1,4 +1,5 @@
 import 'package:malssi/core/services/debug_clock.dart';
+import 'package:malssi/core/services/local_store.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
@@ -30,11 +31,37 @@ abstract class FruitRepository {
 
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
 class InMemoryFruitRepository implements FruitRepository {
-  InMemoryFruitRepository({DateTime Function()? clock})
+  InMemoryFruitRepository({DateTime Function()? clock, this._store})
       : _clock = clock ?? DebugClock.now;
 
   DateTime Function() _clock;
   final List<Fruit> _fruits = [];
+
+  /// 로컬 저장소 (#122). `null`이면 순수 인메모리로 동작한다 (테스트 기본값).
+  final LocalStore? _store;
+
+  static const _dateKeys = {'harvestedAt'};
+
+  /// 저장된 열매들을 불러온다. 저장소 미연결·빈 저장소에서는 아무 일도 없다.
+  /// `main()` 시작 시 1회 호출한다.
+  Future<void> load() async {
+    final store = _store;
+    if (store == null) return;
+    final raws = await store.readList(StoreKeys.fruits);
+    _fruits
+      ..clear()
+      ..addAll(raws.map(
+          (raw) => Fruit.fromMap(decodeDates(raw, _dateKeys))));
+  }
+
+  Future<void> _persist() async {
+    final store = _store;
+    if (store == null) return;
+    await store.writeList(StoreKeys.fruits, [
+      for (final fruit in _fruits)
+        encodeDates(fruit.toMap(), _dateKeys),
+    ]);
+  }
 
   @override
   Future<Fruit> harvestFromSeed(
@@ -50,6 +77,7 @@ class InMemoryFruitRepository implements FruitRepository {
       source: quote.source,
     );
     _fruits.add(fruit);
+    await _persist();
     return fruit;
   }
 
@@ -82,6 +110,7 @@ class InMemoryFruitRepository implements FruitRepository {
     final updated = _fruits[index]
         .copyWith(memo: memo, fidelityScore: fidelityScore);
     _fruits[index] = updated;
+    await _persist();
     return updated;
   }
 
@@ -96,6 +125,7 @@ class InMemoryFruitRepository implements FruitRepository {
           DateTime(harvested.year, harvested.month, harvested.day);
       return day.isBefore(today);
     });
+    await _persist();
   }
 
   @override
