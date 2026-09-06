@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_clock.dart';
-import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
-import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
 
 /// 보관 탭. 1년 단위 잔디 그리드로 수확 현황을 보여준다.
@@ -49,6 +47,9 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
 
   /// 선택 연도. null이면 올해 (#99).
   int? _selectedYear;
+
+  /// 오늘 중앙 이동 요청 횟수. 바뀔 때마다 그리드가 오늘로 이동한다 (#126).
+  int _centerTick = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -95,10 +96,6 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     final viewYear = _selectedYear ?? today.year;
     final firstYear = state.firstPlantedYear;
     final yearCount = state.plantedInYear(viewYear).length;
-    // #117: 오늘 테두리는 오늘 도착한 씨앗의 테마색으로 표시한다.
-    // 씨앗이 아직 없으면 기존 금색 폴백.
-    final todayTheme =
-        context.watch<SeedProvider>().todaySeed?.theme;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
@@ -136,6 +133,19 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                             () => _selectedYear = viewYear + 1)
                         : null,
                   ),
+                  // #126: 오늘로 이동. 올해 보기에서는 비활성화한다.
+                  IconButton(
+                    key: const ValueKey('today-button'),
+                    tooltip: '오늘로 이동',
+                    icon: const Icon(Icons.today),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: viewYear == today.year
+                        ? null
+                        : () => setState(() {
+                              _selectedYear = null;
+                              _centerTick++;
+                            }),
+                  ),
                 ],
               ),
             ],
@@ -145,7 +155,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             today: DateTime(today.year, today.month, today.day),
             year: viewYear,
             fruitsByDateKey: state.plantedByDateKey,
-            todayTheme: todayTheme,
+            centerTick: _centerTick,
             onTapFruit: (fruit) => _openDetail(context, fruit),
           ),
           if (state.plantedFruits.isEmpty)
@@ -259,7 +269,7 @@ class _GrassGrid extends StatefulWidget {
     required this.today,
     required this.year,
     required this.fruitsByDateKey,
-    required this.todayTheme,
+    required this.centerTick,
     required this.onTapFruit,
   });
 
@@ -269,9 +279,8 @@ class _GrassGrid extends StatefulWidget {
   final int year;
   final Map<String, Fruit> fruitsByDateKey;
 
-  /// 오늘 도착한 씨앗의 테마. 오늘 테두리 색으로 쓴다 (#117).
-  /// `null`/빈 값이면 금색 폴백.
-  final String? todayTheme;
+  /// 오늘 중앙 이동 요청 횟수. 바뀔 때마다 오늘로 이동한다 (#126).
+  final int centerTick;
   final ValueChanged<Fruit> onTapFruit;
 
   @override
@@ -281,8 +290,8 @@ class _GrassGrid extends StatefulWidget {
 class _GrassGridState extends State<_GrassGrid> {
   final _scrollController = ScrollController();
 
-  /// 첫 진입 1회에만 오늘 중앙으로 이동한다 (당해 연도만).
-  bool _centered = false;
+  /// 반영済 중앙 이동 요청. 첫 진입 1회 이동과 오늘로 이동에 함께 쓴다.
+  int _appliedTick = -1;
 
   @override
   void dispose() {
@@ -332,10 +341,12 @@ class _GrassGridState extends State<_GrassGrid> {
         // 좁음: 가로 스크롤 (최신 주가 우측, 항상 보이는 스크롤바).
         // 칸을 뷰포트에 맞춰 정지 시 가장자리에 반칸이 없게 한다 (#83).
         // 스크롤바가 칸과 겹치지 않게 아래 간격을 둔다 (#91).
-        // 첫 진입에는 오늘이 가운데 오도록 이동한다 (당해 연도만, #98).
+        // 첫 진입(#98)과 오늘로 이동(#126)에는 오늘이 가운데 오도록 이동한다
+        // (당해 연도만).
         final scrollCell = ThemeAssets.grassScrollCell(maxWidth);
-        if (!_centered && widget.year == widget.today.year) {
-          _centered = true;
+        if (widget.centerTick != _appliedTick &&
+            widget.year == widget.today.year) {
+          _appliedTick = widget.centerTick;
           WidgetsBinding.instance.addPostFrameCallback(
               (_) => _centerOnToday(maxWidth, scrollCell));
         }
@@ -392,12 +403,9 @@ class _GrassGridState extends State<_GrassGrid> {
       BuildContext context, DateTime date, Color divider, double cell) {
     final todayKey = ArchiveScreen.dateKeyOf(widget.today);
     final isToday = ArchiveScreen.dateKeyOf(date) == todayKey;
-    // #117: 오늘 테두리는 오늘 씨앗의 테마색, 미확정이면 금색 폴백.
-    final todayTheme = widget.todayTheme;
-    final outline = (todayTheme == null || todayTheme.isEmpty)
-        ? AppTheme.gold
-        : ThemeAssets.cellColor(
-            todayTheme, Theme.of(context).brightness);
+    // #125: 오늘 테두리는 테마색과 무관한 전용 청록색이다.
+    final outline =
+        ThemeAssets.todayOutline(Theme.of(context).brightness);
     // 연도 밖 가장자리는 빈 공간으로 둔다.
     if (date.year != widget.year) {
       return SizedBox(width: cell, height: cell);

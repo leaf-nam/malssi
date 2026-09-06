@@ -966,7 +966,56 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
-    testWidgets('today cell has a gold outline (#97)', (tester) async {
+    testWidgets('today button returns from a past year (#126)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      var now = DateTime(2025, 5, 5, 12);
+      final repo = InMemoryFruitRepository(clock: () => now);
+      await _harvest(repo,
+          seedId: '2025-05-05', text: '작년 열매', at: now);
+      await repo.updateReview(
+        fruitId: 'fruit-2025-05-05',
+        memo: '좋았다',
+        fidelityScore: 5,
+      );
+      now = DateTime(2026, 9, 4, 12);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '올해 열매', at: now);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 올해 보기에서는 오늘 버튼이 비활성화되어 있다.
+      IconButton todayButton() => tester.widget<IconButton>(
+            find.byKey(const ValueKey('today-button')),
+          );
+      expect(todayButton().onPressed, isNull);
+
+      // 작년으로 이동하면 버튼이 켜진다.
+      await tester.tap(find.byKey(const ValueKey('year-prev')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2025 · 1개의 열매'), findsOneWidget);
+      expect(todayButton().onPressed, isNotNull);
+
+      // 오늘 버튼을 누르면 올해 보기로 돌아온다.
+      await tester.tap(find.byKey(const ValueKey('today-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2026 · 1개의 열매'), findsOneWidget);
+      expect(todayButton().onPressed, isNull);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('today cell has a dedicated outline (#125)',
+        (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final provider = ArchiveProvider(
           fruitRepository: InMemoryFruitRepository());
@@ -975,22 +1024,23 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      // 오늘 씨앗이 없으면 금 테두리 폴백이 정확히 1개 있다 (#117).
-      final goldCells = find.byWidgetPredicate(
-        (w) =>
-            w is Container &&
-            w.decoration is BoxDecoration &&
-            (w.decoration as BoxDecoration).border is Border &&
-            ((w.decoration as BoxDecoration).border as Border)
-                    .top
-                    .color ==
-                AppTheme.gold,
-      );
-      expect(goldCells, findsOneWidget);
+      // 오늘 빈칸에 전용 테두리가 정확히 1개 있다 (테마·금색과 무관).
+      bool borderIs(Color color, Widget w) =>
+          w is Container &&
+          w.decoration is BoxDecoration &&
+          (w.decoration as BoxDecoration).border is Border &&
+          ((w.decoration as BoxDecoration).border as Border).top.color ==
+              color;
+      final expected =
+          ThemeAssets.todayOutline(Brightness.light);
+      expect(find.byWidgetPredicate((w) => borderIs(expected, w)),
+          findsOneWidget);
+      expect(find.byWidgetPredicate((w) => borderIs(AppTheme.gold, w)),
+          findsNothing);
       ArchiveScreen.debugToday = null;
     });
 
-    testWidgets('today outline follows the seed theme (#117)',
+    testWidgets('today outline ignores the seed theme (#125)',
         (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final seedProvider = SeedProvider(
@@ -1008,9 +1058,9 @@ void main() {
       await tester.pumpWidget(_wrap(provider, seed: seedProvider));
       await tester.pumpAndSettle();
 
-      // 오늘 빈칸 테두리가 오늘 씨앗 테마색이다 (테스트 기본 라이트 모드).
+      // 씨앗 테마와 무관하게 전용색이다.
       final expected =
-          ThemeAssets.cellColor(SeedTheme.vitality, Brightness.light);
+          ThemeAssets.todayOutline(Brightness.light);
       bool borderIs(Color color, Widget w) =>
           w is Container &&
           w.decoration is BoxDecoration &&
@@ -1019,8 +1069,11 @@ void main() {
               color;
       expect(find.byWidgetPredicate((w) => borderIs(expected, w)),
           findsOneWidget);
-      // 금색 폴백은 나타나지 않는다.
-      expect(find.byWidgetPredicate((w) => borderIs(AppTheme.gold, w)),
+      expect(
+          find.byWidgetPredicate((w) => borderIs(
+              ThemeAssets.cellColor(
+                  SeedTheme.vitality, Brightness.light),
+              w)),
           findsNothing);
       ArchiveScreen.debugToday = null;
     });
