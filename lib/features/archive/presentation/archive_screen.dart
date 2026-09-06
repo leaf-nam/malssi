@@ -164,15 +164,6 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             const SizedBox(height: 20),
             _ThemeStats(counts: state.themeCounts),
           ],
-          // #123: CC BY-SA 4.0 명언 출처. 구석에 작게 둔다.
-          Padding(
-            padding: const EdgeInsets.only(top: 24),
-            child: Text(
-              '명언 출처: 한국어 위키인용집 (ko.wikiquote.org, CC BY-SA 4.0)',
-              style: TextStyle(
-                  fontSize: 10, color: colors.onSurfaceVariant),
-            ),
-          ),
         ],
       ),
     );
