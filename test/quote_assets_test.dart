@@ -30,19 +30,25 @@ void main() {
   });
 
   group('assets/docs/quotes.json', () {
-    test('covers all source quotes with valid themes (#123)', () {
-      final source = (jsonDecode(
+    test('is a curated subset of the source with valid themes (#123)',
+        () {
+      final sourceIds = (jsonDecode(
         File('assets/docs/wikiquote.json').readAsStringSync(),
       ) as List)
-          .length;
+          .map((entry) => (entry as Map)['dedup_key'])
+          .toSet();
       final quotes = QuoteAssets.parseQuotes(
         File('assets/docs/quotes.json').readAsStringSync(),
       );
 
-      expect(quotes.length, source);
+      // 큐레이션으로 걸러져 원본의 부분집합이다.
+      expect(quotes.isNotEmpty, isTrue);
       for (final quote in quotes) {
+        expect(sourceIds, contains(quote.id));
         expect(quote.text.isNotEmpty, isTrue);
         expect(SeedTheme.isValid(quote.theme), isTrue);
+        // 표시용 문구는 250자를 넘지 않는다 (초과는 핵심문장으로 단축).
+        expect(quote.text.length, lessThanOrEqualTo(250));
       }
       final ids = quotes.map((quote) => quote.id).toSet();
       expect(ids.length, quotes.length);

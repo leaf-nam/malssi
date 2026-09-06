@@ -250,6 +250,76 @@ PRIORITY = [
     'growth', 'vitality', 'wisdom',
 ]
 
+# 큐레이션 (2026-09-06, #123 후속).
+# REMOVE: 단편 메모·영문 중복·학술 해설·노골적 폭력/혐오·노골적 성적 내용·정보성 장문.
+# SHORTEN: 핵심 문장만 남긴 표시용 문구 (원문은 full에 보존).
+REMOVE = {
+    '78a4e90d5f55', '3eeb4e7c6335', '418c71998065', '460deebd8f24',
+    'c6e26e709f24', 'ddcb0f918a64', '7ed3a28e39d8', '8f9cfbdf58d0',
+    '7c6ff8547a2a', '01f9ee6dfeeb', '897547307f26', '681b761fa6d1',
+    '44d320251ebf', '04bd950be929', '4279657f6a8a', '81942ec4f048',
+    'cbd7cee58b71', 'ccca825f4bc0', '60d817b9410d', 'e25e35dccc61',
+    '7a4a31583ee3', 'cf0063036d28', '4c966824ae18', '5c276688d9ef',
+    '35ee1f5384b1', 'd28756c1c28b', '797afcd3798a', 'd7dbe47a4336',
+    'e1b0dd7569be', '0b2e7745cd10', '95e498da97dc', 'e4e718c16fd3',
+    '7d1ac8e00efe', '66db2e6a7dab', '048e4b6107d5', '93a36cde9636',
+    '9fd8f1a1ee59', 'fad32241147b', '68cdaaa1b3b0', 'aa114958c037',
+    '1539d93f534f', '577732644b04', 'd3f439d1b1f4', 'c3eb3ba5fceb',
+    'c9b8803c4c53', '76c43485b539', 'ec00e6f17fcf', '0ab32314cc28',
+    '5f6ea7fa5149', '5a3fc7528cc5', '05b8fee5e26e', '1448753da06d',
+    '176a8f276f55', 'ab3f3c3e075b', '4c8acaf9fe17', '103b79437bd6',
+    'e0b370046763', 'af026ba95bb9', 'a28157830eb1', '914d414d883c',
+    'f9260502c256', '390b973c0d31', 'fbc5efbcd7a0', '4e675e2a5e65',
+    'edbe754c6a4f', '7b2875460655', '16c73c5e49e0', '34c19ce70f2e',
+    '1e0f25b1a8d1', 'c1c76cd093c2', '70e9a89d3443', 'a28412105d36',
+    'f9a153ffcc28', '1e801072d88b', 'cab2ed30dc3d', '324aab681e9f',
+    '849193525f2b', '4364d57d51df', 'f6a27778f4cb', '03c2cd9b9d27',
+}
+
+SHORTEN = {
+    '078ab0363538': '무엇이든 지나치지 말라.',
+    'ff799aea4792':
+        '도(道)는 형상 밖에 있는 것이 아니고, 이치는 물건과 함께 존재하는구나.',
+    'edd3e2af4fc4':
+        '끊임없는 공포와 생사의 갈림길에서 인간의 삶은 고독하고, '
+        '가난하고, 험악하고, 잔인하고, 그리고 짧다.',
+    '6cc05a12e208':
+        '모든 것의 원인들을 안다는 것, 즉 무엇으로 해서 각각의 것이 생기며 '
+        '무엇으로 해서 소멸하고 무엇으로 해서 있는지를 안다는 것',
+    'aa84de9f5e3b':
+        '우리나라가 독립이 못되는 것이 다 나 때문이로구나 하고 가슴을 두드리고 '
+        '뉘우칠 생각은 왜 못하는가. 인물이 없는 것은 인물이 되려고 '
+        '힘쓰는 사람이 없는 까닭이다.',
+    '6a3a5d50b841':
+        '사람으로서의 우리의 개성을 살리우고 우리의 인권을 차지하는 것이 '
+        '무엇보다도 먼저 우리 눈앞에 급박한 큰 문제이다.',
+    '3e9c09d354a8':
+        '대체 제군들의 조선여자교육의 본의가 거대한 신도 명부 작성에 있느냐, '
+        '현실살이 사람 교육에 있느냐',
+    'ffa45757ce13':
+        '사람은 짐승과 위버멘쉬 사이를 잇는 밧줄, '
+        '하나의 심연 위에 걸쳐있는 하나의 밧줄이다.',
+    'efff6818836c':
+        '수학은 답을 찾는 데 걸리는 시간과 방향은 사람마다 달해도 '
+        '도달하는 정답은 하나예요.',
+    '008218ab844d':
+        '천만의 생령이 자유롭게 생각하고 말하고 행동하지 못하는 나라, '
+        '삶 속에서 죽어가고 죽음 속에서 살아가는 나라, '
+        '이것이 한국의 현실이다.',
+    '6d893aed3538':
+        '유교의 남존여비, 왕명에의 절대 복종 강요, 그리고 그 영원한 복고주의는 '
+        '유교 부패의 씨앗을 이미 내포하고 있다. '
+        '유교의 현실주의는 사람을 속물로 만든다.',
+    '533f9b0c2c67':
+        '우리가 서로 친절하게 대하고, 우리가 아는 유일한 보금자리인 '
+        '창백한 푸른 점을 소중히 보존하는 것이 우리의 의무임을 '
+        '강조하고 있는 것입니다.',
+}
+
+
+def normalize(text):
+    return text.replace('&mdash;', '—').replace('<br/>', '\n').replace('<br>', '\n')
+
 
 def classify(text):
     scores = Counter()
@@ -277,8 +347,13 @@ def main():
     unmatched = []
     tied_total = 0
     dist = Counter()
+    removed = 0
+    shortened = 0
     for d in data:
         key = d['dedup_key']
+        if key[:12] in REMOVE:
+            removed += 1
+            continue
         text = d['quote']
         theme = OVERRIDES.get(key[:12])
         scores = {}
@@ -290,13 +365,19 @@ def main():
             if len([t for t, s in scores.items() if s == max(scores.values())]) > 1:
                 tied_total += 1
         dist[theme] += 1
-        out.append({
+        display = normalize(text)
+        entry = {
             'id': key,
-            'text': text,
+            'text': display,
             'author': d.get('author', ''),
             'theme': theme,
-        })
-    print(f'total={len(data)} classified={len(out)} unmatched={len(unmatched)} tied={tied_total}')
+        }
+        if key[:12] in SHORTEN:
+            entry['text'] = SHORTEN[key[:12]]
+            entry['full'] = display
+            shortened += 1
+        out.append(entry)
+    print(f'total={len(data)} classified={len(out)} unmatched={len(unmatched)} tied={tied_total} removed={removed} shortened={shortened}')
     print('dist:', dict(dist))
     if unmatched:
         print(f'--- unmatched samples (max 15) ---')
