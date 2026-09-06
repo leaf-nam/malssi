@@ -5,15 +5,21 @@ class AppSettings {
   /// 화면 모드: `'light'` / `'dark'` / `'system'` 중 1개.
   final String themeMode;
 
+  /// 열매 비 효과 표시 여부 (#108). 기본값 on.
+  final bool fruitRainEnabled;
+
   const AppSettings({
     required this.seedTime,
     required this.notifyEnabled,
     this.themeMode = defaultThemeMode,
+    this.fruitRainEnabled = defaultFruitRainEnabled,
   });
 
   static const defaultSeedTime = '08:00';
 
   static const defaultThemeMode = 'system';
+
+  static const defaultFruitRainEnabled = true;
 
   static const validThemeModes = ['light', 'dark', 'system'];
 
@@ -38,6 +44,8 @@ class AppSettings {
       themeMode: themeMode is String && isValidThemeMode(themeMode)
           ? themeMode
           : defaultThemeMode,
+      fruitRainEnabled:
+          map['fruitRainEnabled'] ?? defaultFruitRainEnabled,
     );
   }
 
@@ -46,15 +54,20 @@ class AppSettings {
       'seedTime': seedTime,
       'notifyEnabled': notifyEnabled,
       'themeMode': themeMode,
+      'fruitRainEnabled': fruitRainEnabled,
     };
   }
 
   AppSettings copyWith(
-      {String? seedTime, bool? notifyEnabled, String? themeMode}) {
+      {String? seedTime,
+      bool? notifyEnabled,
+      String? themeMode,
+      bool? fruitRainEnabled}) {
     return AppSettings(
       seedTime: seedTime ?? this.seedTime,
       notifyEnabled: notifyEnabled ?? this.notifyEnabled,
       themeMode: themeMode ?? this.themeMode,
+      fruitRainEnabled: fruitRainEnabled ?? this.fruitRainEnabled,
     );
   }
 }

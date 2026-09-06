@@ -12,6 +12,9 @@ abstract class SettingsRepository {
 
   /// 화면 모드 변경 (`'light'`/`'dark'`/`'system'`). 형식이 틀리면 [ArgumentError].
   Future<AppSettings> setThemeMode(String themeMode);
+
+  /// 열매 비 효과 on/off (#108).
+  Future<AppSettings> setFruitRainEnabled(bool enabled);
 }
 
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
@@ -52,6 +55,12 @@ class InMemorySettingsRepository implements SettingsRepository {
       throw ArgumentError('Invalid themeMode: $themeMode');
     }
     _settings = _settings.copyWith(themeMode: themeMode);
+    return _settings;
+  }
+
+  @override
+  Future<AppSettings> setFruitRainEnabled(bool enabled) async {
+    _settings = _settings.copyWith(fruitRainEnabled: enabled);
     return _settings;
   }
 }
