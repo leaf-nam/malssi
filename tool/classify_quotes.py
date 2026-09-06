@@ -274,56 +274,56 @@ REHOME = {
 # 분류 순서 변경에 영향받지 않는다.
 KEEP_KEYS = {
     'vitality': [
-        '02b55668e49c', '182b45802831', '21e23433b335',
-        '2753fb4223dc', '278e2635b1c9', '29d67b3e75ae', '2cd724204935',
+        '21e23433b335',
+        '2753fb4223dc', '2cd724204935',
         '3087d6d01c1c', '39fdf8850853', '4793ef1bb05f',
         '5a7ca16cff06', '71962723fd15', '91c4b8fd9020',
-        '986017b01e6c', 'abe25b1f67c9', 'bcfcce53aa97', 'd13c14f23356',
+        '986017b01e6c', 'bcfcce53aa97', 'd13c14f23356',
         'dde25728358f', 'e67a318018cc',
         'f74b0a85f0a6',
     ],
     'health': [
         '11b18ae6a102', '44038ae771af', '4a95b30e8a52', '503e7dce66e6',
-        '745a9824bbbe', '765d345806df', 'a15ba48b2205', 'a760b759c5ce',
+        '765d345806df', 'a15ba48b2205', 'a760b759c5ce',
         'b32de1f8f65c', 'b44fa7ddc689', 'be1cb713fa6c', 'f604a11b80bf',
     ],
     'growth': [
         '0013fab48217', '02a5b5889ad1', '229634780c20', '268f0721f089',
         '27b1dfd6f0e6', '43f011ad92be', '47a81ed5f452',
-        '521b54078958', '5e5a5476740b', '636b7dbf5b39', '6436a3aa12c9',
+        '521b54078958', '636b7dbf5b39',
         '72fb89303ca8', '78e236dfb079', '79ccf3b00d24', '8056f5718020',
         '81189ec84277', '8b3ad65f05d3', '96d96cc99f35', 'b3a7e3881c89',
         'b68cf33cb1be', 'be0aba265541', 'c0a83a901c7c', 'c17663c67870',
         'cc12bb7ee9d0', 'd7f08d3104f7', 'da752bd0bcb5', 'edb5b261cb40',
-        'f870629bbbf8', 'fde2c9167573',
+        'f870629bbbf8',
     ],
     'relationship': [
         '1be2cb665ef3', '22993d1c47ff', '25ec696c15ba',
-        '41cf9a60863e', '520fdd1b1c9d', '5225916bf66e', '5c68382f69a0',
+        '520fdd1b1c9d', '5225916bf66e', '5c68382f69a0',
         '5cc2a608a8dc', '770dec299929', '779c6fac5661',
-        '7afa95386d65', '8b14a3dab622', '8cdde556706c', '8dbeedfb36fc',
+        '7afa95386d65', '8cdde556706c', '8dbeedfb36fc',
         '903cfedfdf52', 'ce7fb9f5651a',
-        'd45765f42f4d', 'db78c7dbc5f8', 'e41495206b50', 'f08e91a48a55',
+        'd45765f42f4d', 'f08e91a48a55',
         'f3b799826b6f',
     ],
     'wisdom': [
         '03197e069ddc', '042fa16dfe2c', '0922bfcf6568', '0b3f49a8c856',
         '0b698e77e337', '1763f2fb4205', '2f874e8fc550',
         '33ad4aeb5665', '3df18cf37bc0', '4070b1e76ca3',
-        '5d01bc65dfdd', '64fc2bda365e', '694b7e1f499a',
+        '5d01bc65dfdd', '694b7e1f499a',
         '727a836b5187', '7bd270638660', '7c4c8fa1f67f', '867427e2a727',
         'a286ff0a84cc', 'aa84de9f5e3b', 'c7b470d1bf29', 'ca30e8f9f554',
         'cc36247cbd94', 'cc4de8d4f6cd', 'e455be678eb6', 'ebf3e2f30d0f',
-        'efff6818836c', 'fb887bbad15b', 'fbedd2ed4200', 'fc54062ef87f',
+        'fb887bbad15b', 'fc54062ef87f',
     ],
     'peace': [
-        '0e8e9292ada4', '44196273233b', '89b78a3709b9', 'ae256f74c737',
+        '0e8e9292ada4', '89b78a3709b9',
         'b222f67feb95', 'be6162d49588', 'f32e22b616dc',
     ],
     'happiness': [
-        '0068ddd3a229', '17e74e19205c', '3c1fa24f3824', '70bdea7ce4c6',
+        '0068ddd3a229', '3c1fa24f3824',
         '904009d02bef', '9243ddc04a90', 'a41e59e6a86f', 'c1d12bcae6aa',
-        'cb562786c413', 'ead400915b39', 'f6dd2ed6dbbe',
+        'cb562786c413', 'ead400915b39',
     ],
 }
 # 단축: 핵심 문장만 남긴 표시용 문구 (원문은 full에 보존).
@@ -370,6 +370,16 @@ SHORTEN = {
         '사람은 다른 사람들을 위해 여기에 있다는 것이다. 무엇보다도 '
         '우리 자신에게 행복을 주는 사람들의 웃음과 안녕을 위해서.',
 }
+# 제외 규칙 (2026-09-06 #123 후속).
+# - 인용부호 포함: 발췌·전재 표식이라 명언 단독으로 부적합.
+# - 생존 인물: 가급적 제외.
+EXCLUDE_AUTHORS = {
+    '야마나카 신야', '허준이', '오무라 사토시', '곽재식', '고병권', '강은교',
+}
+
+QUOTE_MARKS = ('"', '\u201c', '\u201d')
+
+
 def normalize(text):
     return text.replace('&mdash;', '—').replace('<br/>', '\n').replace('<br>', '\n')
 
@@ -425,6 +435,12 @@ def main():
         keep_keys = set(KEEP_KEYS.get(theme, []))
         for key, text, author in entries:
             if key[:12] not in keep_keys:
+                continue
+            if any(m in text for m in QUOTE_MARKS):
+                print(f'dropped quote-marks [{key[:12]}]')
+                continue
+            if author in EXCLUDE_AUTHORS:
+                print(f'dropped living author [{key[:12]}] {author}')
                 continue
             dist[theme] += 1
             display = normalize(text)
