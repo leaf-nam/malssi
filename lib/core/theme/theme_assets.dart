@@ -92,6 +92,16 @@ abstract class ThemeAssets {
           ? const Color(0xFFD8D2C7)
           : const Color(0xFF6C707E);
 
+  /// 오늘 칸 전용 테두리 색 (#125).
+  /// 7테마 셀·금색과 겹치지 않는 청록으로, 작은 칸에서도 식별된다.
+  /// 테마색과 무관하게 항상 이 색을 쓴다 (폴백 불필요).
+  static Color todayOutline(
+      [Brightness brightness = Brightness.dark]) {
+    return brightness == Brightness.light
+        ? const Color(0xFF00ACC1)
+        : const Color(0xFF00E5FF);
+  }
+
   /// 잔디 그리드 규격 (#72).
   static const grassWeeks = 53;
   static const grassGap = 4.0;

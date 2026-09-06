@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
@@ -186,6 +187,25 @@ void main() {
 
         expect(channelGap(red, pink), greaterThan(150));
         expect(channelGap(blue, purple), greaterThan(150));
+      }
+    });
+
+    test('today outline stands out from cells and gold (#125)', () {
+      int channelGap(Color a, Color b) =>
+          (a.r * 255 - b.r * 255).abs().round() +
+          (a.g * 255 - b.g * 255).abs().round() +
+          (a.b * 255 - b.b * 255).abs().round();
+      for (final brightness in [Brightness.dark, Brightness.light]) {
+        final outline = ThemeAssets.todayOutline(brightness);
+        for (final key in SeedTheme.values) {
+          expect(
+            channelGap(
+                outline, ThemeAssets.cellColor(key, brightness)),
+            greaterThan(100),
+            reason: '$key/$brightness',
+          );
+        }
+        expect(channelGap(outline, AppTheme.gold), greaterThan(100));
       }
     });
 
