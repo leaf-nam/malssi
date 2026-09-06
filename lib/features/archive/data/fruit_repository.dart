@@ -1,3 +1,4 @@
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
@@ -25,7 +26,7 @@ abstract class FruitRepository {
 /// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
 class InMemoryFruitRepository implements FruitRepository {
   InMemoryFruitRepository({DateTime Function()? clock})
-      : _clock = clock ?? DateTime.now;
+      : _clock = clock ?? DebugClock.now;
 
   DateTime Function() _clock;
   final List<Fruit> _fruits = [];

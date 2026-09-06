@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
@@ -40,6 +41,9 @@ class _FakeTimestamp {
 }
 
 void main() {
+  // 공용 시계는 테스트 간에 새지 않게 매번 되돌린다 (#115).
+  tearDown(DebugClock.reset);
+
   group('Seed model', () {
     test('dateKeyFor formats YYYY-MM-DD', () {
       expect(Seed.dateKeyFor(DateTime(2026, 9, 4)), '2026-09-04');
@@ -293,29 +297,61 @@ void main() {
       expect(provider.errorMessage, isNull);
     });
 
-    test('debugAdvanceDay expires locked seeds and creates a new one (#95)',
+    test('a day passing expires locked seeds and creates a new one (#95)',
         () async {
-      final provider = _buildProvider(
-          clock: () => DateTime(2026, 9, 4, 12));
+      var now = DateTime(2026, 9, 4, 12);
+      final provider = _buildProvider(clock: () => now);
       await provider.ensureTodaySeed();
       expect(provider.todaySeed!.id, '2026-09-04');
 
-      await provider.debugAdvanceDay();
+      // 하루가 지나면 만료되고 새 씨앗이 생긴다.
+      now = now.add(const Duration(days: 1));
+      await provider.refreshGrowth();
 
       expect(provider.todaySeed!.id, '2026-09-05');
       expect(provider.todaySeed!.isLocked, isTrue);
       expect(provider.errorMessage, isNull);
     });
 
-    test('debugAdvanceDay rolls over growing seeds with auto-harvest (#109)',
+    test('debugAdvanceDay moves the shared clock to a new seed (#115)',
         () async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      final before = provider.todaySeed!.id;
+
+      await provider.debugAdvanceDay();
+
+      expect(provider.todaySeed!.id, isNot(before));
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('debugAdvanceHours grows the seed in small steps (#115)',
+        () async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.vitality);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      final plantedId = provider.todaySeed!.id;
+
+      await provider.debugAdvanceHours(1);
+      expect(provider.todaySeed!.id, plantedId);
+      expect(provider.todaySeed!.growthStage, 0);
+
+      await provider.debugAdvanceHours(1);
+      expect(provider.todaySeed!.id, plantedId);
+      expect(provider.todaySeed!.growthStage, 1);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('a day passing rolls over growing seeds with auto-harvest (#109)',
+        () async {
+      var now = DateTime(2026, 9, 4, 12);
       final seedRepository = InMemorySeedRepository(
-        clock: () => DateTime(2026, 9, 4, 12),
+        clock: () => now,
         themePicker: () => SeedTheme.vitality,
       );
-      final fruitRepository = InMemoryFruitRepository(
-        clock: () => DateTime(2026, 9, 4, 12),
-      );
+      final fruitRepository = InMemoryFruitRepository(clock: () => now);
       final provider = SeedProvider(
         seedRepository: seedRepository,
         quoteRepository: InMemoryQuoteRepository(),
@@ -324,7 +360,8 @@ void main() {
       await provider.ensureTodaySeed();
       await provider.plantSeed();
 
-      await provider.debugAdvanceDay();
+      now = now.add(const Duration(days: 1));
+      await provider.refreshGrowth();
 
       // 일자 변경선: 지난 완성은 오늘 씨앗에 양보하고,
       // 미수확 완성은 자동 수확되어 보관에 남는다.
@@ -339,13 +376,12 @@ void main() {
     });
 
     test('completed state plus one day shows a new seed (#109)', () async {
+      var now = DateTime(2026, 9, 4, 12);
       final seedRepository = InMemorySeedRepository(
-        clock: () => DateTime(2026, 9, 4, 12),
+        clock: () => now,
         themePicker: () => SeedTheme.vitality,
       );
-      final fruitRepository = InMemoryFruitRepository(
-        clock: () => DateTime(2026, 9, 4, 12),
-      );
+      final fruitRepository = InMemoryFruitRepository(clock: () => now);
       final provider = SeedProvider(
         seedRepository: seedRepository,
         quoteRepository: InMemoryQuoteRepository(),
@@ -357,7 +393,8 @@ void main() {
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(provider.completedFruit, isNotNull);
 
-      await provider.debugAdvanceDay();
+      now = now.add(const Duration(days: 1));
+      await provider.refreshGrowth();
 
       // 완성 상태에서 +1일이면 다음 날 새 씨앗(심기 전)이 보인다.
       expect(provider.todaySeed!.id, '2026-09-05');
@@ -527,40 +564,61 @@ void main() {
     });
 
     testWidgets('locked screen advances the day (#95)', (tester) async {
-      final provider =
-          _buildProvider(clock: () => DateTime(2026, 9, 4, 12));
+      // 공용 시계 기반: 버튼이 앱 날짜를 직접 미룬다 (#115).
+      final provider = _buildProvider();
       await provider.ensureTodaySeed();
 
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
-      expect(find.text('2026-09-04'), findsOneWidget);
+      final before = provider.todaySeed!.id;
+      expect(find.text(before), findsOneWidget);
 
       await tester.tap(find.text('디버그: +1일'));
       await tester.pumpAndSettle();
 
-      expect(find.text('2026-09-05'), findsOneWidget);
+      expect(provider.todaySeed!.id, isNot(before));
+      expect(provider.todaySeed!.isLocked, isTrue);
       expect(find.text('씨앗 심기'), findsOneWidget);
     });
 
     testWidgets('advancing the day rolls over to a new seed (#109)',
         (tester) async {
-      final provider =
-          _buildProvider(clock: () => DateTime(2026, 9, 4, 12));
+      final provider = _buildProvider();
       await provider.ensureTodaySeed();
 
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
       await tester.tap(find.text('씨앗 심기'));
       await tester.pumpAndSettle();
+      final plantedId = provider.todaySeed!.id;
 
       await tester.tap(find.text('디버그: +1일'));
       await tester.pumpAndSettle();
 
       // 일자 변경선: 지난 완성은 오늘 씨앗에 양보해 새 잠금 씨앗이 보인다.
-      expect(provider.todaySeed!.id, '2026-09-05');
+      expect(provider.todaySeed!.id, isNot(plantedId));
       expect(provider.todaySeed!.isLocked, isTrue);
-      expect(find.text('2026-09-05'), findsOneWidget);
       expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
+    testWidgets('advancing hours grows the seed step by step (#115)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(provider.todaySeed!.growthStage, 0);
+
+      await tester.tap(find.text('디버그: +1시간'));
+      await tester.pumpAndSettle();
+      expect(provider.todaySeed!.growthStage, 0);
+
+      await tester.tap(find.text('디버그: +1시간'));
+      await tester.pumpAndSettle();
+      expect(provider.todaySeed!.growthStage, 1);
     });
 
     testWidgets('locked seed shows the themed seed image', (tester) async {

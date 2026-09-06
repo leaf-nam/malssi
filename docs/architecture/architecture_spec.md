@@ -46,7 +46,8 @@
   구 컬렉션(`comments/categories/submissions`)의 데이터 처리는 별도 이슈로 분리한다.
   Firebase Auth는 `DummyAuthService`로 대체 중.
 - **공용 서비스 (싱글톤)**: `AdService` (보상형 광고 로드/표시 스텁),
-  `NotificationService` (`flutter_local_notifications` 기반 초기화/예약/표시).
+  `NotificationService` (`flutter_local_notifications` 기반 초기화/예약/표시),
+  `DebugClock` (디버그 시간 이동용 앱 공용 시계, #115).
 - **테마**: `AppTheme.light()` (indigo primary, grey[50] 배경, ElevatedButton/InputDecoration 테마),
   `AppTheme.dark()` (dark 복사 + grey[900] 배경).
 

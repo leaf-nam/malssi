@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
@@ -152,12 +153,12 @@ class SeedProvider extends ChangeNotifier {
     }
   }
 
-  /// 디버그용: 날짜를 하루 앞당긴다 (#95). 수확물 날짜도 함께 이동해
-  /// 잔디 날짜와 맞춘다. 릴리즈 UI에서 호출하지 않는다.
-  Future<void> debugAdvanceDay() async {
+  /// 디버그용: 앱이 인식하는 날짜를 [by]만큼 미룬다 (#115).
+  /// 씨앗·수확물 저장소의 기본 시계와 정원 오늘 날짜가 함께 이동하므로
+  /// 전체 플로우를 시간 이동으로 검증할 수 있다. 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugAdvanceTime(Duration by) async {
     try {
-      await _seedRepository.debugShiftTime(const Duration(days: 1));
-      await _fruitRepository.debugShiftTime(const Duration(days: 1));
+      DebugClock.shift(by);
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
     } catch (e) {
@@ -166,6 +167,15 @@ class SeedProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// 디버그용: 날짜를 하루 앞당긴다 (#95, #115). 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugAdvanceDay() =>
+      debugAdvanceTime(const Duration(days: 1));
+
+  /// 디버그용: 날짜를 [hours]시간 앞당긴다 (#115).
+  /// 2시간 성장 단계 중간도 검증할 수 있다. 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugAdvanceHours(int hours) =>
+      debugAdvanceTime(Duration(hours: hours));
 
   /// 완성된 씨앗의 열매가 없으면 수확하고 명언을 공개한다.
   /// 이월된 미수확 완성도 함께 자동 수확해 보관에 남긴다 (#109).

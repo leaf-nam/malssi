@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
 
@@ -42,7 +43,7 @@ abstract class SeedRepository {
 /// [themePicker]를 주면 테마 선택을 고정할 수 있다 (테스트용).
 class InMemorySeedRepository implements SeedRepository {
   InMemorySeedRepository({DateTime Function()? clock, String Function()? themePicker})
-      : _clock = clock ?? DateTime.now,
+      : _clock = clock ?? DebugClock.now,
         _themePicker = themePicker ?? _randomTheme;
 
   DateTime Function() _clock;

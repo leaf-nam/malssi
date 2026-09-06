@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
@@ -68,6 +69,12 @@ Future<void> _harvest(
 }
 
 void main() {
+  // 공용 시계는 테스트 간에 새지 않게 매번 되돌린다 (#115).
+  tearDown(() {
+    DebugClock.reset();
+    ArchiveScreen.debugToday = null;
+  });
+
   group('Fruit model', () {
     test('fromMap/toMap/copyWith round-trip', () {
       final fruit = Fruit(
@@ -715,6 +722,28 @@ void main() {
 
       expect(find.byType(FruitRain), findsOneWidget);
       ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('garden today follows the shared clock (#115)',
+        (tester) async {
+      ArchiveScreen.debugToday = null;
+      final provider = ArchiveProvider(
+          fruitRepository: InMemoryFruitRepository());
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      final thisYear = DateTime.now().year;
+      expect(find.text('$thisYear · 0개의 열매'), findsOneWidget);
+
+      // 공용 시계를 내년으로 미루면 정원의 연도 기준도 따라간다.
+      final now = DateTime.now();
+      DebugClock.shift(
+          DateTime(now.year + 1, 1, 5).difference(now));
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('${thisYear + 1} · 0개의 열매'), findsOneWidget);
     });
 
     testWidgets('rain shows the top theme fruit behind the grid (#89)',
