@@ -344,7 +344,7 @@ void main() {
       expect(provider.errorMessage, isNull);
     });
 
-    test('a day passing rolls over growing seeds with auto-harvest (#109)',
+    test('a day passing discards unreviewed stale completions (#113)',
         () async {
       var now = DateTime(2026, 9, 4, 12);
       final seedRepository = InMemorySeedRepository(
@@ -364,18 +364,15 @@ void main() {
       await provider.refreshGrowth();
 
       // 일자 변경선: 지난 완성은 오늘 씨앗에 양보하고,
-      // 미수확 완성은 자동 수확되어 보관에 남는다.
+      // 미수확 이월분은 수확하지 않고 폐기한다.
       expect(provider.todaySeed!.id, '2026-09-05');
       expect(provider.todaySeed!.isLocked, isTrue);
-      final fruits = await fruitRepository.getFruits();
-      expect(
-        fruits.any((fruit) => fruit.seedId == '2026-09-04'),
-        isTrue,
-      );
+      expect(await fruitRepository.getFruits(), isEmpty);
       expect(provider.errorMessage, isNull);
     });
 
-    test('completed state plus one day shows a new seed (#109)', () async {
+    test('rollover prunes unreviewed fruits but keeps reviewed ones (#113)',
+        () async {
       var now = DateTime(2026, 9, 4, 12);
       final seedRepository = InMemorySeedRepository(
         clock: () => now,
@@ -393,18 +390,43 @@ void main() {
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(provider.completedFruit, isNotNull);
 
+      // 후기 없이 날짜가 바뀌면 미후기 열매는 폐기된다.
       now = now.add(const Duration(days: 1));
       await provider.refreshGrowth();
 
-      // 완성 상태에서 +1일이면 다음 날 새 씨앗(심기 전)이 보인다.
       expect(provider.todaySeed!.id, '2026-09-05');
       expect(provider.todaySeed!.isLocked, isTrue);
-      // 어제 키운 열매는 보관에 남아 있다.
-      final fruits = await fruitRepository.getFruits();
-      expect(
-        fruits.any((fruit) => fruit.seedId == '2026-09-04'),
-        isTrue,
+      expect(await fruitRepository.getFruits(), isEmpty);
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('reviewed fruits survive the rollover (#113)', () async {
+      var now = DateTime(2026, 9, 4, 12);
+      final seedRepository = InMemorySeedRepository(
+        clock: () => now,
+        themePicker: () => SeedTheme.vitality,
       );
+      final fruitRepository = InMemoryFruitRepository(clock: () => now);
+      final provider = SeedProvider(
+        seedRepository: seedRepository,
+        quoteRepository: InMemoryQuoteRepository(),
+        fruitRepository: fruitRepository,
+      );
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+      await provider.saveReview(memo: '잘 지켰다', fidelityScore: 5);
+
+      now = now.add(const Duration(days: 1));
+      await provider.refreshGrowth();
+
+      // 후기를 남긴 열매는 이월 후에도 보관에 남는다.
+      expect(provider.todaySeed!.id, '2026-09-05');
+      expect(provider.todaySeed!.isLocked, isTrue);
+      final fruits = await fruitRepository.getFruits();
+      expect(fruits.length, 1);
+      expect(fruits.single.seedId, '2026-09-04');
+      expect(fruits.single.isReviewed, isTrue);
       expect(provider.errorMessage, isNull);
     });
   });

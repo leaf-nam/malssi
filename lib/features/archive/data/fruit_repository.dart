@@ -19,6 +19,11 @@ abstract class FruitRepository {
     required int fidelityScore,
   });
 
+  /// 이월 만료 (#113): 오늘 이전에 수확된 미후기 열매를 폐기한다.
+  /// 다음날 씨앗 도착까지 후기를 남기지 않으면 정원에 보관되지 않는다.
+  /// 후기를 남긴 열매는 유지된다.
+  Future<void> pruneUnreviewedBeforeToday();
+
   /// 디버그용: 저장소 시각을 [by]만큼 앞당긴다 (날짜 이동, #95).
   Future<void> debugShiftTime(Duration by);
 }
@@ -77,6 +82,19 @@ class InMemoryFruitRepository implements FruitRepository {
         .copyWith(memo: memo, fidelityScore: fidelityScore);
     _fruits[index] = updated;
     return updated;
+  }
+
+  @override
+  Future<void> pruneUnreviewedBeforeToday() async {
+    final now = _clock();
+    final today = DateTime(now.year, now.month, now.day);
+    _fruits.removeWhere((fruit) {
+      if (fruit.isReviewed) return false;
+      final harvested = fruit.harvestedAt;
+      final day =
+          DateTime(harvested.year, harvested.month, harvested.day);
+      return day.isBefore(today);
+    });
   }
 
   @override

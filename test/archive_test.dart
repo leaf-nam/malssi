@@ -182,6 +182,33 @@ void main() {
         throwsStateError,
       );
     });
+
+    test('pruneUnreviewedBeforeToday keeps reviewed and today (#113)',
+        () async {
+      var now = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => now);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '어제 미후기', at: now);
+      await _harvest(repo,
+          seedId: '2026-09-04-reviewed', text: '어제 후기', at: now);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04-reviewed',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+
+      now = DateTime(2026, 9, 5, 12);
+      await _harvest(repo,
+          seedId: '2026-09-05', text: '오늘 미후기', at: now);
+
+      await repo.pruneUnreviewedBeforeToday();
+
+      final ids =
+          (await repo.getFruits()).map((fruit) => fruit.id);
+      expect(ids, contains('fruit-2026-09-04-reviewed'));
+      expect(ids, contains('fruit-2026-09-05'));
+      expect(ids, isNot(contains('fruit-2026-09-04')));
+    });
   });
 
   group('ArchiveProvider', () {
