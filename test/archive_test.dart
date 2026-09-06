@@ -15,10 +15,22 @@ import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
+import 'package:malssi/features/settings/data/settings_repository.dart';
+import 'package:malssi/features/settings/providers/settings_providers.dart';
 
-Widget _wrap(ArchiveProvider provider) {
+/// #108: 정원 화면은 열매 비 on/off 설정을 함께 본다.
+/// [settings]를 주지 않으면 미로드 상태(기본값 on) provider를 쓴다.
+Widget _wrap(ArchiveProvider provider, {SettingsProvider? settings}) {
   return MultiProvider(
-    providers: [ChangeNotifierProvider.value(value: provider)],
+    providers: [
+      ChangeNotifierProvider.value(value: provider),
+      ChangeNotifierProvider.value(
+        value: settings ??
+            SettingsProvider(
+              settingsRepository: InMemorySettingsRepository(),
+            ),
+      ),
+    ],
     // 열매 비 애니메이션을 멈춰 pumpAndSettle이 끝나게 한다 (#89).
     child: const TickerMode(
       enabled: false,
@@ -667,6 +679,44 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
+    testWidgets('rain respects the fruit rain setting (#108)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04',
+          text: '성장 열매',
+          at: at,
+          theme: SeedTheme.growth);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+      final settings = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+      );
+      await settings.load();
+      await settings.setFruitRainEnabled(false);
+
+      await tester.pumpWidget(
+          _wrap(provider, settings: settings));
+      await tester.pumpAndSettle();
+
+      // 설정에서 끄면 비가 오지 않는다.
+      expect(find.byType(FruitRain), findsNothing);
+
+      // 다시 켜면 비가 온다.
+      await settings.setFruitRainEnabled(true);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FruitRain), findsOneWidget);
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('rain shows the top theme fruit behind the grid (#89)',
         (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
@@ -715,7 +765,14 @@ void main() {
       // 티커를 살려 둔다 (무한 애니메이션이라 pumpAndSettle 금지).
       await tester.pumpWidget(
         MultiProvider(
-          providers: [ChangeNotifierProvider.value(value: provider)],
+          providers: [
+            ChangeNotifierProvider.value(value: provider),
+            ChangeNotifierProvider(
+              create: (_) => SettingsProvider(
+                settingsRepository: InMemorySettingsRepository(),
+              ),
+            ),
+          ],
           child: const MaterialApp(home: ArchiveScreen()),
         ),
       );

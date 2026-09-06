@@ -78,6 +78,7 @@
   심어진(후기 완료) 기준, 보유 테마만 개수 내림차순. 최다 색깔은 정원 테마(#89)에 재사용한다.
 - **테마 연출**: 가장 많이 모은 색깔(`topTheme`)의 열매 12개가 배경에 대각선으로
   비처럼 내린다 (#89, `FruitRain` — 14초 주기·불투명도 라이트 0.14/다크 0.20).
+  설정 탭의 `열매 비 효과` 스위치로 켜고 끌 수 있다 (기본값 on, #108).
   3×4 격자에 1개씩·동일 속도로 배치해 겹치지 않고 (#100),
   위상 분산으로 항상 전체 높이에 퍼져 있다 (#103).
   방울 크기 32~64px (#102). 모은 열매가 없으면 배경 연출 없음.
@@ -102,20 +103,24 @@
 ## 3. 설정 탭 (`/settings`)
 
 - **요구**: 씨앗 생성시간·화면 모드 등을 설정한다. 설정 시각에 씨앗 생성과 알림이 동시에 동작한다.
-  화면 모드(라이트/다크/시스템, #47)와 씨앗 기본 생성시간 08:00 (#47)을 제공한다.
+  화면 모드(라이트/다크/시스템, #47)와 씨앗 기본 생성시간 08:00 (#47),
+  열매 비 효과 on/off (기본값 on, #108)를 제공한다.
 - **구현 상태**: 미구현 (신규). 기존 `MyPageScreen`의 알림 토글·시간 설정 UI는
   본 탭으로 이관 후 `MyPageScreen`은 폐기한다.
 - **관련 코드 (예정)**:
   - 모델: `AppSettings` (`model_spec.md` §4.10 참조).
-  - 저장소: `SettingsRepository` (`getSettingsStream()`, `updateSeedTime()`,
-    `setNotifyEnabled()`, `setThemeMode()`) (`lib/features/settings/data/` 예정).
+   - 저장소: `SettingsRepository` (`getSettingsStream()`, `updateSeedTime()`,
+     `setNotifyEnabled()`, `setThemeMode()`, `setFruitRainEnabled()` (#108))
+     (`lib/features/settings/data/` 예정).
   - 화면: `SettingsScreen` (`lib/features/settings/presentation/settings_screen.dart` 예정).
   - 알림: `NotificationService` (`lib/core/services/notification_service.dart`) —
     기존 1회 예약 API를 매일 반복 스케줄로 확장 (`scheduleDailySeedNotification()` 예정).
 - **동작 플로우 (목표)**:
   1. 사용자가 씨앗 생성 시각 변경 (기본값 매일 08:00) → `updateSeedTime()` 저장.
-  2. 사용자가 화면 모드 변경 (라이트/다크/시스템, 기본 시스템) → `setThemeMode()` 저장·즉시 적용.
-     말씨 탭(`/`)은 항상 다크 고정으로 제외.
+   2. 사용자가 화면 모드 변경 (라이트/다크/시스템, 기본 시스템) → `setThemeMode()` 저장·즉시 적용.
+      말씨 탭(`/`)은 항상 다크 고정으로 제외.
+      사용자가 열매 비 효과 변경 (기본 on) → `setFruitRainEnabled()` 저장·
+      정원 탭(`/archive`)에 즉시 반영 (#108).
   3. 다음 날부터 해당 시각에 씨앗 생성 + `NotificationService` 일일 알림 발송.
   4. 알림 탭 → 말씨 탭(`/`)으로 이동 (딥링크/라우팅 연결).
 - **향후 과제**: 알림 권한 요청 플로우, 타임존 처리, 서버 푸시(FCM) 필요 여부 결정,

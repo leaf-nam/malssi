@@ -83,6 +83,20 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
+  /// 열매 비 효과 on/off (#108). 알림 재등록과는 무관하다.
+  Future<void> setFruitRainEnabled(bool enabled) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _settings =
+          await _settingsRepository.setFruitRainEnabled(enabled);
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
+  }
+
   Future<void> _reschedule() async {
     final settings = _settings;
     final reschedule = _onSettingsChanged;

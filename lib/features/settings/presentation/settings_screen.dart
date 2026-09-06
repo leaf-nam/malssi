@@ -58,6 +58,13 @@ class SettingsScreen extends StatelessWidget {
                 state.setThemeMode(selected.single),
           ),
         ),
+        _Row(
+          label: '열매 비 효과',
+          trailingWidget: Switch(
+            value: settings.fruitRainEnabled,
+            onChanged: state.setFruitRainEnabled,
+          ),
+        ),
         if (state.errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),

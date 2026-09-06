@@ -221,6 +221,7 @@ class CollectionNames {
 | seedTime       | `String` | `seedTime`    | `'08:00'` (`'HH:mm'`, #47) |
 | notifyEnabled  | `bool` | `notifyEnabled` | `true`                     |
 | themeMode      | `String` | `themeMode`   | `'system'` (`'light'`/`'dark'`/`'system'`, #47) |
+| fruitRainEnabled | `bool` | `fruitRainEnabled` | `true` (열매 비 효과 on/off, #108) |
 
 - **동작 귀속**: `seedTime` 시각에 씨앗 생성 + 알림 발송이 동시에 동작한다
   (`feature_spec.md` §3 참조).

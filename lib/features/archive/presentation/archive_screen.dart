@@ -6,6 +6,7 @@ import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
+import 'package:malssi/features/settings/providers/settings_providers.dart';
 
 /// 보관 탭. 1년 단위 잔디 그리드로 수확 현황을 보여준다.
 /// 각 칸은 해당 날짜 열매의 테마 색상이며, 터치하면 상세 카드가 열린다.
@@ -50,6 +51,10 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ArchiveProvider>();
+    // #108: 설정에서 끄면 비를 내리지 않는다 (로딩 전 기본값 on).
+    final rainEnabled =
+        context.watch<SettingsProvider>().settings?.fruitRainEnabled ??
+            true;
 
     return Scaffold(
       // 하단 바는 셸(`AppShellView`)이 상주로 들고 있다 (#79).
@@ -57,7 +62,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
       // #107: Stack이 본문 높이에 맞춰 shrink되므로 비 영역을 화면 크기로 명시한다.
       body: Stack(
         children: [
-          if (state.topTheme.isNotEmpty)
+          if (state.topTheme.isNotEmpty && rainEnabled)
             SizedBox.fromSize(
               size: MediaQuery.sizeOf(context),
               child: FruitRain(
