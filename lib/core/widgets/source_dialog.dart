@@ -19,3 +19,38 @@ Future<void> showQuoteSourceDialog(
     ),
   );
 }
+
+/// 작고 눈에 띄지 않는 출처 버튼 (#123).
+/// 저자 줄 오른쪽 구석에 둔다. 탭하면 출처 다이얼로그를 연다.
+class QuoteSourceButton extends StatelessWidget {
+  const QuoteSourceButton({
+    super.key,
+    required this.source,
+    this.color,
+    this.fontSize = 10,
+  });
+
+  final String source;
+  final Color? color;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: TextButton(
+        style: TextButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        onPressed: () => showQuoteSourceDialog(context, source),
+        child: Text(
+          '출처',
+          style: TextStyle(fontSize: fontSize, color: color),
+        ),
+      ),
+    );
+  }
+}

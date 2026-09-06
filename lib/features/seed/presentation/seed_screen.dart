@@ -219,12 +219,11 @@ class _LockedSeed extends StatelessWidget {
 
 /// 명언 + 저자 블록. 성장/완성 화면에서 재사용한다.
 /// 잠금 상태 명언 노출(후속)에도 그대로 얹을 수 있도록 분리했다 (#51).
-/// [onShowSource]가 있으면 저자 아래에 출처 버튼을 보여준다 (#123).
+/// 출처가 비어 있지 않으면 저자 오른쪽 구석에 작게 출처 버튼을 보여준다 (#123).
 class _QuoteBlock extends StatelessWidget {
-  const _QuoteBlock({required this.quote, this.onShowSource});
+  const _QuoteBlock({required this.quote});
 
   final Quote quote;
-  final VoidCallback? onShowSource;
 
   @override
   Widget build(BuildContext context) {
@@ -246,22 +245,11 @@ class _QuoteBlock extends StatelessWidget {
             color: AppTheme.paper,
           ),
         ),
-        if (onShowSource != null) ...[
-          const SizedBox(height: 8),
-          Center(
-            child: TextButton(
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
-              onPressed: onShowSource,
-              child: const Text(
-                '출처',
-                style: TextStyle(fontSize: 11, color: AppTheme.muted),
-              ),
-            ),
+        if (quote.source.isNotEmpty)
+          QuoteSourceButton(
+            source: quote.source,
+            color: AppTheme.muted,
           ),
-        ],
       ],
     );
   }
@@ -316,14 +304,7 @@ class _GrowingSeed extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: quote == null
                   ? const SizedBox.shrink()
-                  : _QuoteBlock(
-                      quote: quote,
-                      // #123: 출처가 있는 명언에만 출처 버튼을 보여준다.
-                      onShowSource: quote.source.isEmpty
-                          ? null
-                          : () => showQuoteSourceDialog(
-                              context, quote.source),
-                    ),
+                  : _QuoteBlock(quote: quote),
             ),
           ),
         ),
@@ -416,13 +397,7 @@ class _OpenedQuote extends StatelessWidget {
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: _QuoteBlock(
-                  quote: quote,
-                  onShowSource: quote.source.isEmpty
-                      ? null
-                      : () =>
-                          showQuoteSourceDialog(context, quote.source),
-                ),
+                child: _QuoteBlock(quote: quote),
               ),
             ),
           ),

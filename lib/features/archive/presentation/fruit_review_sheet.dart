@@ -108,26 +108,11 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (widget.source.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Center(
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  onPressed: () => showQuoteSourceDialog(
-                      context, widget.source),
-                  child: Text(
-                    '출처',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: colors.onSurfaceVariant),
-                  ),
-                ),
+            if (widget.source.isNotEmpty)
+              QuoteSourceButton(
+                source: widget.source,
+                color: colors.onSurfaceVariant,
               ),
-            ],
             const SizedBox(height: 16),
             const Text('오늘의 점수', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 8),
