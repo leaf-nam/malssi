@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
@@ -64,6 +65,11 @@ class SettingsScreen extends StatelessWidget {
             value: settings.fruitRainEnabled,
             onChanged: state.setFruitRainEnabled,
           ),
+        ),
+        _Row(
+          label: '도움말 다시 보기',
+          trailing: '›',
+          onTap: () => context.go('/onboarding'),
         ),
         if (state.errorMessage != null)
           Padding(
