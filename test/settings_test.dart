@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 import 'package:malssi/features/settings/presentation/settings_screen.dart';
@@ -14,9 +15,12 @@ class _ScheduleCall {
   final bool enabled;
 }
 
-Widget _wrap(SettingsProvider provider) {
+Widget _wrap(SettingsProvider provider, {DebugUiProvider? debugUi}) {
   return MultiProvider(
-    providers: [ChangeNotifierProvider.value(value: provider)],
+    providers: [
+      ChangeNotifierProvider.value(value: provider),
+      ChangeNotifierProvider.value(value: debugUi ?? DebugUiProvider()),
+    ],
     child: const MaterialApp(home: SettingsScreen()),
   );
 }
@@ -212,7 +216,9 @@ void main() {
       expect(find.text('화면 모드'), findsOneWidget);
       expect(find.text('다크'), findsOneWidget);
       expect(find.text('열매 비 효과'), findsOneWidget);
-      expect(find.byType(Switch), findsNWidgets(2));
+      // 디버그 모드에서는 '디버그 버튼 숨기기' 스위치가 하나 더 보인다.
+      expect(find.text('디버그 버튼 숨기기'), findsOneWidget);
+      expect(find.byType(Switch), findsNWidgets(3));
     });
 
     testWidgets('toggling the switch disables notifications', (tester) async {

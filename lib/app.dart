@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/auth/data/dummy_auth_service.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
+import 'package:malssi/features/onboarding/data/onboarding_repository.dart';
+import 'package:malssi/features/onboarding/providers/onboarding_providers.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
@@ -22,6 +25,8 @@ class AppShell extends StatelessWidget {
     this.fruitRepository,
     this.settingsRepository,
     this.quoteRepository,
+    this.onboardingRepository,
+    this.autoShowOnFirstLaunch = false,
   });
 
   final List<Quote> initialQuotes;
@@ -33,6 +38,14 @@ class AppShell extends StatelessWidget {
   final SettingsRepository? settingsRepository;
   final QuoteRepository? quoteRepository;
 
+  /// 온보딩 저장소 (#130). `null`이면 순수 인메모리로 동작한다.
+  /// `main()`에서는 `SharedPreferences` 연결본을 넘긴다.
+  final OnboardingRepository? onboardingRepository;
+
+  /// `true`일 때만 첫 실행에 도움말로 자동 이동한다.
+  /// `main()`에서만 `true`로 넘기고, 테스트 기본값은 `false`이다.
+  final bool autoShowOnFirstLaunch;
+
   @override
   Widget build(BuildContext context) {
     final quoteRepository =
@@ -41,11 +54,19 @@ class AppShell extends StatelessWidget {
         this.seedRepository ?? InMemorySeedRepository();
     final fruitRepository =
         this.fruitRepository ?? InMemoryFruitRepository();
+    final onboardingRepository =
+        this.onboardingRepository ?? PrefsOnboardingRepository();
     return MultiProvider(
       providers: [
         Provider<QuoteRepository>.value(value: quoteRepository),
         Provider<SeedRepository>.value(value: seedRepository),
         Provider<FruitRepository>.value(value: fruitRepository),
+        ChangeNotifierProvider(
+          create: (_) => OnboardingProvider(
+            repository: onboardingRepository,
+            autoShowOnFirstLaunch: autoShowOnFirstLaunch,
+          )..load(),
+        ),
         ChangeNotifierProvider(
           create: (_) => SeedProvider(
             seedRepository: seedRepository,
@@ -82,6 +103,7 @@ class AppShell extends StatelessWidget {
           )..load(),
         ),
         Provider(create: (_) => DummyAuthService()),
+        ChangeNotifierProvider(create: (_) => DebugUiProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (_, settingsState, __) {
@@ -92,6 +114,8 @@ class AppShell extends StatelessWidget {
           };
           return MaterialApp.router(
             title: 'malssi',
+            // 스크린샷에 디버그 리본이 찍히지 않게 항상 가린다.
+            debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: themeMode,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/core/services/debug_clock.dart';
+import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
@@ -25,9 +26,12 @@ SeedProvider _buildProvider(
   );
 }
 
-Widget _wrap(SeedProvider provider) {
+Widget _wrap(SeedProvider provider, {DebugUiProvider? debugUi}) {
   return MultiProvider(
-    providers: [ChangeNotifierProvider.value(value: provider)],
+    providers: [
+      ChangeNotifierProvider.value(value: provider),
+      ChangeNotifierProvider.value(value: debugUi ?? DebugUiProvider()),
+    ],
     child: const MaterialApp(home: SeedScreen()),
   );
 }

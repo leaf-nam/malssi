@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
@@ -65,6 +68,22 @@ class SettingsScreen extends StatelessWidget {
             onChanged: state.setFruitRainEnabled,
           ),
         ),
+        _Row(
+          label: '도움말 다시 보기',
+          trailing: '›',
+          onTap: () => context.go('/onboarding'),
+        ),
+        // 디버그 모드에서만 보이는 스크린샷용 스위치. 켜면 씨앗 탭의
+        // 디버그 버튼들이 가려지고, 끄면 다시 수확 플로우를 검증할 수 있다.
+        if (kDebugMode)
+          _Row(
+            label: '디버그 버튼 숨기기',
+            trailingWidget: Switch(
+              value: context.watch<DebugUiProvider>().hideButtons,
+              onChanged: (value) =>
+                  context.read<DebugUiProvider>().setHideButtons(value),
+            ),
+          ),
         if (state.errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),

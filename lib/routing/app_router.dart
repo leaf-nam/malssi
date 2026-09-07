@@ -5,6 +5,8 @@ import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/presentation/archive_screen.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/auth/presentation/login_screen.dart';
+import 'package:malssi/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:malssi/features/onboarding/providers/onboarding_providers.dart';
 import 'package:malssi/features/seed/presentation/seed_screen.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/features/settings/presentation/settings_screen.dart';
@@ -48,6 +50,11 @@ final GoRouter appRouter = GoRouter(
       path: '/auth',
       builder: (context, state) => const LoginScreen(),
     ),
+    // 첫 실행 도움말. 셸 밖에 두어 바 없이 전체 화면으로 보여준다 (#130).
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
   ],
 );
 
@@ -55,13 +62,39 @@ final GoRouter appRouter = GoRouter(
 ///
 /// 셸에서는 화면이 계속 살아있어 탭 진입 시 `initState`가 돌지 않으므로,
 /// 탭 선택 시 명시적으로 새로고침한다 (#62 진입 갱신의 셸 버전).
-class AppShellView extends StatelessWidget {
+/// 첫 실행(`autoShowOnFirstLaunch`, #130)에는 도움말(`/onboarding`)로
+/// 1회 자동 이동한다. 셸이 앱 수명 동안 유지되므로 중복 이동은 없다.
+class AppShellView extends StatefulWidget {
   const AppShellView({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
+  @override
+  State<AppShellView> createState() => _AppShellViewState();
+}
+
+class _AppShellViewState extends State<AppShellView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeShowOnboarding();
+    });
+  }
+
+  Future<void> _maybeShowOnboarding() async {
+    if (!mounted) return;
+    final onboarding = context.read<OnboardingProvider>();
+    if (!onboarding.autoShowOnFirstLaunch) return;
+    await onboarding.load();
+    if (!mounted) return;
+    if (onboarding.completed != true) {
+      context.go('/onboarding');
+    }
+  }
+
   void _onTap(BuildContext context, int index) {
-    navigationShell.goBranch(index);
+    widget.navigationShell.goBranch(index);
     switch (index) {
       case 0:
         context.read<SeedProvider>().refreshGrowth();
@@ -73,9 +106,9 @@ class AppShellView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: MainBottomNav(
-        currentIndex: navigationShell.currentIndex,
+        currentIndex: widget.navigationShell.currentIndex,
         onTap: (index) => _onTap(context, index),
       ),
     );
