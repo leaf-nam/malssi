@@ -31,6 +31,7 @@ flutter:
     - assets/docs/
     - assets/fonts/
     - assets/images/
+    - assets/images/screenshots/
 
   fonts:
     - family: Galmuri11

@@ -114,6 +114,72 @@ void main() {
       expect(provider.completed, isTrue);
     });
 
+    testWidgets('shows screenshots on tab pages only', (tester) async {
+      final provider = OnboardingProvider(
+        repository: PrefsOnboardingRepository(),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 환영 페이지: 스크린샷 없이 아이콘만.
+      expect(find.text('말씨에 오신 것을 환영해요'), findsOneWidget);
+      expect(find.byType(Image), findsNothing);
+
+      // 말씨 탭: 씨앗 잠금 → 성장 → 완성 열매 → 후기 5장.
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Image), findsNWidgets(5));
+
+      // 정원 탭: 잔디 그리드 1장.
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Image), findsOneWidget);
+
+      // 설정 탭: 설정 + 시간 선택 2장.
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Image), findsNWidgets(2));
+
+      // 시작 페이지: 스크린샷 없이 아이콘만.
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      expect(find.text('오늘의 씨앗을 만나보세요'), findsOneWidget);
+      expect(find.byType(Image), findsNothing);
+    });
+
+    testWidgets('titles stay on one line on narrow phones', (tester) async {
+      // iPhone 16e 너비(390pt)에서도 제목이 두 줄로 끊기지 않아야 한다.
+      // 넘침이 생기면 레이아웃 에러로 테스트가 실패한다.
+      tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+
+      final provider = OnboardingProvider(
+        repository: PrefsOnboardingRepository(),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      for (var page = 0; page < onboardingPages.length; page++) {
+        for (final title in onboardingPages.map((p) => p.title)) {
+          final found = find.text(title).evaluate();
+          if (found.isNotEmpty) {
+            final text = found.single.widget as Text;
+            expect(text.maxLines, 1, reason: title);
+          }
+        }
+        expect(tester.takeException(), isNull);
+        if (page < onboardingPages.length - 1) {
+          await tester.tap(find.text('다음'));
+          await tester.pumpAndSettle();
+        }
+      }
+    });
+
     testWidgets('skip finishes immediately', (tester) async {
       var finished = false;
       final provider = OnboardingProvider(

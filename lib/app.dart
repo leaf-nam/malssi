@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/auth/data/dummy_auth_service.dart';
@@ -102,6 +103,7 @@ class AppShell extends StatelessWidget {
           )..load(),
         ),
         Provider(create: (_) => DummyAuthService()),
+        ChangeNotifierProvider(create: (_) => DebugUiProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (_, settingsState, __) {
@@ -112,6 +114,8 @@ class AppShell extends StatelessWidget {
           };
           return MaterialApp.router(
             title: 'malssi',
+            // 스크린샷에 디버그 리본이 찍히지 않게 항상 가린다.
+            debugShowCheckedModeBanner: false,
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: themeMode,

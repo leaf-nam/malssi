@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
@@ -131,6 +131,8 @@ class _LockedSeed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 설정 탭의 런타임 스위치로 스크린샷용으로 가릴 수 있다.
+    final showDebug = context.watch<DebugUiProvider>().showButtons;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -184,7 +186,7 @@ class _LockedSeed extends StatelessWidget {
                     : const Text('씨앗 심기'),
               ),
             ),
-            if (kDebugMode) ...[
+            if (showDebug) ...[
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
@@ -293,6 +295,7 @@ class _GrowingSeed extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final quote = this.quote;
+    final showDebug = context.watch<DebugUiProvider>().showButtons;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -318,7 +321,7 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
-        if (kDebugMode) ...[
+        if (showDebug) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Center(
@@ -386,6 +389,7 @@ class _OpenedQuote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fruit = this.fruit;
+    final showDebug = context.watch<DebugUiProvider>().showButtons;
     return GestureDetector(
       onTap: onTapReview,
       child: Column(
@@ -427,7 +431,7 @@ class _OpenedQuote extends StatelessWidget {
           ],
           // #109: 완성 상태에서도 날짜를 옮길 수 있어야 다음 날 씨앗을 볼 수 있다.
           // #115: 공용 시계를 미뤄 전체 플로우를 검증한다.
-          if (kDebugMode) ...[
+          if (showDebug) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Center(
