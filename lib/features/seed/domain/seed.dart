@@ -110,6 +110,20 @@ class Seed {
         now.difference(plantedAt).inSeconds ~/ stageInterval.inSeconds;
     return elapsed.clamp(0, Seed.maxGrowthStage);
   }
+
+  /// 다음 성장 단계까지 남은 시간 (#138).
+  /// `growing`이 아니면 `Duration.zero`를 돌려준다.
+  /// 최종 단계에 도달했으면 완성 임박으로 보고 `Duration.zero`
+  /// (남은시간 대신 완성 표시를 보여준다).
+  Duration timeUntilNextStage(DateTime now) {
+    if (!isGrowing) return Duration.zero;
+    if (growthStageAt(now) >= maxGrowthStage) return Duration.zero;
+    final elapsed = now.difference(plantedAt);
+    if (elapsed.isNegative) return stageInterval;
+    return Duration(
+        seconds: stageInterval.inSeconds -
+            (elapsed.inSeconds % stageInterval.inSeconds));
+  }
 }
 
 /// `Seed.status` 값. enum 대신 문자열 상수로 둔다 (Firestore 직렬화 단순화).

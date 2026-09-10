@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
@@ -257,6 +260,70 @@ class _QuoteBlock extends StatelessWidget {
   }
 }
 
+/// 남은시간 문구 (#138). 1시간 이상은 `다음 성장까지 1시간 23분`,
+/// 1시간 미만은 `다음 성장까지 23분`, 1분 미만은 `곧 성장해요`.
+/// 남은시간이 없으면 `''` (호출자가 숨긴다).
+String formatGrowthCountdown(Duration remaining) {
+  if (remaining <= Duration.zero) return '';
+  final minutes = remaining.inMinutes;
+  if (minutes < 1) return '곧 성장해요';
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  if (hours <= 0) return '다음 성장까지 $minutes분';
+  if (rest <= 0) return '다음 성장까지 $hours시간';
+  return '다음 성장까지 $hours시간 $rest분';
+}
+
+/// 다음 성장까지 남은시간 표시 (#138). 30초마다 다시 계산한다.
+/// 명언 블록 아래에 두며, 성장 에셋 영역에는 문구를 두지 않는다 (#57).
+/// 완성 임박·비성장 상태에서는 숨긴다.
+class _GrowthCountdown extends StatefulWidget {
+  const _GrowthCountdown({required this.seed});
+
+  final Seed seed;
+
+  @override
+  State<_GrowthCountdown> createState() => _GrowthCountdownState();
+}
+
+class _GrowthCountdownState extends State<_GrowthCountdown> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) {
+        if (mounted) setState(() {});
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 공용 시계 기준이라 디버그 시간 이동(+1시간/+1일)에도 함께 당겨진다 (#115).
+    final label = formatGrowthCountdown(
+      widget.seed.timeUntilNextStage(DebugClock.now()),
+    );
+    if (label.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+      ),
+    );
+  }
+}
+
 /// 영역에 맞춰 들어가는 테마 이미지. 에셋이 없거나 로드에 실패하면 🌱를 보여준다.
 class _ContainImage extends StatelessWidget {
   const _ContainImage({required this.path});
@@ -299,15 +366,21 @@ class _GrowingSeed extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 명언 + 저자: 나머지 2/3.
+        // 명언 + 저자: 나머지 2/3. 성장 중이면 아래에 남은시간을 덧붙인다 (#138).
         Expanded(
           flex: 2,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: quote == null
-                  ? const SizedBox.shrink()
-                  : _QuoteBlock(quote: quote),
+                  ? _GrowthCountdown(seed: seed)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _QuoteBlock(quote: quote),
+                        _GrowthCountdown(seed: seed),
+                      ],
+                    ),
             ),
           ),
         ),
