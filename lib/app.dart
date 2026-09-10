@@ -87,10 +87,29 @@ class AppShell extends StatelessWidget {
                 body: '눌러서 오늘의 리뷰를 남겨보세요',
                 completeAt: completeAt,
               );
+              // 심었으므로 마감 리마인드는 취소한다 (#147).
+              await NotificationService.instance.cancelSeedNotification(
+                  NotificationService.seedReminderNotificationId);
             },
             onSeedCompleted: () async {
               await NotificationService.instance.cancelSeedNotification(
                   NotificationService.seedCompleteNotificationId);
+              await NotificationService.instance.cancelSeedNotification(
+                  NotificationService.seedReminderNotificationId);
+            },
+            // #147: 미심김 씨앗의 마감(14시) 1시간 전 리마인드. 당일 13:00 1회.
+            onReminderDue: ({required reminderAt}) async {
+              final settings = await (settingsRepository ??
+                      InMemorySettingsRepository())
+                  .getSettings();
+              if (!settings.notifyEnabled) return;
+              await NotificationService.instance
+                  .scheduleSeedCompleteNotification(
+                id: NotificationService.seedReminderNotificationId,
+                title: '오늘의 씨앗이 곧 마감돼요',
+                body: '14시 전에 씨앗을 심어보세요',
+                completeAt: reminderAt,
+              );
             },
           )..ensureTodaySeed(),
         ),
@@ -114,11 +133,13 @@ class AppShell extends StatelessWidget {
                   minute: minute,
                 );
               } else {
-                // 매일 알림을 끄면 완성 알림도 함께 취소한다 (#140).
+                // 매일 알림을 끄면 완성·리마인드 알림도 함께 취소한다 (#140, #147).
                 await NotificationService.instance.cancelSeedNotification(
                     NotificationService.seedNotificationId);
                 await NotificationService.instance.cancelSeedNotification(
                     NotificationService.seedCompleteNotificationId);
+                await NotificationService.instance.cancelSeedNotification(
+                    NotificationService.seedReminderNotificationId);
               }
             },
           )..load(),

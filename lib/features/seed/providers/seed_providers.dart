@@ -19,6 +19,12 @@ typedef ScheduleCompleteNotification = Future<void> Function({
 /// 씨앗이 완성·수확되면 호출된다. 완성 알림 취소용 (#140).
 typedef CancelCompleteNotification = Future<void> Function();
 
+/// 당일 미심김 씨앗을 확인하면 리마인드 예정 시각과 함께 호출된다 (#147).
+/// 실제 예약은 `app.dart`에서 `NotificationService`로 연결한다.
+typedef ScheduleReminderNotification = Future<void> Function({
+  required DateTime reminderAt,
+});
+
 /// 씨앗 탭 상태. `provider` + [ChangeNotifier] 패턴 (컨벤션 §3).
 ///
 /// 성장 플로우 (#40, #46): 심기(명언 즉시 공개) → 2시간 간격 성장(0~5단계) →
@@ -33,6 +39,7 @@ class SeedProvider extends ChangeNotifier {
     bool enableAutoRefresh = false,
     this._onSeedPlanted,
     this._onSeedCompleted,
+    this._onReminderDue,
   }) {
     if (enableAutoRefresh) {
       _timer = Timer.periodic(
@@ -50,6 +57,7 @@ class SeedProvider extends ChangeNotifier {
   final FruitRepository _fruitRepository;
   final ScheduleCompleteNotification? _onSeedPlanted;
   final CancelCompleteNotification? _onSeedCompleted;
+  final ScheduleReminderNotification? _onReminderDue;
   Timer? _timer;
 
   Seed? _todaySeed;
@@ -103,6 +111,22 @@ class SeedProvider extends ChangeNotifier {
     }
   }
 
+  /// 미심김 씨앗이면 마감 리마인드 예약을 요청한다 (#147).
+  /// 마감됐거나 성장 중이면 요청하지 않는다.
+  /// 리마인드 날짜는 씨앗 당일로 고정한다 (저장소·공용 시계가 어긋나는
+  /// 테스트·디버그 상황에서도 당일 13:00을 가리킨다).
+  Future<void> _notifyReminderDue(Seed seed) async {
+    final schedule = _onReminderDue;
+    if (schedule == null || !seed.isLocked) return;
+    if (seed.isMissed(DebugClock.now())) return;
+    try {
+      final day = DateTime.parse(seed.dateKey);
+      await schedule(reminderAt: Seed.reminderAt(day));
+    } catch (e) {
+      _errorMessage = '$e';
+    }
+  }
+
   /// 오늘의 씨앗을 준비한다 (없으면 생성, 성장 중이면 이월).
   /// 완성된 씨앗은 열매를 수확하고 명언을 복원한다. 앱 시작 시 1회 호출.
   Future<void> ensureTodaySeed() async {
@@ -114,7 +138,10 @@ class SeedProvider extends ChangeNotifier {
       await _maybeHarvest();
       // 재시작 시 성장 중이면 완성 알림을 다시 예약한다 (#140).
       final seed = _todaySeed;
-      if (seed != null) await _notifyPlanted(seed);
+      if (seed == null) return;
+      await _notifyPlanted(seed);
+      // 미심김이면 마감 리마인드를 예약한다 (#147).
+      await _notifyReminderDue(seed);
     } catch (e) {
       _errorMessage = '$e';
     } finally {

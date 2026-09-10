@@ -416,8 +416,8 @@ void main() {
       expect(active.growthStage, Seed.maxGrowthStage);
     });
 
-    test('getActiveSeed carries over growing seeds past midnight', () async {
-      var now = DateTime(2026, 9, 4, 20);
+    test('growing seeds are not expired by the noon deadline', () async {
+      var now = DateTime(2026, 9, 4, 8);
       final repo = InMemorySeedRepository(
         clock: () => now,
         themePicker: () => SeedTheme.growth,
@@ -427,13 +427,14 @@ void main() {
       final seed = await repo.getTodaySeed();
       await repo.plantSeed(seedId: seed.id, quote: quote);
 
-      now = DateTime(2026, 9, 5, 1);
+      now = DateTime(2026, 9, 4, 15);
       final active = await repo.getActiveSeed();
 
-      // 심은 씨앗은 만료되지 않고 이월된다 (5시간 경과 → 2단계).
+      // 심은 씨앗은 마감과 무관하게 자란다 (7시간 경과 → 3단계).
+      // 정오 전 심기 → 늦어도 22시 완성이라 자정 이월도 발생하지 않는다 (#147).
       expect(active.id, '2026-09-04');
       expect(active.isGrowing, isTrue);
-      expect(active.growthStage, 2);
+      expect(active.growthStage, 3);
     });
 
     test('growthImage maps stages with fallbacks', () {

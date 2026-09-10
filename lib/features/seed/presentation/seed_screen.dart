@@ -113,6 +113,16 @@ class _SeedScreenState extends State<SeedScreen> {
         isBusy: state.isLoading,
       );
     }
+    // 14시 마감 (#147): 만료됐거나 마감된 locked 씨앗은 심기 화면을 보여주지 않는다.
+    if (seed.status == SeedStatus.expired ||
+        seed.isMissed(DebugClock.now())) {
+      return _LockedSeed(
+        seedDateKey: seed.dateKey,
+        theme: seed.theme,
+        isBusy: state.isLoading,
+        isMissed: true,
+      );
+    }
     return _LockedSeed(
       seedDateKey: seed.dateKey,
       theme: seed.theme,
@@ -126,11 +136,15 @@ class _LockedSeed extends StatelessWidget {
     required this.seedDateKey,
     required this.theme,
     required this.isBusy,
+    this.isMissed = false,
   });
 
   final String seedDateKey;
   final String theme;
   final bool isBusy;
+
+  /// 14시 마감 여부 (#147). `true`면 심기 버튼을 비활성화하고 마감 안내를 보여준다.
+  final bool isMissed;
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +180,9 @@ class _LockedSeed extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
+              isMissed
+                  ? '오늘의 씨앗이 마감되었어요'
+                  : '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -177,7 +193,7 @@ class _LockedSeed extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: isBusy
+                onPressed: isBusy || isMissed
                     ? null
                     : () => context.read<SeedProvider>().plantSeed(),
                 child: isBusy

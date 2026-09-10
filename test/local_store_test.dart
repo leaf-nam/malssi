@@ -85,7 +85,9 @@ void main() {
     test('load with an empty store starts fresh', () async {
       SharedPreferences.setMockInitialValues({});
       final store = await PrefsLocalStore.create();
-      final repo = InMemorySeedRepository(store: store);
+      // 마감 규칙(#147)과 무관하게 오전 기준으로 검증한다.
+      final repo = InMemorySeedRepository(
+          clock: () => DateTime(2026, 9, 4, 8), store: store);
       await repo.load();
 
       final seed = await repo.getTodaySeed();
