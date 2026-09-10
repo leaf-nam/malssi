@@ -134,20 +134,17 @@ void main() {
       });
     });
 
-    group('formatGrowthCountdown (#138)', () {
-      test('formats hours and minutes', () {
-        expect(formatGrowthCountdown(const Duration(minutes: 83)),
-            '다음 성장까지 1시간 23분');
-        expect(formatGrowthCountdown(const Duration(hours: 2)),
-            '다음 성장까지 2시간');
-        expect(formatGrowthCountdown(const Duration(minutes: 23)),
-            '다음 성장까지 23분');
+    group('formatGrowthTimer (#138)', () {
+      test('formats HH:MM with two digits', () {
+        expect(formatGrowthTimer(const Duration(minutes: 83)), '01:23');
+        expect(formatGrowthTimer(const Duration(hours: 2)), '02:00');
+        expect(formatGrowthTimer(const Duration(minutes: 23)), '00:23');
       });
 
-      test('shows encouragement under a minute and hides zero', () {
-        expect(formatGrowthCountdown(const Duration(seconds: 30)), '곧 성장해요');
-        expect(formatGrowthCountdown(Duration.zero), isEmpty);
-        expect(formatGrowthCountdown(const Duration(seconds: -5)), isEmpty);
+      test('rounds sub-minute up and hides zero', () {
+        expect(formatGrowthTimer(const Duration(seconds: 30)), '00:01');
+        expect(formatGrowthTimer(Duration.zero), isEmpty);
+        expect(formatGrowthTimer(const Duration(seconds: -5)), isEmpty);
       });
     });
   });
@@ -699,13 +696,13 @@ void main() {
       expect(find.textContaining('단계 성장 중'), findsNothing);
       expect(find.textContaining('2시간마다'), findsNothing);
       expect(find.byType(Image), findsOneWidget);
-      // #51: 명언 영역(2/3) : 성장 에셋(1/3).
+      // #51에서 6:4로 조정 (에셋 1.2x 확대분, #138 개선).
       final growingFlexes = tester
           .widgetList<Expanded>(find.byType(Expanded))
           .map((e) => e.flex)
           .toList();
-      expect(growingFlexes[0], 2);
-      expect(growingFlexes[1], 1);
+      expect(growingFlexes[0], 6);
+      expect(growingFlexes[1], 4);
 
       // #64: 디버그 5초 간격이라 +1단계는 1단계만 오른다.
       await tester.tap(find.text('디버그: +1단계'));
@@ -723,9 +720,9 @@ void main() {
           findsOneWidget);
     });
 
-    testWidgets('growing seed shows the countdown, completion hides it (#138)',
+    testWidgets('growing seed shows the timer below, completion hides it (#138)',
         (tester) async {
-      // 심은 지 61분째: 남은시간이 보인다.
+      // 심은 지 61분째: 라벨 + 타이머가 씨앗 아래에 보인다.
       final plantedBase =
           DateTime.now().subtract(const Duration(minutes: 61));
       final provider = _buildProvider(clock: () => plantedBase);
@@ -736,15 +733,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(provider.todaySeed!.isGrowing, isTrue);
-      expect(find.textContaining('다음 성장까지'), findsOneWidget);
+      expect(find.text('다음 성장까지'), findsOneWidget);
+      expect(
+          find.textContaining(RegExp(r'^\d\d:\d\d$')), findsOneWidget);
 
-      // 완성되면 남은시간 대신 완성 화면이 보인다.
+      // 완성되면 타이머 대신 완성 화면이 보인다.
       await tester.tap(find.text('디버그: 열매 만들기'));
       await tester.pumpAndSettle();
 
       expect(provider.todaySeed!.isComplete, isTrue);
-      expect(find.textContaining('다음 성장까지'), findsNothing);
-      expect(find.textContaining('곧 성장해요'), findsNothing);
+      expect(find.text('다음 성장까지'), findsNothing);
+      expect(find.textContaining(RegExp(r'^\d\d:\d\d$')), findsNothing);
+      expect(find.text('열매가 완성되었어요'), findsNothing);
+    });
+
+    testWidgets('final stage shows only the completion phrase (#138)',
+        (tester) async {
+      // 저장소 시각은 심은 직후로 고정하고, 공용 시계만 완성 단계로 미룬다.
+      final plantedBase = DateTime.now();
+      final provider = _buildProvider(clock: () => plantedBase);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      DebugClock.shift(const Duration(hours: 10));
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 아직 수확 전(성장 중)이지만 남은시간은 0 → 문구만 남는다.
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(find.text('열매가 완성되었어요'), findsOneWidget);
+      expect(find.text('다음 성장까지'), findsNothing);
+      expect(find.textContaining(RegExp(r'^\d\d:\d\d$')), findsNothing);
     });
 
     testWidgets('locked screen advances the day (#95)', (tester) async {

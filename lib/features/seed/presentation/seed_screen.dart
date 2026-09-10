@@ -260,23 +260,23 @@ class _QuoteBlock extends StatelessWidget {
   }
 }
 
-/// 남은시간 문구 (#138). 1시간 이상은 `다음 성장까지 1시간 23분`,
-/// 1시간 미만은 `다음 성장까지 23분`, 1분 미만은 `곧 성장해요`.
-/// 남은시간이 없으면 `''` (호출자가 숨긴다).
-String formatGrowthCountdown(Duration remaining) {
+/// 타이머 표기 (#138). `1시간 23분` → `01:23` (`HH:MM`, 2자리 고정).
+/// 1분 미만은 올림해서 `00:01`로 보여준다 (0으로 떨어지는 순간은
+/// 완성 단계라 호출자가 완성 문구를 보여준다).
+/// 0 이하면 `''` (호출자가 숨긴다).
+String formatGrowthTimer(Duration remaining) {
   if (remaining <= Duration.zero) return '';
-  final minutes = remaining.inMinutes;
-  if (minutes < 1) return '곧 성장해요';
+  final minutes = (remaining.inSeconds + 59) ~/ 60;
   final hours = minutes ~/ 60;
   final rest = minutes % 60;
-  if (hours <= 0) return '다음 성장까지 $minutes분';
-  if (rest <= 0) return '다음 성장까지 $hours시간';
-  return '다음 성장까지 $hours시간 $rest분';
+  return '${hours.toString().padLeft(2, '0')}:'
+      '${rest.toString().padLeft(2, '0')}';
 }
 
 /// 다음 성장까지 남은시간 표시 (#138). 30초마다 다시 계산한다.
-/// 명언 블록 아래에 두며, 성장 에셋 영역에는 문구를 두지 않는다 (#57).
-/// 완성 임박·비성장 상태에서는 숨긴다.
+/// 성장 에셋 아래에 두며 (에셋 영역 자체에는 문구를 두지 않는다, #57),
+/// `다음 성장까지` 라벨(기존 폰트 유지) + 씨앗 UI 수준의 큰 타이머로 보여준다.
+/// 최종 단계(완성 임박)에서는 타이머 대신 `열매가 완성되었어요` 문구만 남긴다.
 class _GrowthCountdown extends StatefulWidget {
   const _GrowthCountdown({required this.seed});
 
@@ -308,18 +308,41 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.seed.isGrowing) return const SizedBox.shrink();
     // 공용 시계 기준이라 디버그 시간 이동(+1시간/+1일)에도 함께 당겨진다 (#115).
-    final label = formatGrowthCountdown(
+    final timer = formatGrowthTimer(
       widget.seed.timeUntilNextStage(DebugClock.now()),
     );
-    if (label.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 11, color: AppTheme.muted),
-      ),
+    // 완성 임박: 문구만 남긴다.
+    if (timer.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: Text(
+          '열매가 완성되었어요',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 11, color: AppTheme.muted),
+        ),
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+            '다음 성장까지',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: AppTheme.muted),
+          ),
+        ),
+        Text(
+          timer,
+          textAlign: TextAlign.center,
+          // Galmuri 숫자는 monospace(1자=1em)라 40px → 너비 200.
+          // 일반 폰 화면의 씨앗 너비와 같은 수준으로 맞춘다 (#138 개선).
+          style: AppTheme.quoteTextStyle(fontSize: 40),
+        ),
+      ],
     );
   }
 }
@@ -344,7 +367,8 @@ class _ContainImage extends StatelessWidget {
   }
 }
 
-/// 성장 중 화면 (#51). 명언 + 저자가 2/3, 성장 에셋이 1/3을 차지한다.
+/// 성장 중 화면. 명언 + 저자가 6, 성장 에셋이 4를 차지한다
+/// (에셋 1.2x 확대분 반영, #138 개선).
 /// 디버그에서만 빨리감기 버튼.
 class _GrowingSeed extends StatelessWidget {
   const _GrowingSeed({
@@ -366,27 +390,22 @@ class _GrowingSeed extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 명언 + 저자: 나머지 2/3. 성장 중이면 아래에 남은시간을 덧붙인다 (#138).
+        // 명언 + 저자.
         Expanded(
-          flex: 2,
+          flex: 6,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: quote == null
-                  ? _GrowthCountdown(seed: seed)
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _QuoteBlock(quote: quote),
-                        _GrowthCountdown(seed: seed),
-                      ],
-                    ),
+                  ? const SizedBox.shrink()
+                  : _QuoteBlock(quote: quote),
             ),
           ),
         ),
-        // 성장 에셋: 화면의 1/3. 형태만 보여주고 문구·도트는 두지 않는다 (#57).
+        // 성장 에셋 (1.2x 확대분 반영, #138 개선).
+        // 형태만 보여주고 문구·도트는 두지 않는다 (#57).
         Expanded(
-          flex: 1,
+          flex: 4,
           child: Center(
             child: _ContainImage(
               path: ThemeAssets.growthImage(
@@ -394,6 +413,8 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
+        // 남은시간: 씨앗 아래. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
+        _GrowthCountdown(seed: seed),
         if (showDebug) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
