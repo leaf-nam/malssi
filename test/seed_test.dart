@@ -85,6 +85,66 @@ void main() {
       expect(seed.status, SeedStatus.locked);
       expect(seed.isLocked, isTrue);
     });
+
+    group('timeUntilNextStage (#138)', () {
+      Seed growingAt(DateTime plantedAt) => Seed(
+            id: '2026-09-04',
+            dateKey: '2026-09-04',
+            quoteId: 'seed-1',
+            status: SeedStatus.growing,
+            createdAt: plantedAt,
+            plantedAt: plantedAt,
+          );
+
+      test('returns the remainder of the 2-hour stage', () {
+        final seed = growingAt(DateTime(2026, 9, 4, 8));
+
+        expect(seed.timeUntilNextStage(DateTime(2026, 9, 4, 9)),
+            const Duration(hours: 1));
+        expect(seed.timeUntilNextStage(DateTime(2026, 9, 4, 9, 37)),
+            const Duration(minutes: 23));
+      });
+
+      test('resets to a full stage exactly on the boundary', () {
+        final seed = growingAt(DateTime(2026, 9, 4, 8));
+
+        expect(seed.timeUntilNextStage(DateTime(2026, 9, 4, 10)),
+            const Duration(hours: 2));
+      });
+
+      test('returns zero when not growing or nearly complete', () {
+        final plantedAt = DateTime(2026, 9, 4, 8);
+        final locked = growingAt(plantedAt).copyWith(status: SeedStatus.locked);
+        final complete =
+            growingAt(plantedAt).copyWith(status: SeedStatus.complete);
+        final growing = growingAt(plantedAt);
+
+        expect(locked.timeUntilNextStage(DateTime(2026, 9, 4, 9)),
+            Duration.zero);
+        expect(complete.timeUntilNextStage(DateTime(2026, 9, 4, 9)),
+            Duration.zero);
+        // 5단계 도달(10시간 경과) = 완성 임박.
+        expect(growing.timeUntilNextStage(DateTime(2026, 9, 4, 18)),
+            Duration.zero);
+      });
+    });
+
+    group('formatGrowthCountdown (#138)', () {
+      test('formats hours and minutes', () {
+        expect(formatGrowthCountdown(const Duration(minutes: 83)),
+            '다음 성장까지 1시간 23분');
+        expect(formatGrowthCountdown(const Duration(hours: 2)),
+            '다음 성장까지 2시간');
+        expect(formatGrowthCountdown(const Duration(minutes: 23)),
+            '다음 성장까지 23분');
+      });
+
+      test('shows encouragement under a minute and hides zero', () {
+        expect(formatGrowthCountdown(const Duration(seconds: 30)), '곧 성장해요');
+        expect(formatGrowthCountdown(Duration.zero), isEmpty);
+        expect(formatGrowthCountdown(const Duration(seconds: -5)), isEmpty);
+      });
+    });
   });
 
   group('InMemorySeedRepository', () {
@@ -587,6 +647,30 @@ void main() {
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
+    });
+
+    testWidgets('growing seed shows the countdown, completion hides it (#138)',
+        (tester) async {
+      // 심은 지 61분째: 남은시간이 보인다.
+      final plantedBase =
+          DateTime.now().subtract(const Duration(minutes: 61));
+      final provider = _buildProvider(clock: () => plantedBase);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(find.textContaining('다음 성장까지'), findsOneWidget);
+
+      // 완성되면 남은시간 대신 완성 화면이 보인다.
+      await tester.tap(find.text('디버그: 열매 만들기'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isComplete, isTrue);
+      expect(find.textContaining('다음 성장까지'), findsNothing);
+      expect(find.textContaining('곧 성장해요'), findsNothing);
     });
 
     testWidgets('locked screen advances the day (#95)', (tester) async {
