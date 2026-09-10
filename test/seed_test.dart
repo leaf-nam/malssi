@@ -696,13 +696,13 @@ void main() {
       expect(find.textContaining('단계 성장 중'), findsNothing);
       expect(find.textContaining('2시간마다'), findsNothing);
       expect(find.byType(Image), findsOneWidget);
-      // #51: 명언 영역(2/3) : 성장 에셋(1/3).
+      // #51에서 6:4로 조정 (에셋 1.2x 확대분, #138 개선).
       final growingFlexes = tester
           .widgetList<Expanded>(find.byType(Expanded))
           .map((e) => e.flex)
           .toList();
-      expect(growingFlexes[0], 2);
-      expect(growingFlexes[1], 1);
+      expect(growingFlexes[0], 6);
+      expect(growingFlexes[1], 4);
 
       // #64: 디버그 5초 간격이라 +1단계는 1단계만 오른다.
       await tester.tap(find.text('디버그: +1단계'));
