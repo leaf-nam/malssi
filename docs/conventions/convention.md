@@ -28,6 +28,7 @@
 - Repository: `<Name>Repository` 추상 클래스 + `InMemory<Name>Repository` 구현체
   (예: `QuoteRepository` / `InMemoryQuoteRepository`).
   Firestore 연동 시 구현체를 교체하고 `fromMap`/`toMap` 규칙(`model_spec.md` §3)을 따른다.
+  (서버 동기화는 미계획. Firebase 미사용 확정.)
 - Provider/Notifier: `<Name>Provider`, `<Name>Notifier` (예: `randomQuoteProvider`, `QuoteNotifier`).
 - 모델: `Quote`, `Seed`, `Fruit`, `AppSettings`
   (`HomeQuote`/`Comment`와 `User`/`Submission` Map 기반 코드는 #19에서 제거됨.

@@ -1,10 +1,9 @@
 import 'package:malssi/core/constants/collection_names.dart';
 
-/// Firestore collection path holder.
+/// Collection path holder (local-first, no backend).
 ///
-/// Holds document-path helpers only (no Firebase SDK types) until the
-/// Firestore backend is connected. Always use [CollectionNames] constants;
-/// do not hard-code collection strings elsewhere.
+/// Holds document-path helpers only (no SDK types). Always use
+/// [CollectionNames] constants; do not hard-code collection strings elsewhere.
 class FirestoreRefs {
   const FirestoreRefs();
 

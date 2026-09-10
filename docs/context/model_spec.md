@@ -48,9 +48,9 @@ class CollectionNames {
    ```dart
    createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
    ```
-   Firestore `Timestamp` 객체의 `.toDate()`를 호출합니다.
-   `toMap()`에서는 현재 코드가 `DateTime`을 그대로 넣으므로, Firestore SDK가
-   자동으로 Timestamp로 변환합니다.
+   `.toDate()` 방어 읽기로 `Timestamp` 호환 형태를 파싱한다.
+   `toMap()`에서는 `DateTime`을 그대로 넣는다 (로컬 JSON 저장 시 ISO 문자열로 변환,
+   `LocalStore.decodeDates`로 복원). 서버 연동은 미계획.
 
 ## 4. 모델별 스펙
 
@@ -113,12 +113,13 @@ class CollectionNames {
   컬렉션 `submissions`.)
 - **향후 과제**: 자작 명언 부활 시(#129) 모델·상태 정책을 새로 확정한다.
 
-### 4.7 `Auth` — 인증
+### 4.7 `Auth` — 인증 (백엔드 없음, 확정)
 
 - **위치**: `lib/features/auth/data/dummy_auth_service.dart` (`DummyAuthService`)
-- **현황**: 실제 Firebase Auth가 아닌 더미 구현 (`signInAnonymously`, `signInWithGoogle`, `signOut`,
-  `currentUserId => 'anonymous_user'`).
-- **컬렉션**: `auth` (`CollectionNames.auth`) — 실제 Auth 연동 시 스키마 확정 필요.
+- **현황**: 인증 백엔드 없이 더미 구현으로 확정
+  (`signInAnonymously`, `signInWithGoogle`, `signOut`,
+  `currentUserId => 'anonymous_user'`). Firebase 미사용.
+- **컬렉션**: `auth` (`CollectionNames.auth`) — 로컬 키로만 사용한다.
 
 ### 4.8 `Seed` — 씨앗 (3탭 개편 신규, 2026-09-04, 구현됨)
 
