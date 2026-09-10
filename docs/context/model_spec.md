@@ -141,7 +141,12 @@ class CollectionNames {
 
 - **상태 전이**: `locked` (생성, 탭 → 심기) → `growing` (2시간 간격 성장) →
   `complete` (5단계 도달, 열매 수확 대상).
-  자정 만료는 미심김(`locked`)에만 적용되고, `growing`은 다음 날로 이월된다.
+  미심김(`locked`) 씨앗은 당일 정오를 넘기면 `expired`로 전환된다
+  (정오 정각까지 심기 가능, `Seed.deadlineHour = 12`, #147).
+  `seedTime`과 무관한 고정 마감이다.
+  자정 만료도 유지된다 (날짜가 바뀌면 지난 `locked` 만료).
+  `growing`은 다음 날로 이월된다 (정오 전 심기 → 늦어도 22시 완성이므로
+  실제로 자정을 넘기지 않는다).
   (`opened`는 성장 도입 전 상태로 호환용으로만 유지.)
 - **컬렉션**: `seeds` (`CollectionNames.seeds`).
 - **향후 과제**: 성장 단계 연출 에셋 확정 시 §4.11 개정.

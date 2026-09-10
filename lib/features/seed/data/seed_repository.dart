@@ -97,7 +97,7 @@ class InMemorySeedRepository implements SeedRepository {
       }
     }
     final now = _clock();
-    final seed = _seeds.putIfAbsent(
+    var seed = _seeds.putIfAbsent(
       todayKey,
       () {
         final createdAt = now;
@@ -112,6 +112,11 @@ class InMemorySeedRepository implements SeedRepository {
         );
       },
     );
+    // 정오 마감 (#147): 당일 미심김 씨앗은 정오가 지나면 만료된다.
+    if (seed.isMissed(now)) {
+      seed = seed.copyWith(status: SeedStatus.expired);
+      _seeds[todayKey] = seed;
+    }
     await _persist();
     return seed;
   }
@@ -165,6 +170,9 @@ class InMemorySeedRepository implements SeedRepository {
     }
     if (!seed.isLocked) {
       throw StateError('Seed is not locked: $seedId (${seed.status})');
+    }
+    if (seed.isMissed(_clock())) {
+      throw StateError('Seed missed the noon deadline: $seedId');
     }
     final planted = seed.copyWith(
       quoteId: quote.id,
