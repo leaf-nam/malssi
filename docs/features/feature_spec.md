@@ -22,17 +22,17 @@
   명언 + 저자 영역(`_QuoteBlock`)은 잠금 화면 재사용을 전제로 분리되어 있다
   (잠금 상태 명언 노출은 후속 이슈).
   안내 문구·열매 헤더·카드 테두리·태그 칩은 삭제. 저자는 작게(11px) 흰색 통일.
-- **구현 상태**: 미구현 (신규). 기존 `HomeScreen`의 랜덤 명언 + 광고 게이트 플로우를 대체한다.
-- **관련 코드 (예정)**:
-  - 모델: `Seed`, `Fruit` (`model_spec.md` §4.8·§4.9 참조).
-  - 저장소: `SeedRepository` (`getTodaySeed()`, `openSeed(seedId)`),
-    `FruitRepository` (`harvestFromSeed(seedId)`, `getFruitsStream()`)
-    (`lib/features/seed/data/`, `lib/features/archive/data/` 예정).
-  - 화면: `SeedScreen` (`lib/features/seed/presentation/seed_screen.dart` 예정) —
-    기존 `HomeScreen` (`lib/features/home/presentation/home_screen.dart`)을 대체.
-  - 상태: `SeedProvider` (`lib/features/seed/providers/` 예정).
-  - 명언 원천: 기존 `quotes` 컬렉션 + `Quote` 모델 재사용
-    (`lib/features/quote.dart`, `CollectionNames.quotes`).
+- **구현 상태**: 구현됨.
+- **관련 코드**:
+  - 모델: `Seed` (`model_spec.md` §4.8 참조).
+  - 저장소: `SeedRepository` (`getActiveSeed()`, `getTodaySeed()`, `plantSeed()`,
+    `openSeed()`, `refreshGrowth()`),
+    `FruitRepository` (`harvestFromSeed()`, `getFruitsStream()`)
+    (`lib/features/seed/data/`, `lib/features/archive/data/`).
+  - 화면: `SeedScreen` (`lib/features/seed/presentation/seed_screen.dart`).
+  - 상태: `SeedProvider` (`lib/features/seed/providers/`, 15분 자동 갱신 + 탭 진입 갱신).
+  - 명언 원천: 번들 `assets/docs/quotes.json` → `QuoteAssets` →
+    `InMemoryQuoteRepository` (`lib/features/home/data/`, #123).
 - **동작 플로우 (목표)**:
   1. 설정 시각(`AppSettings.seedTime`, 기본 08:00)에 당일 `Seed` 문서 1개 생성
      (문서 ID = 날짜키, 예: `'2026-09-04'`, 테마 랜덤 부여) + 씨앗 알림 발송.
@@ -55,8 +55,7 @@
       `디버그: +1시간`/`+1일`은 앱 공용 시계(`DebugClock`)를 미뤄 씨앗·수확물·
       정원 오늘 날짜를 통째로 이동한다, #95, #115.
       잠금·성장·완성 화면 모두에 있어 다음 날 새 씨앗까지 검증할 수 있다, #109).
-- **향후 과제 (후속 이슈로 분리)**: 성장 단계 연출 에셋 17개 확보
-  (`model_spec.md` §4.11), 열매에 그날의 명언 충실도 기록 (#41 리뷰 작성으로 해소 예정).
+- **향후 과제 (후속 이슈로 분리)**: 열매에 그날의 명언 충실도 기록 (#41 리뷰 작성으로 해소 예정).
 
 ## 2. 정원 탭 (`/archive`)
 
@@ -112,16 +111,17 @@
 - **요구**: 씨앗 생성시간·화면 모드 등을 설정한다. 설정 시각에 씨앗 생성과 알림이 동시에 동작한다.
   화면 모드(라이트/다크/시스템, #47)와 씨앗 기본 생성시간 08:00 (#47),
   열매 비 효과 on/off (기본값 on, #108)를 제공한다.
-- **구현 상태**: 미구현 (신규). 기존 `MyPageScreen`의 알림 토글·시간 설정 UI는
-  본 탭으로 이관 후 `MyPageScreen`은 폐기한다.
-- **관련 코드 (예정)**:
+- **구현 상태**: 구현됨. 구 `MyPageScreen`은 #19에서 제거됐다.
+- **관련 코드**:
   - 모델: `AppSettings` (`model_spec.md` §4.10 참조).
-   - 저장소: `SettingsRepository` (`getSettingsStream()`, `updateSeedTime()`,
-     `setNotifyEnabled()`, `setThemeMode()`, `setFruitRainEnabled()` (#108))
-     (`lib/features/settings/data/` 예정).
-  - 화면: `SettingsScreen` (`lib/features/settings/presentation/settings_screen.dart` 예정).
+  - 저장소: `SettingsRepository` (`getSettings()`, `getSettingsStream()`,
+    `updateSeedTime()`, `setNotifyEnabled()`, `setThemeMode()`,
+    `setFruitRainEnabled()` (#108)) (`lib/features/settings/data/`).
+  - 화면: `SettingsScreen` (`lib/features/settings/presentation/settings_screen.dart`).
+  - 상태: `SettingsProvider` (`lib/features/settings/providers/`,
+    변경 시 `NotificationService` 재예약 콜백 연동 — `app.dart` 주입).
   - 알림: `NotificationService` (`lib/core/services/notification_service.dart`) —
-    기존 1회 예약 API를 매일 반복 스케줄로 확장 (`scheduleDailySeedNotification()` 예정).
+    매일 반복 스케줄 (`scheduleDailySeedNotification()`, inexact 모드 #137).
 - **동작 플로우 (목표)**:
   1. 사용자가 씨앗 생성 시각 변경 (기본값 매일 08:00) → `updateSeedTime()` 저장.
    2. 사용자가 화면 모드 변경 (라이트/다크/시스템, 기본 시스템) → `setThemeMode()` 저장·즉시 적용.
@@ -160,9 +160,10 @@
 
 | # | 기능 | 컬렉션 | 모델 | Repository | 화면/Provider | 상태 |
 |---|------|--------|------|------------|---------------|------|
-| 1 | 말씨 (메인) | `seeds` (+`quotes` 원천) | `Seed` / `Quote` | `SeedRepository` | `SeedScreen`, `SeedProvider` | 미구현 |
-| 2 | 정원 (열매) | `fruits` | `Fruit` | `FruitRepository` | `ArchiveScreen`, `ArchiveProvider` | 미구현 |
-| 3 | 설정 | `settings` | `AppSettings` | `SettingsRepository` | `SettingsScreen` | 미구현 |
+| 1 | 말씨 (메인) | `seeds` (+번들 `quotes` 원천) | `Seed` / `Quote` | `SeedRepository` | `SeedScreen`, `SeedProvider` | 구현됨 |
+| 2 | 정원 (열매) | `fruits` | `Fruit` | `FruitRepository` | `ArchiveScreen`, `ArchiveProvider` | 구현됨 |
+| 3 | 설정 | `settings` | `AppSettings` | `SettingsRepository` | `SettingsScreen`, `SettingsProvider` | 구현됨 |
+| 4 | 첫 실행 도움말 | — (로컬 플래그) | — | `OnboardingRepository` | `OnboardingScreen`, `OnboardingProvider` | 구현됨 (#130) |
 
 ## 6. 폐기된 기존 7기능과 사유 (2026-09-04 확정)
 
@@ -171,7 +172,7 @@
 | 기존 이슈 | 기능 | 처리 |
 |-----------|------|------|
 | #1 | 오늘의 명언 DB (랜덤 1개 + 광고 게이트) | 대체 — 명언 DB(`quotes`)는 씨앗의 명언 원천으로 재사용, 광고 게이트는 폐기 |
-| #2 | 내 명언 생성 (작성→관리자 승인) | 폐기 — 3탭에 없음. 수요 발생 시 별도 이슈로 부활 |
+| #2 | 내 명언 생성 (작성→관리자 승인) | 폐기 — 3탭에 없음. 자작 명언으로 부활 검토 중 (#129) |
 | #3 | 명언 댓글 (베스트 3개) | 폐기 — 3탭에 없음. 충실도 기록과 통합 여부는 후속 이슈에서 결정 |
 | #4 | 카테고리 (해시태그 분류) | 폐기 — 3탭에 없음. 추천 활용 계획도 함께 폐기 |
 | #5 | 좋아요 (+해시태그 추천) | 폐기 — 3탭에 없음 |
@@ -181,3 +182,15 @@
 > 기존 코드(`HomeScreen`, `CategoryScreen`, `WriteScreen`, `LikedScreen`,
 > `MyPageScreen`, `CommentScreen`, `MvpBottomNav` 5탭, `AdService` 광고 게이트 등)는
 > #19에서 정리 완료했다. 본 문서는 요구 명세만 정의한다.
+
+## 7. 첫 실행 도움말 (`/onboarding`, #130에서 구현)
+
+- **요구**: 첫 실행에 탭별 사용법(말씨→정원→설정 순서)을 5페이지로 안내한다.
+  완료하면 다시 뜨지 않고, 설정 탭의 `도움말 다시 보기`로 재진입할 수 있다.
+- **관련 코드**:
+  - 저장소: `OnboardingRepository` (`isCompleted()`, `complete()` —
+    `PrefsOnboardingRepository`, 같은 `SharedPreferences` 공유)
+    (`lib/features/onboarding/data/`).
+  - 화면: `OnboardingScreen` (`lib/features/onboarding/presentation/`).
+  - 상태: `OnboardingProvider` (`autoShowOnFirstLaunch` — `main()`에서만 `true`).
+  - 진입: 셸 밖 `GoRoute('/onboarding')`. 셸이 첫 실행 1회 자동 이동한다.
