@@ -75,6 +75,10 @@ LLM 에이전트는 이슈 목록을 조회하여 처리할 이슈를 제안하�
 ### 2.7 PR 생성 (LLM)
 
 - 푸시 후 PR을 생성하고, 본문에 관련 이슈 번호(예: `Closes #8`)를 참조합니다.
+- PR의 base는 **`main` 또는 해당 릴리스 브랜치(`release/*`) 중 하나**로 직접 지정합니다.
+  기능 브랜치끼리 머지하거나 base로 삼는 스택 방식은 금지합니다
+  (2026-09-10 확정 — 스택 PR이 엉뚱한 base로 머지되어 릴리스 누락이 발생한 전례, #145).
+  기능 간 코드 의존이 생기면 base 브랜치가 머지된 뒤 새 브랜치에서 rebase·cherry-pick으로 해소합니다.
 - PR 생성 전 반드시 `flutter analyze`와 `flutter test`를 통과했는지 확인합니다.
 - PR 본문에는 변경 파일(`AGENTS.md`, `docs/context/model_spec.md`,
   `docs/workflow/development_flow.md`, `docs/architecture/architecture_spec.md`,
