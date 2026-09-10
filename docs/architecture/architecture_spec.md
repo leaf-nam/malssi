@@ -154,8 +154,12 @@ lib/
 - API: `scheduleNotification({id, title, body, scheduleTime})` (1회),
   `scheduleDailySeedNotification({id, title, body, hour, minute})`
   (매일 반복, `matchDateTimeComponents: time`),
+  `scheduleSeedCompleteNotification({id, title, body, completeAt})`
+  (씨앗 완성 1회, #140 — 이미 지났으면 예약 안 함),
   `showLocalNotification({id, title, body})`, `cancelSeedNotification(id)`.
-  씨앗 도착 알림 ID는 `seedNotificationId` (1001).
+  씨앗 도착 알림 ID는 `seedNotificationId` (1001),
+  완성 알림 ID는 `seedCompleteNotificationId` (1002).
+  알림 탭 → `/` 이동은 `init(onTap:)` 주입으로 연결한다 (`main()` → `appRouter`).
 - 스케줄 모드: `inexactAllowWhileIdle` 고정 (#137).
   `SCHEDULE_EXACT_ALARM` 권한이 필요 없고 수분 오차가 날 수 있다
   (일일 씨앗 알림 용도로 허용).

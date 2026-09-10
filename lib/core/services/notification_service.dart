@@ -11,9 +11,12 @@ class NotificationService {
   /// 씨앗 도착 일일 알림 ID.
   static const seedNotificationId = 1001;
 
+  /// 씨앗 완성(열매) 1회 알림 ID (#140).
+  static const seedCompleteNotificationId = 1002;
+
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
-  Future<void> init() async {
+  Future<void> init({void Function()? onTap}) async {
     tz_data.initializeTimeZones();
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const darwinSettings = DarwinInitializationSettings();
@@ -22,7 +25,11 @@ class NotificationService {
       iOS: darwinSettings,
       macOS: darwinSettings,
     );
-    await _plugin.initialize(settings: settings);
+    await _plugin.initialize(
+      settings: settings,
+      // 알림 탭 → 말씨 탭(`/`) 이동은 호출자(`main()`)가 주입한다 (#140).
+      onDidReceiveNotificationResponse: (_) => onTap?.call(),
+    );
   }
 
   Future<void> scheduleNotification({
@@ -110,5 +117,36 @@ class NotificationService {
 
   Future<void> cancelSeedNotification(int id) async {
     await _plugin.cancel(id: id);
+  }
+
+  /// 씨앗 완성(열매) 1회 알림을 [completeAt]에 예약한다 (#140).
+  /// 일일 알림과 같은 inexact 모드라 `SCHEDULE_EXACT_ALARM` 권한이 필요 없다.
+  /// 이미 지난 시각이면 예약하지 않는다.
+  Future<void> scheduleSeedCompleteNotification({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime completeAt,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'channel_id',
+      'channel_name',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const details = NotificationDetails(android: androidDetails);
+
+    final now = tz.TZDateTime.now(tz.local);
+    final scheduled = tz.TZDateTime.from(completeAt, tz.local);
+    if (!scheduled.isAfter(now)) return;
+
+    await _plugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduled,
+      notificationDetails: details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
   }
 }
