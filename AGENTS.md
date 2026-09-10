@@ -28,8 +28,8 @@
     *   **내용**: 이슈 기반 개발 사이클(브랜치/TDD/`flutter test`·`flutter analyze`/PR 검토·승인),
         브랜치 네이밍, 커밋 메시지, 푸시/PR 절차. `battern` 프로젝트 패턴과 일치.
 *   **주요 기능 명세서**: `docs/features/feature_spec.md`
-    *   **내용**: 오늘의 명언(랜덤 1개 + 교체 시 광고)/내 명언(관리자 승인)/명언 댓글(베스트 3개)/
-        카테고리(해시태그)/좋아요·추천/공유(딥링크)/하루 1회 알림의 요구·구현 상태·관련 코드·향후 과제.
+    *   **내용**: 말씨(씨앗 성장·수확·후기)/정원(잔디 그리드·열매 비)/설정(씨앗 시각·알림·화면 모드)/
+        첫 실행 도움말의 요구·구현 상태·관련 코드·향후 과제.
 *   **코드 컨벤션**: `docs/conventions/convention.md`
     *   **내용**: Dart/Flutter 스타일, 네이밍 컨벤션, 상태 관리(`provider` + `riverpod`
         혼용 현황 및 지향점), 테마(`AppTheme`), 에러/로딩 처리 패턴.
@@ -52,11 +52,11 @@
     새 기능은 `features/<feature>/{data,domain,presentation,providers}` 4계층으로 추가하고,
     공용 코드는 `core/{constants,services,theme,widgets}`에 두십시오.
     라우트는 `lib/routing/app_router.dart`의 `GoRoute`에 등록하십시오.
-4.  **상태 관리 일관성**: 현재 `provider`(`AppShell`의 `MultiProvider`)와
-    `riverpod`(`home_providers.dart`의 `StateNotifierProvider`/`StreamProvider`)가 혼용되어 있습니다.
-    기존 파일의 패턴을 유지하되, 신규 코드는 `convention.md`의 지향점을 따르십시오.
-    `riverpod`를 `dev_dependencies`가 아닌 정식 의존성으로 둘지 여부는 아키텍처 이슈로
-    분리하여 논의하십시오 (현재 `pubspec.yaml`에서 `riverpod`는 `dev_dependencies`에 있음).
+4.  **상태 관리 일관성**: `provider` + `ChangeNotifier` + `context.watch`/`context.read`
+    단일 패턴을 따르십시오. `riverpod`는 `dev_dependencies`에 잔류하지만
+    `lib/`에서 사용하지 않으므로 신규 코드에서 쓰지 마십시오.
+    `riverpod`를 정식 의존성으로 둘지·제거할지는 아키텍처 이슈로
+    분리하여 논의하십시오.
 5.  **테스트 필수**: 수정 후 반드시 `flutter analyze`와 `flutter test`를 실행하여
     회귀가 없는지 확인하십시오. PR 생성의 필수 조건입니다.
 

@@ -25,24 +25,22 @@
   설정 회색(라이트 `navSettingsLight`/다크 `navSettingsDark`) (#75).
   전환은 250ms `AnimatedContainer` (#77).
   탭 추가·순서 변경 시 `feature_spec.md`와 본 문서 §6을 함께 개정하십시오.
-- Repository: `<Name>Repository` 추상 클래스 + `<Name>RepositoryImpl` 구현체
-  (예: `QuoteRepository` / `QuoteRepositoryImpl`).
+- Repository: `<Name>Repository` 추상 클래스 + `InMemory<Name>Repository` 구현체
+  (예: `QuoteRepository` / `InMemoryQuoteRepository`).
+  Firestore 연동 시 구현체를 교체하고 `fromMap`/`toMap` 규칙(`model_spec.md` §3)을 따른다.
 - Provider/Notifier: `<Name>Provider`, `<Name>Notifier` (예: `randomQuoteProvider`, `QuoteNotifier`).
-- 모델: `Quote`, `HomeQuote`, `Comment`, `Seed`, `Fruit`, `AppSettings`
-  (+ 향후 `User`, `Submission` — 구 화면 폐기로 보류.
+- 모델: `Quote`, `Seed`, `Fruit`, `AppSettings`
+  (`HomeQuote`/`Comment`와 `User`/`Submission` Map 기반 코드는 #19에서 제거됨.
   `Hashtag`/`Category`와 `Quote.tags`는 미사용 확정으로 2026-09-05 제외).
 - Firestore 컬렉션: `CollectionNames` 상수 경유 (문자열 리터럴 금지).
 
 ## 3. 상태 관리
 
-- 현재 `provider`와 `riverpod`가 혼용되어 있습니다.
-  - `provider`: `AppShell`의 `MultiProvider`, 각 화면의 `context.watch<T>()` / `context.read<T>()`.
-  - `riverpod`: `home_providers.dart`의 `StateNotifierProvider` (`QuoteNotifier`),
-    `StreamProvider` (`likedQuotesStreamProvider`).
-- 기존 파일의 패턴을 유지하십시오. 새 파일에서는 화면 상태 구독에 `provider` +
-  `ChangeNotifier` + `context.watch`/`context.read` 패턴(구 `home_screen.dart`가 쓰던 방식)을 따르고,
-  비동기 스트림에는 `StreamProvider` + `.when()`을 사용합니다.
-- `riverpod` 정식 의존성 승격 여부가 결정되기 전까지 `pubspec.yaml`의 섹션을 임의로 이동하지 마십시오.
+- `provider` + `ChangeNotifier` + `context.watch`/`context.read` 단일 패턴을 쓴다
+  (`AppShell`의 `MultiProvider`, 각 Provider·화면 — `OnboardingProvider` 포함 #130).
+- `riverpod`는 `dev_dependencies`에 잔류하지만 `lib/`에서 import하지 않는다.
+  신규 코드에서 사용하지 마십시오 (승격·제거 여부는 아키텍처 이슈로 분리).
+  `pubspec.yaml`의 섹션을 임의로 이동하지 마십시오.
 
 ## 4. 테마 (`AppTheme`)
 
@@ -77,9 +75,9 @@
 - 신규 화면은 `lib/routing/app_router.dart`에 등록합니다.
   3탭은 `StatefulShellRoute.indexedStack` 분기로 등록하고 (#79),
   바는 셸(`AppShellView`)이 상주로 들고 있어 화면에 두지 않습니다.
-  목표 라우트: `/`, `/archive`, `/settings` (+ `/auth` 셸 외부).
+  현재 라우트: `/`, `/archive`, `/settings` (+ 셸 밖 `/auth`, `/onboarding` #130).
   구 라우트(`/home`, `/quote-detail/:quoteId`, `/category`, `/write`, `/liked`, `/mypage`)는
-  폐기 예정이며 신규 코드에서 연결하지 마십시오.
+  #19에서 제거됐으며 신규 코드에서 연결하지 마십시오.
 - 경로 파라미터는 `state.pathParameters['quoteId'] ?? ''` 패턴으로 안전하게 읽습니다.
 - 화면 이동은 `context.go(...)`를 사용합니다.
 - 탭 이동은 셸 바 경유를 원칙으로 합니다 (`AppShellView` → `goBranch`, #79).
