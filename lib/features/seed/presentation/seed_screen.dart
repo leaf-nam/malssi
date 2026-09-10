@@ -338,7 +338,9 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
         Text(
           timer,
           textAlign: TextAlign.center,
-          style: AppTheme.quoteTextStyle(fontSize: 48),
+          // Galmuri 숫자는 monospace(1자=1em)라 40px → 너비 200.
+          // 일반 폰 화면의 씨앗 너비와 같은 수준으로 맞춘다 (#138 개선).
+          style: AppTheme.quoteTextStyle(fontSize: 40),
         ),
       ],
     );
@@ -365,7 +367,8 @@ class _ContainImage extends StatelessWidget {
   }
 }
 
-/// 성장 중 화면 (#51). 명언 + 저자가 2/3, 성장 에셋이 1/3을 차지한다.
+/// 성장 중 화면. 명언 + 저자가 6, 성장 에셋이 4를 차지한다
+/// (에셋 1.2x 확대분 반영, #138 개선).
 /// 디버그에서만 빨리감기 버튼.
 class _GrowingSeed extends StatelessWidget {
   const _GrowingSeed({
@@ -387,9 +390,9 @@ class _GrowingSeed extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 명언 + 저자: 나머지 2/3.
+        // 명언 + 저자.
         Expanded(
-          flex: 2,
+          flex: 6,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -399,9 +402,10 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
-        // 성장 에셋: 화면의 1/3. 형태만 보여주고 문구·도트는 두지 않는다 (#57).
+        // 성장 에셋 (1.2x 확대분 반영, #138 개선).
+        // 형태만 보여주고 문구·도트는 두지 않는다 (#57).
         Expanded(
-          flex: 1,
+          flex: 4,
           child: Center(
             child: _ContainImage(
               path: ThemeAssets.growthImage(
