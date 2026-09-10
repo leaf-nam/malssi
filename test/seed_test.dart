@@ -16,13 +16,20 @@ import 'package:malssi/features/seed/presentation/seed_screen.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 
 SeedProvider _buildProvider(
-    {DateTime Function()? clock, String Function()? themePicker}) {
+    {DateTime Function()? clock,
+    String Function()? themePicker,
+    ScheduleCompleteNotification? onSeedPlanted,
+    CancelCompleteNotification? onSeedCompleted,
+    ScheduleReminderNotification? onReminderDue}) {
   final seedRepository =
       InMemorySeedRepository(clock: clock, themePicker: themePicker);
   return SeedProvider(
     seedRepository: seedRepository,
     quoteRepository: InMemoryQuoteRepository(),
     fruitRepository: InMemoryFruitRepository(clock: clock),
+    onSeedPlanted: onSeedPlanted,
+    onSeedCompleted: onSeedCompleted,
+    onReminderDue: onReminderDue,
   );
 }
 
@@ -47,6 +54,11 @@ class _FakeTimestamp {
 void main() {
   // 공용 시계는 테스트 간에 새지 않게 매번 되돌린다 (#115).
   tearDown(DebugClock.reset);
+  // 마감 규칙(#147) 탓에 실제 시각에 의존하면 오후에 깨지므로,
+  // 공용 시계를 오전으로 고정한다. 개별 테스트의 shift는 누적된다.
+  setUp(() {
+    DebugClock.shift(DateTime(2026, 9, 4, 8).difference(DateTime.now()));
+  });
 
   group('Seed model', () {
     test('dateKeyFor formats YYYY-MM-DD', () {
@@ -84,6 +96,106 @@ void main() {
 
       expect(seed.status, SeedStatus.locked);
       expect(seed.isLocked, isTrue);
+    });
+
+    group('timeUntilNextStage (#138)', () {
+      Seed growingAt(DateTime plantedAt) => Seed(
+            id: '2026-09-04',
+            dateKey: '2026-09-04',
+            quoteId: 'seed-1',
+            status: SeedStatus.growing,
+            createdAt: plantedAt,
+            plantedAt: plantedAt,
+          );
+
+      test('returns the remainder of the 2-hour stage', () {
+        final seed = growingAt(DateTime(2026, 9, 4, 8));
+
+        expect(seed.timeUntilNextStage(DateTime(2026, 9, 4, 9)),
+            const Duration(hours: 1));
+        expect(seed.timeUntilNextStage(DateTime(2026, 9, 4, 9, 37)),
+            const Duration(minutes: 23));
+      });
+
+      test('resets to a full stage exactly on the boundary', () {
+        final seed = growingAt(DateTime(2026, 9, 4, 8));
+
+        expect(seed.timeUntilNextStage(DateTime(2026, 9, 4, 10)),
+            const Duration(hours: 2));
+      });
+
+      test('returns zero when not growing or nearly complete', () {
+        final plantedAt = DateTime(2026, 9, 4, 8);
+        final locked = growingAt(plantedAt).copyWith(status: SeedStatus.locked);
+        final complete =
+            growingAt(plantedAt).copyWith(status: SeedStatus.complete);
+        final growing = growingAt(plantedAt);
+
+        expect(locked.timeUntilNextStage(DateTime(2026, 9, 4, 9)),
+            Duration.zero);
+        expect(complete.timeUntilNextStage(DateTime(2026, 9, 4, 9)),
+            Duration.zero);
+        // 5단계 도달(10시간 경과) = 완성 임박.
+        expect(growing.timeUntilNextStage(DateTime(2026, 9, 4, 18)),
+            Duration.zero);
+      });
+    });
+
+    group('formatGrowthTimer (#138)', () {
+      test('formats HH:MM with two digits', () {
+        expect(formatGrowthTimer(const Duration(minutes: 83)), '01:23');
+        expect(formatGrowthTimer(const Duration(hours: 2)), '02:00');
+        expect(formatGrowthTimer(const Duration(minutes: 23)), '00:23');
+      });
+
+      test('rounds sub-minute up and hides zero', () {
+        expect(formatGrowthTimer(const Duration(seconds: 30)), '00:01');
+        expect(formatGrowthTimer(Duration.zero), isEmpty);
+        expect(formatGrowthTimer(const Duration(seconds: -5)), isEmpty);
+      });
+    });
+
+    group('noon deadline (#147)', () {
+      Seed lockedAt(DateTime createdAt) => Seed(
+            id: '2026-09-04',
+            dateKey: '2026-09-04',
+            quoteId: '',
+            status: SeedStatus.locked,
+            createdAt: createdAt,
+            plantedAt: createdAt,
+          );
+
+      test('locked seed is missed after 14:00 on the same day', () {
+        final seed = lockedAt(DateTime(2026, 9, 4, 8));
+
+        expect(seed.isMissed(DateTime(2026, 9, 4, 8)), isFalse);
+        expect(seed.isMissed(DateTime(2026, 9, 4, 13, 59)), isFalse);
+        // 마감 정각까지는 심을 수 있다.
+        expect(seed.isMissed(DateTime(2026, 9, 4, 14)), isFalse);
+        expect(seed.isMissed(DateTime(2026, 9, 4, 14, 0, 1)), isTrue);
+        expect(seed.isMissed(DateTime(2026, 9, 4, 23)), isTrue);
+      });
+
+      test('missed applies to locked seeds of the same day only', () {
+        final growing =
+            lockedAt(DateTime(2026, 9, 4, 8)).copyWith(status: SeedStatus.growing);
+        final yesterday = Seed(
+          id: '2026-09-03',
+          dateKey: '2026-09-03',
+          quoteId: '',
+          status: SeedStatus.locked,
+          createdAt: DateTime(2026, 9, 3, 8),
+          plantedAt: DateTime(2026, 9, 3, 8),
+        );
+
+        expect(growing.isMissed(DateTime(2026, 9, 4, 15)), isFalse);
+        expect(yesterday.isMissed(DateTime(2026, 9, 4, 15)), isFalse);
+      });
+
+      test('reminderAt is 13:00 of the given day', () {
+        expect(Seed.reminderAt(DateTime(2026, 9, 4, 8)),
+            DateTime(2026, 9, 4, 13));
+      });
     });
   });
 
@@ -152,6 +264,49 @@ void main() {
         seeds.firstWhere((s) => s.id == '2026-09-04').status,
         SeedStatus.expired,
       );
+    });
+
+    group('noon deadline (#147)', () {
+      Quote testQuote() => Quote(
+            id: 'seed-1',
+            text: 't',
+            author: 'a',
+            likes: 0,
+            createdAt: DateTime(2026, 1, 1),
+          );
+
+      test('today seed expires after 14:00 when unplanted', () async {
+        final repo = InMemorySeedRepository(
+            clock: () => DateTime(2026, 9, 4, 15));
+
+        final seed = await repo.getTodaySeed();
+
+        expect(seed.status, SeedStatus.expired);
+      });
+
+      test('planting after 14:00 throws', () async {
+        var now = DateTime(2026, 9, 4, 8);
+        final repo = InMemorySeedRepository(clock: () => now);
+        final seed = await repo.getTodaySeed();
+
+        now = DateTime(2026, 9, 4, 15);
+
+        expect(
+          () => repo.plantSeed(seedId: seed.id, quote: testQuote()),
+          throwsStateError,
+        );
+      });
+
+      test('planting at 14:00 sharp still works', () async {
+        final repo = InMemorySeedRepository(
+            clock: () => DateTime(2026, 9, 4, 14));
+        final seed = await repo.getTodaySeed();
+
+        final planted =
+            await repo.plantSeed(seedId: seed.id, quote: testQuote());
+
+        expect(planted.isGrowing, isTrue);
+      });
     });
 
     test('getActiveSeed yields to today when completion is stale (#109)',
@@ -433,6 +588,120 @@ void main() {
       expect(fruits.single.isReviewed, isTrue);
       expect(provider.errorMessage, isNull);
     });
+
+    group('completion notification callbacks (#140)', () {
+      test('planting schedules completion 10 hours later', () async {
+        final plantedAt = DateTime(2026, 9, 4, 8);
+        DateTime? scheduledAt;
+        final provider = _buildProvider(
+          clock: () => plantedAt,
+          onSeedPlanted: ({required completeAt}) async {
+            scheduledAt = completeAt;
+          },
+        );
+        await provider.ensureTodaySeed();
+        await provider.plantSeed();
+
+        expect(provider.todaySeed!.isGrowing, isTrue);
+        expect(scheduledAt, plantedAt.add(const Duration(hours: 10)));
+        expect(provider.errorMessage, isNull);
+      });
+
+      test('harvest cancels the scheduled completion', () async {
+        var completedCalls = 0;
+        final provider = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 8),
+          onSeedCompleted: () async {
+            completedCalls++;
+          },
+        );
+        await provider.ensureTodaySeed();
+        await provider.plantSeed();
+        await provider.debugCompleteNow();
+
+        expect(provider.todaySeed!.isComplete, isTrue);
+        expect(completedCalls, 1);
+        expect(provider.errorMessage, isNull);
+      });
+
+      test('restart with a growing seed reschedules completion', () async {
+        final clockTime = DateTime(2026, 9, 4, 8);
+        final seedRepository = InMemorySeedRepository(
+          clock: () => clockTime,
+          themePicker: () => SeedTheme.vitality,
+        );
+        final fruitRepository = InMemoryFruitRepository(
+          clock: () => clockTime,
+        );
+        final first = SeedProvider(
+          seedRepository: seedRepository,
+          quoteRepository: InMemoryQuoteRepository(),
+          fruitRepository: fruitRepository,
+        );
+        await first.ensureTodaySeed();
+        await first.plantSeed();
+
+        DateTime? rescheduledAt;
+        final restarted = SeedProvider(
+          seedRepository: seedRepository,
+          quoteRepository: InMemoryQuoteRepository(),
+          fruitRepository: fruitRepository,
+          onSeedPlanted: ({required completeAt}) async {
+            rescheduledAt = completeAt;
+          },
+        );
+        await restarted.ensureTodaySeed();
+
+        expect(restarted.todaySeed!.isGrowing, isTrue);
+        expect(rescheduledAt, clockTime.add(const Duration(hours: 10)));
+        expect(restarted.errorMessage, isNull);
+      });
+    });
+
+    group('deadline reminder callbacks (#147)', () {
+      test('locked seed requests a reminder for 13:00', () async {
+        DateTime? requestedAt;
+        final provider = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 8),
+          onReminderDue: ({required reminderAt}) async {
+            requestedAt = reminderAt;
+          },
+        );
+        await provider.ensureTodaySeed();
+
+        expect(provider.todaySeed!.isLocked, isTrue);
+        expect(requestedAt, DateTime(2026, 9, 4, 13));
+        expect(provider.errorMessage, isNull);
+      });
+
+      test('no reminder once growing or missed', () async {
+        var calls = 0;
+        final provider = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 8),
+          onReminderDue: ({required reminderAt}) async {
+            calls++;
+          },
+        );
+        await provider.ensureTodaySeed();
+        await provider.plantSeed();
+        expect(calls, 1);
+
+        // 성장 중에는 다시 요청하지 않는다.
+        await provider.ensureTodaySeed();
+        expect(calls, 1);
+
+        // 마감된 씨앗에도 요청하지 않는다.
+        final missed = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 15),
+          onReminderDue: ({required reminderAt}) async {
+            calls++;
+          },
+        );
+        await missed.ensureTodaySeed();
+        expect(missed.todaySeed!.status, SeedStatus.expired);
+        expect(calls, 1);
+      });
+    });
   });
 
   group('SeedScreen', () {
@@ -459,6 +728,23 @@ void main() {
       // (하단 바는 셸이 상주로 들고 있어 화면 트리에 없음, #79.)
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       expect(scaffold.backgroundColor, AppTheme.abyss);
+    });
+
+    testWidgets('missed seed shows the deadline notice (#147)',
+        (tester) async {
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 15));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.status, SeedStatus.expired);
+      expect(find.text('오늘의 씨앗이 마감되었어요'), findsOneWidget);
+      // 심기 버튼은 비활성화된다.
+      final button =
+          tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      expect(button.onPressed, isNull);
     });
 
     testWidgets('completed seed advances to the next day (#109)',
@@ -565,13 +851,13 @@ void main() {
       expect(find.textContaining('단계 성장 중'), findsNothing);
       expect(find.textContaining('2시간마다'), findsNothing);
       expect(find.byType(Image), findsOneWidget);
-      // #51: 명언 영역(2/3) : 성장 에셋(1/3).
+      // #51에서 6:4로 조정 (에셋 1.2x 확대분, #138 개선).
       final growingFlexes = tester
           .widgetList<Expanded>(find.byType(Expanded))
           .map((e) => e.flex)
           .toList();
-      expect(growingFlexes[0], 2);
-      expect(growingFlexes[1], 1);
+      expect(growingFlexes[0], 6);
+      expect(growingFlexes[1], 4);
 
       // #64: 디버그 5초 간격이라 +1단계는 1단계만 오른다.
       await tester.tap(find.text('디버그: +1단계'));
@@ -587,6 +873,53 @@ void main() {
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(provider.revealedQuote!.text),
           findsOneWidget);
+    });
+
+    testWidgets('growing seed shows the timer below, completion hides it (#138)',
+        (tester) async {
+      // 심은 지 61분째: 라벨 + 타이머가 씨앗 아래에 보인다.
+      // (공용 시계 고정 08:00 기준.)
+      final plantedBase = DateTime(2026, 9, 4, 7);
+      final provider = _buildProvider(clock: () => plantedBase);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(find.text('다음 성장까지'), findsOneWidget);
+      expect(
+          find.textContaining(RegExp(r'^\d\d:\d\d$')), findsOneWidget);
+
+      // 완성되면 타이머 대신 완성 화면이 보인다.
+      await tester.tap(find.text('디버그: 열매 만들기'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isComplete, isTrue);
+      expect(find.text('다음 성장까지'), findsNothing);
+      expect(find.textContaining(RegExp(r'^\d\d:\d\d$')), findsNothing);
+      expect(find.text('열매가 완성되었어요'), findsNothing);
+    });
+
+    testWidgets('final stage shows only the completion phrase (#138)',
+        (tester) async {
+      // 저장소 시각은 심은 직후로 고정하고, 공용 시계만 완성 단계로 미룬다.
+      // (공용 시계 고정 08:00에서 +10시간.)
+      final plantedBase = DateTime(2026, 9, 4, 8);
+      final provider = _buildProvider(clock: () => plantedBase);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      DebugClock.shift(const Duration(hours: 10));
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 아직 수확 전(성장 중)이지만 남은시간은 0 → 문구만 남는다.
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(find.text('열매가 완성되었어요'), findsOneWidget);
+      expect(find.text('다음 성장까지'), findsNothing);
+      expect(find.textContaining(RegExp(r'^\d\d:\d\d$')), findsNothing);
     });
 
     testWidgets('locked screen advances the day (#95)', (tester) async {

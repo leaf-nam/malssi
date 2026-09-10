@@ -2,9 +2,11 @@
 
 > AI 에이전트용 개발 하네스 문서 중 하나입니다. Firestore 직렬화/모델 수정 전 반드시 본 문서를 읽으십시오.
 > 상위 지침: `AGENTS.md`. 관련: `docs/architecture/architecture_spec.md`, `docs/conventions/convention.md`.
-> 기준 커밋시점의 실제 코드: `lib/features/quote.dart`, `lib/features/home/domain/quote.dart`,
-> `lib/features/quote_detail/domain/comment.dart`, `lib/core/constants/collection_names.dart`,
-> `lib/features/*/data/*_repository.dart`.
+> 기준 코드: `lib/features/quote.dart`, `lib/features/seed/domain/seed.dart`,
+> `lib/features/archive/domain/fruit.dart`, `lib/features/settings/domain/app_settings.dart`,
+> `lib/core/constants/collection_names.dart`, `lib/features/*/data/*_repository.dart`.
+> 구 화면 모델(`HomeQuote`, `Comment` 등)은 #19에서 제거되어 §4.2~§4.6에
+> 제거 상태로만 기록한다.
 
 ## 1. 개요
 
@@ -32,9 +34,9 @@ class CollectionNames {
 }
 ```
 
-> 주의: `lib/core/services/firestore_refs.dart`는 현재 `package:firebase/firebase.dart`를
-> import 하며 문자열 리터럴(`'quotes'` 등)을 직접 사용하고 있습니다.
-> 추후 리팩터링 시 `CollectionNames` 상수로 교체해야 합니다 (아키텍처 이슈로 분리).
+> 참고: `lib/core/services/firestore_refs.dart`는 `CollectionNames` 상수를 사용한다.
+> `seeds`/`fruits`/`settings` 경로 상수 추가 여부는 아키텍처 이슈로 분리
+> (`architecture_spec.md` §3-8 참조).
 
 ## 3. 직렬화 공통 규칙
 
@@ -46,9 +48,9 @@ class CollectionNames {
    ```dart
    createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
    ```
-   Firestore `Timestamp` 객체의 `.toDate()`를 호출합니다.
-   `toMap()`에서는 현재 코드가 `DateTime`을 그대로 넣으므로, Firestore SDK가
-   자동으로 Timestamp로 변환합니다.
+   `.toDate()` 방어 읽기로 `Timestamp` 호환 형태를 파싱한다.
+   `toMap()`에서는 `DateTime`을 그대로 넣는다 (로컬 JSON 저장 시 ISO 문자열로 변환,
+   `LocalStore.decodeDates`로 복원). 서버 연동은 미계획.
 
 ## 4. 모델별 스펙
 
@@ -73,62 +75,28 @@ class CollectionNames {
 - **직렬화**: `fromMap` 팩토리, `toMap()`, `copyWith({id, text, author, likes, createdAt})` 제공.
   `Quote._internal` 클래스가 `implements Quote`로 실제 저장소 역할을 합니다.
 
-### 4.2 `HomeQuote` — `Quote` 확장 (홈 피드용)
+### 4.2 `HomeQuote` — 제거됨 (#19)
 
-- **위치**: `lib/features/home/domain/quote.dart`
-- **상속**: `extends Quote`
-- **추가 필드**:
+- **현황**: 구 홈 화면과 함께 제거됨. (제거 전 위치: `lib/features/home/domain/quote.dart`,
+  `Quote` 확장 + `category`/`isFeatured` 필드.)
+- **참고**: `Quote` 기본 클래스(§4.1)는 씨앗의 명언 원천으로 유지한다.
 
-| 필드       | 타입     | Firestore 키 | 기본값  |
-| ---------- | -------- | ------------ | ------- |
-| category   | `String` | `category`   | `''`    |
-| isFeatured | `bool`   | `isFeatured` | `false` |
+### 4.3 `Comment` — 제거됨 (#19)
 
-- **직렬화**: `fromMap` 팩토리, `toMap()` 오버라이드(`category`/`isFeatured` 포함),
-  `copyWith` 제공. `const` 생성자.
-- **용도**: 홈 화면 피드/추천 명언. `QuoteRepository.getRandomQuote()`,
-  `getQuotesStream()`의 요소 타입.
+- **현황**: 구 명언 상세 화면과 함께 제거됨.
+  (제거 전 위치: `lib/features/quote_detail/domain/comment.dart`,
+  `id`/`quoteId`/`author`/`text`/`likes`/`createdAt` 필드,
+  최상위 `comments` 컬렉션 방식.)
+- **참고**: 충실도 기록과의 통합 여부는 후속 이슈에서 결정한다
+  (`feature_spec.md` §6 참조).
 
-### 4.3 `Comment` — 명언 댓글
+### 4.4 `User` — 제거됨 (#19)
 
-- **위치**: `lib/features/quote_detail/domain/comment.dart`
-- **성격**: 추상 클래스 + `Comment._internal` 구현체 (`Quote`와 동일 패턴).
-- **필드**:
-
-| 필드      | 타입       | Firestore 키 | 기본값              |
-| --------- | ---------- | ------------ | ------------------- |
-| id        | `String`   | `id`         | `''`                |
-| quoteId   | `String`   | `quoteId`    | `''` (부모 명언 FK) |
-| author    | `String`   | `author`     | `''`                |
-| text      | `String`   | `text`       | `''`                |
-| likes     | `int`      | `likes`      | `0`                 |
-| createdAt | `DateTime` | `createdAt`  | `DateTime.now()`    |
-
-- **직렬화**: `fromMap` / `toMap()` / `copyWith` 전부 제공.
-- **컬렉션**: `comments` (`CollectionNames.comments`).
-  `quoteId`로 부모 명언을 참조합니다 (서브컬렉션이 아닌 최상위 컬렉션 방식).
-
-### 4.4 `User` — 사용자 프로필 (Map 기반, 모델 클래스 미정의)
-
-- **위치**: `lib/features/mypage/data/user_repository.dart` (`UserRepository` 추상 클래스)
-- **현황**: 전용 Dart 모델 클래스는 없고 `Map<String, dynamic>` 프로필을 직접 사용합니다.
-- **공식 필드** (presentation 사용처 `mypage_screen.dart` 기준):
-
-| 필드            | 타입      | 설명                                              |
-| --------------- | --------- | ------------------------------------------------- |
-| displayName     | `String?` | 표시 이름 (`profile['displayName'] ?? '내 이름'`) |
-| email           | `String?` | 이메일 (`profile['email'] ?? '이메일 없음'`)      |
-| profileImageUrl | `String?` | `updateUserProfile` 파라미터에 존재               |
-
-- **Repository API**:
-  ```dart
-  Future<Map<String, dynamic>> getUserProfile();
-  Stream<Map<String, dynamic>> getUserProfileStream();
-  Future<void> updateUserProfile({required String displayName, required String? profileImageUrl});
-  Future<void> deleteAccount();
-  ```
-- **컬렉션**: `users` (`CollectionNames.users`).
-- **향후 과제**: `User` 모델 클래스(`fromMap`/`toMap`/`copyWith`) 신설을 권장합니다.
+- **현황**: 구 마이페이지와 함께 제거됨. 전용 Dart 모델 클래스는 만든 적 없고
+  `Map<String, dynamic>` 프로필을 직접 사용했었다.
+  (제거 전 위치: `lib/features/mypage/data/user_repository.dart`,
+  컬렉션 `users`.)
+- **향후 과제**: 필요시 `User` 모델 클래스(`fromMap`/`toMap`/`copyWith`) 신설을 재검토한다.
 
 ### 4.5 `Hashtag` / `Category` — 해시태그·카테고리 (미사용 확정, 2026-09-05 제외)
 
@@ -137,31 +105,25 @@ class CollectionNames {
   (제거 전 위치: `lib/features/category/data/hashtag_repository.dart`)
 - **컬렉션**: `categories` (`CollectionNames.categories`) — 사용 중단.
 
-### 4.6 `Submission` — 명언 제보/제출
+### 4.6 `Submission` — 제거됨 (#19)
 
-- **위치**: `lib/features/my_quote/data/submission_repository.dart` (`SubmissionRepository`)
-- **현황**: 전용 모델 클래스 없이 `Map<String, dynamic>`으로 다룹니다.
-- **공식 필드** (`submitQuote` 파라미터 기준): `text` (`String`), `author` (`String`), `category` (`String`).
-  상태 변경은 `updateSubmissionStatus({submissionId, status})`의 `status` (`String`)로 관리합니다.
-- **API**:
-  ```dart
-  Future<void> submitQuote({required String text, required String author, required String category});
-  Stream<List<Map<String, dynamic>>> getSubmissionsStream();
-  Future<void> updateSubmissionStatus({required String submissionId, required String status});
-  ```
-- **컬렉션**: `submissions` (`CollectionNames.submissions`).
-- **향후 과제**: `status` 값의 enum/상수화 및 `Submission` 모델 클래스 신설을 권장합니다.
+- **현황**: 구 내 명언 화면과 함께 제거됨. 전용 모델 클래스 없이
+  `Map<String, dynamic>`으로 다루었었다.
+  (제거 전 위치: `lib/features/my_quote/data/submission_repository.dart`,
+  컬렉션 `submissions`.)
+- **향후 과제**: 자작 명언 부활 시(#129) 모델·상태 정책을 새로 확정한다.
 
-### 4.7 `Auth` — 인증
+### 4.7 `Auth` — 인증 (백엔드 없음, 확정)
 
 - **위치**: `lib/features/auth/data/dummy_auth_service.dart` (`DummyAuthService`)
-- **현황**: 실제 Firebase Auth가 아닌 더미 구현 (`signInAnonymously`, `signInWithGoogle`, `signOut`,
-  `currentUserId => 'anonymous_user'`).
-- **컬렉션**: `auth` (`CollectionNames.auth`) — 실제 Auth 연동 시 스키마 확정 필요.
+- **현황**: 인증 백엔드 없이 더미 구현으로 확정
+  (`signInAnonymously`, `signInWithGoogle`, `signOut`,
+  `currentUserId => 'anonymous_user'`). Firebase 미사용.
+- **컬렉션**: `auth` (`CollectionNames.auth`) — 로컬 키로만 사용한다.
 
-### 4.8 `Seed` — 씨앗 (3탭 개편 신규, 2026-09-04)
+### 4.8 `Seed` — 씨앗 (3탭 개편 신규, 2026-09-04, 구현됨)
 
-- **위치 (예정)**: `lib/features/seed/domain/seed.dart`
+- **위치**: `lib/features/seed/domain/seed.dart`
 - **성격**: 하루 1개 생성되는 씨앗. 문서 ID는 날짜키(예: `'2026-09-04'`) 사용을 권장.
   불변 모델이며 `fromMap`/`toMap`/`copyWith` 삼중 구조를 따른다 (§3 준수).
 - **필드**:
@@ -179,15 +141,21 @@ class CollectionNames {
 
 - **상태 전이**: `locked` (생성, 탭 → 심기) → `growing` (2시간 간격 성장) →
   `complete` (5단계 도달, 열매 수확 대상).
-  자정 만료는 미심김(`locked`)에만 적용되고, `growing`은 다음 날로 이월된다.
+  미심김(`locked`) 씨앗은 당일 14시를 넘기면 `expired`로 전환된다
+  (14시 정각까지 심기 가능, `Seed.deadlineHour = 14`, #147 —
+  14시 심기 → 10시간 성장 → 24시 완성으로 당일 수확 가능).
+  `seedTime`과 무관한 고정 마감이다.
+  자정 만료도 유지된다 (날짜가 바뀌면 지난 `locked` 만료).
+  `growing`은 다음 날로 이월된다 (정오 전 심기 → 늦어도 22시 완성이므로
+  실제로 자정을 넘기지 않는다).
   (`opened`는 성장 도입 전 상태로 호환용으로만 유지.)
 - **컬렉션**: `seeds` (`CollectionNames.seeds`).
 - **향후 과제**: 성장 단계 연출 에셋 확정 시 §4.11 개정.
 
-### 4.9 `Fruit` — 열매 (3탭 개편 신규, 2026-09-04)
+### 4.9 `Fruit` — 열매 (3탭 개편 신규, 2026-09-04, 구현됨)
 
-- **위치 (예정)**: `lib/features/archive/domain/fruit.dart`
-- **성격**: 씨앗 개봉 시 수확되는 기록. 보관 탭 MVP는 날짜+명언만 담는다.
+- **위치**: `lib/features/archive/domain/fruit.dart`
+- **성격**: 씨앗 개봉 시 수확되는 기록.
   불변 모델이며 `fromMap`/`toMap`/`copyWith` 삼중 구조를 따른다 (§3 준수).
 - **필드**:
 
@@ -211,9 +179,9 @@ class CollectionNames {
 - **컬렉션**: `fruits` (`CollectionNames.fruits`).
 - **향후 과제 (후속 이슈로 분리)**: 성장 단계 필드 추가 시 본 스펙 개정.
 
-### 4.10 `AppSettings` — 앱 설정 (3탭 개편 신규, 2026-09-04)
+### 4.10 `AppSettings` — 앱 설정 (3탭 개편 신규, 2026-09-04, 구현됨)
 
-- **위치 (예정)**: `lib/features/settings/domain/app_settings.dart`
+- **위치**: `lib/features/settings/domain/app_settings.dart`
 - **성격**: 사용자별 1문서. 씨앗 생성 시각 등을 담는다.
   불변 모델이며 `fromMap`/`toMap`/`copyWith` 삼중 구조를 따른다 (§3 준수).
 - **필드**:
@@ -228,8 +196,8 @@ class CollectionNames {
 - **동작 귀속**: `seedTime` 시각에 씨앗 생성 + 알림 발송이 동시에 동작한다
   (`feature_spec.md` §3 참조).
 - **컬렉션**: `settings` (`CollectionNames.settings`).
-- **향후 과제**: Firestore 저장 vs 로컬 저장(`SharedPreferences`) 결정 시 본 스펙 개정
-  (아키텍처 이슈로 분리). 비로그인 시 로컬 폴백이 후보이다.
+- **저장**: 로컬 저장으로 확정 (#122, `LocalStore` + `SharedPreferences`).
+  Firestore 연동은 동기화·공유 수요 발생 시 별도 이슈로 분리한다.
 
 ### 4.11 테마 분류 — 씨앗·열매·명언 (2026-09-04)
 
@@ -249,7 +217,8 @@ class CollectionNames {
   명언 풀로 사용하고, 로드 실패 시 기본 7시드로 동작한다.
 - **성장 간격**: 2시간 (`Seed.stageInterval`, #95에서 디버그 5초 폐기).
   자동 갱신 타이머 15분 (`SeedProvider.refreshInterval`).
-  디버그 날짜 이동: `debugShiftTime()` (씨앗·수확물 저장소 시각 이동).
+  디버그 날짜 이동: 앱 공용 시계 `DebugClock.shift()` + 저장소별 `debugShiftTime()`
+  (씨앗·수확물 저장소 시각 이동, #95·#115).
 - **성장 단계 에셋** (과일별 5단계, #67 — 2026-09-05 확보, 35개):
   - 0단계: 테마 씨앗 이미지 (`<이름>_seed.png`, 기존).
   - 1~5단계: `<이름>-<n>.png`
@@ -285,13 +254,13 @@ class CollectionNames {
 
 | Repository             | 위치                                                    | 핵심 메서드                                                                    |
 | ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `QuoteRepository`      | `lib/features/home/data/quote_repository.dart`          | `getRandomQuote`, `getQuotesStream`, `addQuote`, `updateLike`, `deleteQuote` — 씨앗 탭의 명언 원천 조회 용도로 유지 (구 `home` 화면·Provider는 #19에서 제거) |
+| `QuoteRepository`      | `lib/features/home/data/quote_repository.dart`          | `getRandomQuote`, `getRandomQuoteByTheme` (테마 폴백 포함), `getQuotesStream`, `addQuote`, `updateLike`, `deleteQuote` — 씨앗 탭의 명언 원천 조회 용도로 유지 |
 | `UserRepository` (제거됨, #19) | — | 구 `mypage` 화면과 함께 제거 |
 | `HashtagRepository` (제거됨, #19) | — | 구 `category` 화면과 함께 제거 |
 | `SubmissionRepository` (제거됨, #19) | — | 구 `my_quote` 화면과 함께 제거 |
-| `SeedRepository` (신규) | `lib/features/seed/data/` (예정)                      | `getTodaySeed`, `getSeedsStream`, `openSeed`                                   |
-| `FruitRepository` (신규) | `lib/features/archive/data/` (예정)                  | `harvestFromSeed`, `getFruitsStream` (수확일 내림차순), `updateReview` (후기·점수 저장), `pruneUnreviewedBeforeToday` (이월 만료 폐기, #113) |
-| `SettingsRepository` (신규) | `lib/features/settings/data/` (예정)              | `getSettingsStream`, `updateSeedTime`, `setNotifyEnabled`                      |
+| `SeedRepository` | `lib/features/seed/data/seed_repository.dart` | `getTodaySeed`, `getActiveSeed`, `getSeedsStream`, `openSeed`, `plantSeed`, `refreshGrowth`, `debugFastForward`, `debugShiftTime` |
+| `FruitRepository` | `lib/features/archive/data/fruit_repository.dart` | `harvestFromSeed`, `getFruits`/`getFruitsStream` (수확일 내림차순), `updateReview` (후기·점수 저장), `pruneUnreviewedBeforeToday` (이월 만료 폐기, #113), `debugShiftTime` |
+| `SettingsRepository` | `lib/features/settings/data/settings_repository.dart` | `getSettings`, `getSettingsStream`, `updateSeedTime`, `setNotifyEnabled`, `setThemeMode`, `setFruitRainEnabled` (#108), `load` (로컬 복원, #122) |
 
-> `home_providers.dart`는 `QuoteRepositoryImpl()`을 참조하지만 해당 구현체가
-> 아직 존재하지 않습니다. 구현체 추가 시 본 스펙의 `fromMap`/`toMap` 규칙을 따르십시오.
+> `Quote` 명언 원천은 번들(`assets/docs/quotes.json`, #123)을 `QuoteAssets`로 읽어
+> `InMemoryQuoteRepository`에 주입한다. 로드 실패 시 기본 7시드로 동작한다.

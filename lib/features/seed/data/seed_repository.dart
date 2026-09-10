@@ -38,7 +38,7 @@ abstract class SeedRepository {
   Future<void> debugShiftTime(Duration by);
 }
 
-/// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
+/// 로컬 저장(`LocalStore`) 기반 인메모리 구현. 서버 동기화는 미계획.
 ///
 /// 일자별 씨앗 테마는 **랜덤**으로 부여한다 (중복 허용, 2026-09-04 확정).
 /// [themePicker]를 주면 테마 선택을 고정할 수 있다 (테스트용).
@@ -97,7 +97,7 @@ class InMemorySeedRepository implements SeedRepository {
       }
     }
     final now = _clock();
-    final seed = _seeds.putIfAbsent(
+    var seed = _seeds.putIfAbsent(
       todayKey,
       () {
         final createdAt = now;
@@ -112,6 +112,11 @@ class InMemorySeedRepository implements SeedRepository {
         );
       },
     );
+    // 14시 마감 (#147): 당일 미심김 씨앗은 14시가 지나면 만료된다.
+    if (seed.isMissed(now)) {
+      seed = seed.copyWith(status: SeedStatus.expired);
+      _seeds[todayKey] = seed;
+    }
     await _persist();
     return seed;
   }
@@ -165,6 +170,9 @@ class InMemorySeedRepository implements SeedRepository {
     }
     if (!seed.isLocked) {
       throw StateError('Seed is not locked: $seedId (${seed.status})');
+    }
+    if (seed.isMissed(_clock())) {
+      throw StateError('Seed missed the noon deadline: $seedId');
     }
     final planted = seed.copyWith(
       quoteId: quote.id,

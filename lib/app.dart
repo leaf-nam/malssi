@@ -74,6 +74,43 @@ class AppShell extends StatelessWidget {
             fruitRepository: fruitRepository,
             // #62: 앱 사용 중에도 15분마다 성장을 갱신한다.
             enableAutoRefresh: true,
+            // #140: 완성 알림 예약·취소. 매일 알림 스위치가 꺼져 있으면 예약하지 않는다.
+            onSeedPlanted: ({required completeAt}) async {
+              final settings = await (settingsRepository ??
+                      InMemorySettingsRepository())
+                  .getSettings();
+              if (!settings.notifyEnabled) return;
+              await NotificationService.instance
+                  .scheduleSeedCompleteNotification(
+                id: NotificationService.seedCompleteNotificationId,
+                title: '열매가 완성됐어요',
+                body: '눌러서 오늘의 리뷰를 남겨보세요',
+                completeAt: completeAt,
+              );
+              // 심었으므로 마감 리마인드는 취소한다 (#147).
+              await NotificationService.instance.cancelSeedNotification(
+                  NotificationService.seedReminderNotificationId);
+            },
+            onSeedCompleted: () async {
+              await NotificationService.instance.cancelSeedNotification(
+                  NotificationService.seedCompleteNotificationId);
+              await NotificationService.instance.cancelSeedNotification(
+                  NotificationService.seedReminderNotificationId);
+            },
+            // #147: 미심김 씨앗의 마감(14시) 1시간 전 리마인드. 당일 13:00 1회.
+            onReminderDue: ({required reminderAt}) async {
+              final settings = await (settingsRepository ??
+                      InMemorySettingsRepository())
+                  .getSettings();
+              if (!settings.notifyEnabled) return;
+              await NotificationService.instance
+                  .scheduleSeedCompleteNotification(
+                id: NotificationService.seedReminderNotificationId,
+                title: '오늘의 씨앗이 곧 마감돼요',
+                body: '14시 전에 씨앗을 심어보세요',
+                completeAt: reminderAt,
+              );
+            },
           )..ensureTodaySeed(),
         ),
         ChangeNotifierProvider(
@@ -96,8 +133,13 @@ class AppShell extends StatelessWidget {
                   minute: minute,
                 );
               } else {
+                // 매일 알림을 끄면 완성·리마인드 알림도 함께 취소한다 (#140, #147).
                 await NotificationService.instance.cancelSeedNotification(
                     NotificationService.seedNotificationId);
+                await NotificationService.instance.cancelSeedNotification(
+                    NotificationService.seedCompleteNotificationId);
+                await NotificationService.instance.cancelSeedNotification(
+                    NotificationService.seedReminderNotificationId);
               }
             },
           )..load(),

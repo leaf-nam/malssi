@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
@@ -110,6 +113,16 @@ class _SeedScreenState extends State<SeedScreen> {
         isBusy: state.isLoading,
       );
     }
+    // 14시 마감 (#147): 만료됐거나 마감된 locked 씨앗은 심기 화면을 보여주지 않는다.
+    if (seed.status == SeedStatus.expired ||
+        seed.isMissed(DebugClock.now())) {
+      return _LockedSeed(
+        seedDateKey: seed.dateKey,
+        theme: seed.theme,
+        isBusy: state.isLoading,
+        isMissed: true,
+      );
+    }
     return _LockedSeed(
       seedDateKey: seed.dateKey,
       theme: seed.theme,
@@ -123,11 +136,15 @@ class _LockedSeed extends StatelessWidget {
     required this.seedDateKey,
     required this.theme,
     required this.isBusy,
+    this.isMissed = false,
   });
 
   final String seedDateKey;
   final String theme;
   final bool isBusy;
+
+  /// 14시 마감 여부 (#147). `true`면 심기 버튼을 비활성화하고 마감 안내를 보여준다.
+  final bool isMissed;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +180,9 @@ class _LockedSeed extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
+              isMissed
+                  ? '오늘의 씨앗이 마감되었어요'
+                  : '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -174,7 +193,7 @@ class _LockedSeed extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: isBusy
+                onPressed: isBusy || isMissed
                     ? null
                     : () => context.read<SeedProvider>().plantSeed(),
                 child: isBusy
@@ -257,6 +276,93 @@ class _QuoteBlock extends StatelessWidget {
   }
 }
 
+/// 타이머 표기 (#138). `1시간 23분` → `01:23` (`HH:MM`, 2자리 고정).
+/// 1분 미만은 올림해서 `00:01`로 보여준다 (0으로 떨어지는 순간은
+/// 완성 단계라 호출자가 완성 문구를 보여준다).
+/// 0 이하면 `''` (호출자가 숨긴다).
+String formatGrowthTimer(Duration remaining) {
+  if (remaining <= Duration.zero) return '';
+  final minutes = (remaining.inSeconds + 59) ~/ 60;
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  return '${hours.toString().padLeft(2, '0')}:'
+      '${rest.toString().padLeft(2, '0')}';
+}
+
+/// 다음 성장까지 남은시간 표시 (#138). 30초마다 다시 계산한다.
+/// 성장 에셋 아래에 두며 (에셋 영역 자체에는 문구를 두지 않는다, #57),
+/// `다음 성장까지` 라벨(기존 폰트 유지) + 씨앗 UI 수준의 큰 타이머로 보여준다.
+/// 최종 단계(완성 임박)에서는 타이머 대신 `열매가 완성되었어요` 문구만 남긴다.
+class _GrowthCountdown extends StatefulWidget {
+  const _GrowthCountdown({required this.seed});
+
+  final Seed seed;
+
+  @override
+  State<_GrowthCountdown> createState() => _GrowthCountdownState();
+}
+
+class _GrowthCountdownState extends State<_GrowthCountdown> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) {
+        if (mounted) setState(() {});
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.seed.isGrowing) return const SizedBox.shrink();
+    // 공용 시계 기준이라 디버그 시간 이동(+1시간/+1일)에도 함께 당겨진다 (#115).
+    final timer = formatGrowthTimer(
+      widget.seed.timeUntilNextStage(DebugClock.now()),
+    );
+    // 완성 임박: 문구만 남긴다.
+    if (timer.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: Text(
+          '열매가 완성되었어요',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 11, color: AppTheme.muted),
+        ),
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+            '다음 성장까지',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: AppTheme.muted),
+          ),
+        ),
+        Text(
+          timer,
+          textAlign: TextAlign.center,
+          // Galmuri 숫자는 monospace(1자=1em)라 40px → 너비 200.
+          // 일반 폰 화면의 씨앗 너비와 같은 수준으로 맞춘다 (#138 개선).
+          style: AppTheme.quoteTextStyle(fontSize: 40),
+        ),
+      ],
+    );
+  }
+}
+
 /// 영역에 맞춰 들어가는 테마 이미지. 에셋이 없거나 로드에 실패하면 🌱를 보여준다.
 class _ContainImage extends StatelessWidget {
   const _ContainImage({required this.path});
@@ -277,7 +383,8 @@ class _ContainImage extends StatelessWidget {
   }
 }
 
-/// 성장 중 화면 (#51). 명언 + 저자가 2/3, 성장 에셋이 1/3을 차지한다.
+/// 성장 중 화면. 명언 + 저자가 6, 성장 에셋이 4를 차지한다
+/// (에셋 1.2x 확대분 반영, #138 개선).
 /// 디버그에서만 빨리감기 버튼.
 class _GrowingSeed extends StatelessWidget {
   const _GrowingSeed({
@@ -299,9 +406,9 @@ class _GrowingSeed extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 명언 + 저자: 나머지 2/3.
+        // 명언 + 저자.
         Expanded(
-          flex: 2,
+          flex: 6,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -311,9 +418,10 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
-        // 성장 에셋: 화면의 1/3. 형태만 보여주고 문구·도트는 두지 않는다 (#57).
+        // 성장 에셋 (1.2x 확대분 반영, #138 개선).
+        // 형태만 보여주고 문구·도트는 두지 않는다 (#57).
         Expanded(
-          flex: 1,
+          flex: 4,
           child: Center(
             child: _ContainImage(
               path: ThemeAssets.growthImage(
@@ -321,6 +429,8 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
+        // 남은시간: 씨앗 아래. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
+        _GrowthCountdown(seed: seed),
         if (showDebug) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 12),

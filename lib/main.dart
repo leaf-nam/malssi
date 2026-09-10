@@ -7,13 +7,15 @@ import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
 import 'package:malssi/core/services/local_store.dart';
 import 'package:malssi/features/onboarding/data/onboarding_repository.dart';
+import 'package:malssi/routing/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Notification init must never block app startup: on failure, log and continue.
   try {
-    await NotificationService.instance.init();
+    // 알림 탭 → 말씨 탭(`/`)으로 이동한다 (#140).
+    await NotificationService.instance.init(onTap: () => appRouter.go('/'));
   } catch (e) {
     debugPrint('NotificationService init failed: $e');
   }

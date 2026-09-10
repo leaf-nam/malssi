@@ -18,8 +18,8 @@ abstract class QuoteRepository {
   Future<void> deleteQuote(String quoteId);
 }
 
-/// In-memory implementation used until the Firestore backend is connected.
-/// Seed data only; no persistence across restarts.
+/// In-memory implementation backed by the bundled asset (#123).
+/// No backend; seed data only with no persistence across restarts.
 class InMemoryQuoteRepository implements QuoteRepository {
   InMemoryQuoteRepository({List<Quote>? seed})
       : _quotes = List.of(
