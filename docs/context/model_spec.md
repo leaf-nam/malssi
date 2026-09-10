@@ -141,8 +141,9 @@ class CollectionNames {
 
 - **상태 전이**: `locked` (생성, 탭 → 심기) → `growing` (2시간 간격 성장) →
   `complete` (5단계 도달, 열매 수확 대상).
-  미심김(`locked`) 씨앗은 당일 정오를 넘기면 `expired`로 전환된다
-  (정오 정각까지 심기 가능, `Seed.deadlineHour = 12`, #147).
+  미심김(`locked`) 씨앗은 당일 14시를 넘기면 `expired`로 전환된다
+  (14시 정각까지 심기 가능, `Seed.deadlineHour = 14`, #147 —
+  14시 심기 → 10시간 성장 → 24시 완성으로 당일 수확 가능).
   `seedTime`과 무관한 고정 마감이다.
   자정 만료도 유지된다 (날짜가 바뀌면 지난 `locked` 만료).
   `growing`은 다음 날로 이월된다 (정오 전 심기 → 늦어도 22시 완성이므로

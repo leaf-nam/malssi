@@ -28,11 +28,12 @@ class Seed {
   /// 디버그에서는 버튼(`+1단계`/`열매 만들기`)으로 당긴다.
   static const stageInterval = Duration(hours: stageHours);
 
-  /// 당일 마감 시각(시). 정오 고정 (#147). `seedTime`과 무관하다.
-  static const deadlineHour = 12;
+  /// 당일 마감 시각(시). 14시 고정 (#147). `seedTime`과 무관하다.
+  /// 14시 심기 → 10시간 성장 → 24시 완성으로 당일 수확이 가능하다.
+  static const deadlineHour = 14;
 
   /// 마감 리마인드 시각(시). 마감 1시간 전 고정 (#147).
-  static const reminderHour = 11;
+  static const reminderHour = 13;
 
   const Seed({
     required this.id,
@@ -117,9 +118,9 @@ class Seed {
     return elapsed.clamp(0, Seed.maxGrowthStage);
   }
 
-  /// 당일 정오를 넘겨 심을 수 없게 된 `locked` 씨앗인지 (#147).
+  /// 당일 마감(14시)을 넘겨 심을 수 없게 된 `locked` 씨앗인지 (#147).
   /// `growing`·`complete` 등에는 해당 없고, 자정 만료와 별개다.
-  /// 정오 정각까지는 심을 수 있고, 그 이후는 마감이다.
+  /// 마감 정각까지는 심을 수 있고, 그 이후는 마감이다.
   /// 저장소는 마감된 당일 씨앗을 `expired`로 전환한다.
   bool isMissed(DateTime now) {
     if (!isLocked) return false;
@@ -128,7 +129,7 @@ class Seed {
     return now.isAfter(noon);
   }
 
-  /// [date] 당일 리마인드 시각(11:00) (#147).
+  /// [date] 당일 리마인드 시각(13:00) (#147).
   static DateTime reminderAt(DateTime date) =>
       DateTime(date.year, date.month, date.day, reminderHour);
 

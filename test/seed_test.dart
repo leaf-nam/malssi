@@ -165,14 +165,14 @@ void main() {
             plantedAt: createdAt,
           );
 
-      test('locked seed is missed after noon on the same day', () {
+      test('locked seed is missed after 14:00 on the same day', () {
         final seed = lockedAt(DateTime(2026, 9, 4, 8));
 
         expect(seed.isMissed(DateTime(2026, 9, 4, 8)), isFalse);
-        expect(seed.isMissed(DateTime(2026, 9, 4, 11, 59)), isFalse);
-        // 정오 정각까지는 심을 수 있다.
-        expect(seed.isMissed(DateTime(2026, 9, 4, 12)), isFalse);
-        expect(seed.isMissed(DateTime(2026, 9, 4, 12, 0, 1)), isTrue);
+        expect(seed.isMissed(DateTime(2026, 9, 4, 13, 59)), isFalse);
+        // 마감 정각까지는 심을 수 있다.
+        expect(seed.isMissed(DateTime(2026, 9, 4, 14)), isFalse);
+        expect(seed.isMissed(DateTime(2026, 9, 4, 14, 0, 1)), isTrue);
         expect(seed.isMissed(DateTime(2026, 9, 4, 23)), isTrue);
       });
 
@@ -188,13 +188,13 @@ void main() {
           plantedAt: DateTime(2026, 9, 3, 8),
         );
 
-        expect(growing.isMissed(DateTime(2026, 9, 4, 13)), isFalse);
-        expect(yesterday.isMissed(DateTime(2026, 9, 4, 13)), isFalse);
+        expect(growing.isMissed(DateTime(2026, 9, 4, 15)), isFalse);
+        expect(yesterday.isMissed(DateTime(2026, 9, 4, 15)), isFalse);
       });
 
-      test('reminderAt is 11:00 of the given day', () {
+      test('reminderAt is 13:00 of the given day', () {
         expect(Seed.reminderAt(DateTime(2026, 9, 4, 8)),
-            DateTime(2026, 9, 4, 11));
+            DateTime(2026, 9, 4, 13));
       });
     });
   });
@@ -275,21 +275,21 @@ void main() {
             createdAt: DateTime(2026, 1, 1),
           );
 
-      test('today seed expires after noon when unplanted', () async {
+      test('today seed expires after 14:00 when unplanted', () async {
         final repo = InMemorySeedRepository(
-            clock: () => DateTime(2026, 9, 4, 13));
+            clock: () => DateTime(2026, 9, 4, 15));
 
         final seed = await repo.getTodaySeed();
 
         expect(seed.status, SeedStatus.expired);
       });
 
-      test('planting after noon throws', () async {
+      test('planting after 14:00 throws', () async {
         var now = DateTime(2026, 9, 4, 8);
         final repo = InMemorySeedRepository(clock: () => now);
         final seed = await repo.getTodaySeed();
 
-        now = DateTime(2026, 9, 4, 13);
+        now = DateTime(2026, 9, 4, 15);
 
         expect(
           () => repo.plantSeed(seedId: seed.id, quote: testQuote()),
@@ -297,9 +297,9 @@ void main() {
         );
       });
 
-      test('planting at noon sharp still works', () async {
+      test('planting at 14:00 sharp still works', () async {
         final repo = InMemorySeedRepository(
-            clock: () => DateTime(2026, 9, 4, 12));
+            clock: () => DateTime(2026, 9, 4, 14));
         final seed = await repo.getTodaySeed();
 
         final planted =
@@ -659,7 +659,7 @@ void main() {
     });
 
     group('deadline reminder callbacks (#147)', () {
-      test('locked seed requests a reminder for 11:00', () async {
+      test('locked seed requests a reminder for 13:00', () async {
         DateTime? requestedAt;
         final provider = _buildProvider(
           clock: () => DateTime(2026, 9, 4, 8),
@@ -670,7 +670,7 @@ void main() {
         await provider.ensureTodaySeed();
 
         expect(provider.todaySeed!.isLocked, isTrue);
-        expect(requestedAt, DateTime(2026, 9, 4, 11));
+        expect(requestedAt, DateTime(2026, 9, 4, 13));
         expect(provider.errorMessage, isNull);
       });
 
@@ -692,7 +692,7 @@ void main() {
 
         // 마감된 씨앗에도 요청하지 않는다.
         final missed = _buildProvider(
-          clock: () => DateTime(2026, 9, 4, 13),
+          clock: () => DateTime(2026, 9, 4, 15),
           onReminderDue: ({required reminderAt}) async {
             calls++;
           },
@@ -733,7 +733,7 @@ void main() {
     testWidgets('missed seed shows the deadline notice (#147)',
         (tester) async {
       final provider =
-          _buildProvider(clock: () => DateTime(2026, 9, 4, 13));
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 15));
       await provider.ensureTodaySeed();
 
       await tester.pumpWidget(_wrap(provider));

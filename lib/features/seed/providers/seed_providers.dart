@@ -114,7 +114,7 @@ class SeedProvider extends ChangeNotifier {
   /// 미심김 씨앗이면 마감 리마인드 예약을 요청한다 (#147).
   /// 마감됐거나 성장 중이면 요청하지 않는다.
   /// 리마인드 날짜는 씨앗 당일로 고정한다 (저장소·공용 시계가 어긋나는
-  /// 테스트·디버그 상황에서도 당일 11:00을 가리킨다).
+  /// 테스트·디버그 상황에서도 당일 13:00을 가리킨다).
   Future<void> _notifyReminderDue(Seed seed) async {
     final schedule = _onReminderDue;
     if (schedule == null || !seed.isLocked) return;

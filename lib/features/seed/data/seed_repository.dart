@@ -112,7 +112,7 @@ class InMemorySeedRepository implements SeedRepository {
         );
       },
     );
-    // 정오 마감 (#147): 당일 미심김 씨앗은 정오가 지나면 만료된다.
+    // 14시 마감 (#147): 당일 미심김 씨앗은 14시가 지나면 만료된다.
     if (seed.isMissed(now)) {
       seed = seed.copyWith(status: SeedStatus.expired);
       _seeds[todayKey] = seed;

@@ -97,7 +97,7 @@ class AppShell extends StatelessWidget {
               await NotificationService.instance.cancelSeedNotification(
                   NotificationService.seedReminderNotificationId);
             },
-            // #147: 미심김 씨앗의 마감(정오) 1시간 전 리마인드. 당일 11:00 1회.
+            // #147: 미심김 씨앗의 마감(14시) 1시간 전 리마인드. 당일 13:00 1회.
             onReminderDue: ({required reminderAt}) async {
               final settings = await (settingsRepository ??
                       InMemorySettingsRepository())
@@ -107,7 +107,7 @@ class AppShell extends StatelessWidget {
                   .scheduleSeedCompleteNotification(
                 id: NotificationService.seedReminderNotificationId,
                 title: '오늘의 씨앗이 곧 마감돼요',
-                body: '정오 전에 씨앗을 심어보세요',
+                body: '14시 전에 씨앗을 심어보세요',
                 completeAt: reminderAt,
               );
             },

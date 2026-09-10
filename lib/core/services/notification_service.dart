@@ -14,7 +14,7 @@ class NotificationService {
   /// 씨앗 완성(열매) 1회 알림 ID (#140).
   static const seedCompleteNotificationId = 1002;
 
-  /// 마감 리마인드 1회 알림 ID (#147). 당일 11:00 고정.
+  /// 마감 리마인드 1회 알림 ID (#147). 당일 13:00 고정.
   static const seedReminderNotificationId = 1003;
 
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();

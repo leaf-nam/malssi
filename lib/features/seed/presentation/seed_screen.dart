@@ -113,7 +113,7 @@ class _SeedScreenState extends State<SeedScreen> {
         isBusy: state.isLoading,
       );
     }
-    // 정오 마감 (#147): 만료됐거나 마감된 locked 씨앗은 심기 화면을 보여주지 않는다.
+    // 14시 마감 (#147): 만료됐거나 마감된 locked 씨앗은 심기 화면을 보여주지 않는다.
     if (seed.status == SeedStatus.expired ||
         seed.isMissed(DebugClock.now())) {
       return _LockedSeed(
@@ -143,7 +143,7 @@ class _LockedSeed extends StatelessWidget {
   final String theme;
   final bool isBusy;
 
-  /// 정오 마감 여부 (#147). `true`면 심기 버튼을 비활성화하고 마감 안내를 보여준다.
+  /// 14시 마감 여부 (#147). `true`면 심기 버튼을 비활성화하고 마감 안내를 보여준다.
   final bool isMissed;
 
   @override
