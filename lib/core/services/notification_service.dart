@@ -39,13 +39,14 @@ class NotificationService {
     );
     const details = NotificationDetails(android: androidDetails);
 
+    // inexact 모드: SCHEDULE_EXACT_ALARM 권한 불필요 (수분 오차 허용).
     await _plugin.zonedSchedule(
       id: id,
       title: title,
       body: body,
       scheduledDate: tz.TZDateTime.from(scheduleTime, tz.local),
       notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
   }
 
@@ -72,6 +73,8 @@ class NotificationService {
 
   /// 매일 [hour]:[minute]에 씨앗 도착 알림을 반복 예약한다.
   /// `matchDateTimeComponents: time`으로 일일 반복된다.
+  /// inexact 모드이므로 SCHEDULE_EXACT_ALARM 권한이 필요 없고,
+  /// 수분 단위 오차가 발생할 수 있다 (일일 씨앗 알림 용도로 허용).
   Future<void> scheduleDailySeedNotification({
     required int id,
     required String title,
@@ -100,7 +103,7 @@ class NotificationService {
       body: body,
       scheduledDate: scheduled,
       notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
