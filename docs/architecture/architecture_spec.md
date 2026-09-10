@@ -43,7 +43,7 @@
   (`LocalStore`, `core/services/local_store.dart`),
   `InMemory*` 저장소가 변경마다 저장·시작 시 복원한다.
   온보딩 완료 여부도 같은 `SharedPreferences`를 공유한다 (#130).
-  Firebase Auth는 `DummyAuthService`로 대체 중.
+  인증은 백엔드 없이 `DummyAuthService`로 확정했다 (Firebase 미사용).
 - **공용 서비스 (싱글톤)**: `AdService` (보상형 광고 로드/표시 스텁),
   `NotificationService` (`flutter_local_notifications` 기반 초기화/예약/표시),
   `DebugClock` (디버그 시간 이동용 앱 공용 시계, #115).
@@ -121,7 +121,6 @@ lib/
 | `flutter` | SDK | 프레임워크 | `uses-material-design: true` |
 | `provider` | `^6.0.0` | 상태 관리 (주) | `AppShell` MultiProvider, 화면 watch/read |
 | `go_router` | `^13.2.0` | 라우팅 | `appRouter` |
-| `firebase_core` | `^2.24.2` | Firebase 초기화 | `lib/`에서 미사용 중. Auth/Firestore 실연동 시 사용 |
 | `flutter_local_notifications` | `^22.3.0` | 로컬 알림 | `NotificationService` (v22 named-parameter API) |
 | `timezone` | `^0.11.1` | 알림 예약 시각 | `zonedSchedule`용 타임존 |
 | `share_plus` | `^10.1.2` | 공유 | `lib/`에서 미사용 중. 보관 상세 편입 여부는 후속 이슈에서 결정 (`feature_spec.md` §6 #6) |
@@ -135,16 +134,20 @@ lib/
 
 ## 2. 외부 연동 규격
 
-### 2.1 Firestore
+### 2.1 로컬 저장소 키 규격
 
-- 컬렉션명: `CollectionNames` 상수 사용 (`docs/context/model_spec.md` §2 참조).
+- 키명: `CollectionNames` 상수 사용 (`docs/context/model_spec.md` §2 참조).
+  Firestore 시절의 컬렉션명을 로컬 저장 키로 그대로 쓴다.
 - 문서 스키마: `model_spec.md` §4의 모델별 필드표 준수.
-- `createdAt`은 Firestore `Timestamp` ↔ Dart `DateTime` 변환 규칙 준수.
+- `createdAt`은 `Timestamp` 호환 변환 규칙 준수 (`.toDate()` 방어 읽기).
 
-### 2.2 Firebase Auth (예정)
+### 2.2 인증 (`DummyAuthService`, 백엔드 없음)
 
-- 현재 `DummyAuthService` 스텁 상태. 실제 연동 시 `firebase_core` 초기화 후
-  `firebase_auth` 의존성 추가 및 `auth` 컬렉션 스키마 확정이 필요합니다.
+- `lib/features/auth/data/dummy_auth_service.dart`가 최종 구현이다
+  (`signInAnonymously`, `signInWithGoogle`, `signOut`,
+  `currentUserId => 'anonymous_user'`).
+- Firebase를 사용하지 않기로 확정했으므로 `firebase_core`/`firebase_auth`
+  의존성을 제거했다. 서버 계정 연동은 미계획.
 
 ### 2.3 로컬 알림 (`NotificationService`)
 
@@ -189,8 +192,8 @@ lib/
 4. **저장 방식 결정** (#122에서 로컬로 확정): `seeds`/`fruits`/`settings`는
    `SharedPreferences` + JSON (`LocalStore`, `core/services/local_store.dart`)에
    저장한다. `InMemory*` 저장소가 `store` 연결 시 변경마다 저장하고,
-   `main()` 시작 시 1회 복원한다. Firestore 연동은 동기화·공유 수요 발생 시
-   별도 이슈로 분리한다. `/auth` 잔류 여부, 비로그인 시 폴백 규칙은 미확정.
+   `main()` 시작 시 1회 복원한다. 서버 백엔드(Firebase 포함)는 사용하지 않기로
+   확정했다. `/auth` 잔류 여부, 비로그인 시 폴백 규칙은 미확정.
 5. **성장 연출 후속** (`fidelityScore`/`memo`·성장 단계 UI·열매 상세는 구현됨):
    남은 과제(`feature_spec.md` §1·§2 향후 과제 참조).
 6. **`riverpod` 의존성 정리**: `lib/`에서 미사용 중. 정식 승격 vs 제거 결정.

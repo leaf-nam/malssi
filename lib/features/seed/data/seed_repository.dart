@@ -38,7 +38,7 @@ abstract class SeedRepository {
   Future<void> debugShiftTime(Duration by);
 }
 
-/// Firestore 연동 전까지 사용하는 인메모리 구현. 영속성 없음.
+/// 로컬 저장(`LocalStore`) 기반 인메모리 구현. 서버 동기화는 미계획.
 ///
 /// 일자별 씨앗 테마는 **랜덤**으로 부여한다 (중복 허용, 2026-09-04 확정).
 /// [themePicker]를 주면 테마 선택을 고정할 수 있다 (테스트용).

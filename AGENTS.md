@@ -21,7 +21,7 @@
 *   **시스템 아키텍처 스펙**: `docs/architecture/architecture_spec.md`
     *   **내용**: feature-based 프로젝트 구조(`lib/features/*`, `lib/core/*`,
         `lib/routing/*`), 계층 규칙(data/domain/presentation/providers),
-        의존성(`provider`, `go_router`, `firebase_core`, `flutter_local_notifications`,
+        의존성(`provider`, `go_router`, `flutter_local_notifications`,
         `riverpod`), 라우팅 및 싱글톤 서비스(`AdService`, `NotificationService`,
         `FirestoreRefs`) 규격.
 *   **개발 워크플로우**: `docs/workflow/development_flow.md`
@@ -109,7 +109,7 @@
 opencode에 설치된 MCP 서버 구성과 각 서버의 용도입니다. 작업 성격에 맞는 서버를 우선 활용하십시오.
 
 *   **context7** (remote): 라이브러리/프레임워크 공식 문서 조회.
-    Flutter, `provider`, `riverpod`, `go_router`, `firebase_core`,
+    Flutter, `provider`, `go_router`,
     `flutter_local_notifications` 등의 API 문법·설정·마이그레이션을 확인할 때
     웹 검색보다 우선 사용.
 *   **github** (remote): 이슈/PR/커밋 조회 및 생성, 코드 검색, 리뷰 작업.
