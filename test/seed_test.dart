@@ -16,13 +16,18 @@ import 'package:malssi/features/seed/presentation/seed_screen.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 
 SeedProvider _buildProvider(
-    {DateTime Function()? clock, String Function()? themePicker}) {
+    {DateTime Function()? clock,
+    String Function()? themePicker,
+    ScheduleCompleteNotification? onSeedPlanted,
+    CancelCompleteNotification? onSeedCompleted}) {
   final seedRepository =
       InMemorySeedRepository(clock: clock, themePicker: themePicker);
   return SeedProvider(
     seedRepository: seedRepository,
     quoteRepository: InMemoryQuoteRepository(),
     fruitRepository: InMemoryFruitRepository(clock: clock),
+    onSeedPlanted: onSeedPlanted,
+    onSeedCompleted: onSeedCompleted,
   );
 }
 
@@ -492,6 +497,75 @@ void main() {
       expect(fruits.single.seedId, '2026-09-04');
       expect(fruits.single.isReviewed, isTrue);
       expect(provider.errorMessage, isNull);
+    });
+
+    group('completion notification callbacks (#140)', () {
+      test('planting schedules completion 10 hours later', () async {
+        final plantedAt = DateTime(2026, 9, 4, 8);
+        DateTime? scheduledAt;
+        final provider = _buildProvider(
+          clock: () => plantedAt,
+          onSeedPlanted: ({required completeAt}) async {
+            scheduledAt = completeAt;
+          },
+        );
+        await provider.ensureTodaySeed();
+        await provider.plantSeed();
+
+        expect(provider.todaySeed!.isGrowing, isTrue);
+        expect(scheduledAt, plantedAt.add(const Duration(hours: 10)));
+        expect(provider.errorMessage, isNull);
+      });
+
+      test('harvest cancels the scheduled completion', () async {
+        var completedCalls = 0;
+        final provider = _buildProvider(
+          clock: () => DateTime(2026, 9, 4, 8),
+          onSeedCompleted: () async {
+            completedCalls++;
+          },
+        );
+        await provider.ensureTodaySeed();
+        await provider.plantSeed();
+        await provider.debugCompleteNow();
+
+        expect(provider.todaySeed!.isComplete, isTrue);
+        expect(completedCalls, 1);
+        expect(provider.errorMessage, isNull);
+      });
+
+      test('restart with a growing seed reschedules completion', () async {
+        final clockTime = DateTime(2026, 9, 4, 8);
+        final seedRepository = InMemorySeedRepository(
+          clock: () => clockTime,
+          themePicker: () => SeedTheme.vitality,
+        );
+        final fruitRepository = InMemoryFruitRepository(
+          clock: () => clockTime,
+        );
+        final first = SeedProvider(
+          seedRepository: seedRepository,
+          quoteRepository: InMemoryQuoteRepository(),
+          fruitRepository: fruitRepository,
+        );
+        await first.ensureTodaySeed();
+        await first.plantSeed();
+
+        DateTime? rescheduledAt;
+        final restarted = SeedProvider(
+          seedRepository: seedRepository,
+          quoteRepository: InMemoryQuoteRepository(),
+          fruitRepository: fruitRepository,
+          onSeedPlanted: ({required completeAt}) async {
+            rescheduledAt = completeAt;
+          },
+        );
+        await restarted.ensureTodaySeed();
+
+        expect(restarted.todaySeed!.isGrowing, isTrue);
+        expect(rescheduledAt, clockTime.add(const Duration(hours: 10)));
+        expect(restarted.errorMessage, isNull);
+      });
     });
   });
 
