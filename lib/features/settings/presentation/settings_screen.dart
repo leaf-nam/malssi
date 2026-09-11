@@ -113,6 +113,14 @@ class SettingsScreen extends StatelessWidget {
     if (picked == null || !context.mounted) return;
     final formatted =
         '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+    // #159: 마감 14시 이후는 저장 전에 막고 이유를 알린다.
+    if (!AppSettings.isAllowedSeedTime(formatted)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('씨앗 생성 시간은 14시 이후로 설정할 수 없어요')),
+      );
+      return;
+    }
     await state.updateSeedTime(formatted);
   }
 }

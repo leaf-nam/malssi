@@ -6,7 +6,8 @@ abstract class SettingsRepository {
 
   Stream<AppSettings> getSettingsStream();
 
-  /// 씨앗 생성 시각 변경 (`'HH:mm'`). 형식이 틀리면 [ArgumentError].
+  /// 씨앗 생성 시각 변경 (`'HH:mm'`). 형식이 틀리거나
+  /// 마감 14시 이후이면 [ArgumentError] (#159).
   Future<AppSettings> updateSeedTime(String seedTime);
 
   Future<AppSettings> setNotifyEnabled(bool enabled);
@@ -61,6 +62,10 @@ class InMemorySettingsRepository implements SettingsRepository {
   Future<AppSettings> updateSeedTime(String seedTime) async {
     if (!AppSettings.isValidSeedTime(seedTime)) {
       throw ArgumentError('Invalid seedTime (expected HH:mm): $seedTime');
+    }
+    // #159: 당일 마감(14시) 이후로는 씨앗이 도착해도 심을 수 없으므로 차단.
+    if (!AppSettings.isAllowedSeedTime(seedTime)) {
+      throw ArgumentError('Seed time must be no later than 14:00: $seedTime');
     }
     return _save(_settings.copyWith(seedTime: seedTime));
   }

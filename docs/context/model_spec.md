@@ -195,6 +195,8 @@ class CollectionNames {
 
 - **동작 귀속**: `seedTime` 시각에 씨앗 생성 + 알림 발송이 동시에 동작한다
   (`feature_spec.md` §3 참조).
+  당일 마감(14시, #147) 이후 값은 저장할 수 없다
+  (`isAllowedSeedTime` — 14:00 정각까지 허용, #159).
 - **컬렉션**: `settings` (`CollectionNames.settings`).
 - **저장**: 로컬 저장으로 확정 (#122, `LocalStore` + `SharedPreferences`).
   Firestore 연동은 동기화·공유 수요 발생 시 별도 이슈로 분리한다.

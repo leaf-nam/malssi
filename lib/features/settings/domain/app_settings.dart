@@ -17,6 +17,10 @@ class AppSettings {
 
   static const defaultSeedTime = '08:00';
 
+  /// 씨앗 생성 시간 상한(시). 당일 마감 14시와 같은 값 (#147, #159).
+  /// `Seed.deadlineHour`와 함께 바뀌어야 한다.
+  static const maxSeedTimeHour = 14;
+
   static const defaultThemeMode = 'system';
 
   static const defaultFruitRainEnabled = true;
@@ -26,6 +30,17 @@ class AppSettings {
   /// `'HH:mm'` 형식 검증.
   static bool isValidSeedTime(String value) =>
       _timePattern.hasMatch(value);
+
+  /// 씨앗 생성 시간으로 허용되는지 (#159). 마감 14시 정각까지 허용하고,
+  /// 그 이후는 막는다. 형식이 틀리면 `false`.
+  static bool isAllowedSeedTime(String value) {
+    if (!isValidSeedTime(value)) return false;
+    final parts = value.split(':');
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+    if (hour < maxSeedTimeHour) return true;
+    return hour == maxSeedTimeHour && minute == 0;
+  }
 
   static bool isValidThemeMode(String value) =>
       validThemeModes.contains(value);
