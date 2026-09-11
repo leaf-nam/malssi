@@ -764,6 +764,18 @@ void main() {
       expect(dateDy, lessThan(buttonDy));
     });
 
+    testWidgets('locked seed shows the 2PM cutoff notice (#161)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('씨앗은 2시까지만 받을 수 있어요!'), findsOneWidget);
+      expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
     testWidgets('growth timer sits centered above the asset (#163)',
         (tester) async {
       final provider = _buildProvider();
@@ -781,6 +793,19 @@ void main() {
           tester.view.devicePixelRatio;
       expect(labelDy,
           inInclusiveRange(height * 0.25, height * 0.75));
+    });
+
+    testWidgets('missed seed hides the 2PM cutoff notice (#161)',
+        (tester) async {
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 15));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('오늘의 씨앗이 마감되었어요'), findsOneWidget);
+      expect(find.text('씨앗은 2시까지만 받을 수 있어요!'), findsNothing);
     });
 
     testWidgets('completed seed advances to the next day (#109)',
