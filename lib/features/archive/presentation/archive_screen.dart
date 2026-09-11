@@ -161,8 +161,9 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
               padding: const EdgeInsets.only(top: 16),
               child: Text(
                 // #84: 후기 대기 열매가 있으면 다른 안내를 보여준다.
+                // #151: 열매가 하나도 없으면 씨앗 성장 중 안내를 보여준다.
                 state.fruits.isEmpty
-                    ? '말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'
+                    ? '오늘의 씨앗이 자라는 중이에요'
                     : '완성된 열매에 후기를 남기면 잔디가 심어져요',
                 style: TextStyle(
                     fontSize: 12, color: colors.onSurfaceVariant),

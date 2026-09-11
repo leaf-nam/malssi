@@ -583,8 +583,7 @@ void main() {
       expect(find.text('2026 · 0개의 열매'), findsOneWidget);
       expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
           findsOneWidget);
-      expect(find.text('말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'),
-          findsNothing);
+      expect(find.text('오늘의 씨앗이 자라는 중이에요'), findsNothing);
       ArchiveScreen.debugToday = null;
     });
 
@@ -644,7 +643,8 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
-    testWidgets('empty grid guides to the seed tab', (tester) async {
+    testWidgets('empty grid shows the growing notice (#151)',
+        (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final provider = ArchiveProvider(
           fruitRepository: InMemoryFruitRepository());
@@ -654,8 +654,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('2026 · 0개의 열매'), findsOneWidget);
-      expect(find.text('말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'),
-          findsOneWidget);
+      expect(find.text('오늘의 씨앗이 자라는 중이에요'), findsOneWidget);
+      expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
+          findsNothing);
       ArchiveScreen.debugToday = null;
     });
 
