@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -19,8 +21,13 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
-  Future<void> init({void Function()? onTap}) async {
+  Future<void> init(
+      {void Function()? onTap,
+      @visibleForTesting Future<String> Function()? localTimezoneProvider}) async {
     tz_data.initializeTimeZones();
+    // #164: 초기화 직후 `tz.local`은 UTC이므로 기기 타임존으로 바꾼다.
+    // 바꾸지 않으면 일일 알림 wall-clock이 UTC로 해석돼 9시간 어긋난다.
+    await configureLocalTimezone(provider: localTimezoneProvider);
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const darwinSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(
@@ -120,6 +127,22 @@ class NotificationService {
 
   Future<void> cancelSeedNotification(int id) async {
     await _plugin.cancel(id: id);
+  }
+
+  /// 기기 타임존을 `tz.local`에 반영한다 (#164).
+  /// 조회 실패·미지원 이름이면 UTC 기본값을 유지하고 조용히 넘어간다.
+  /// 앱 시작을 막지 않는 것이 우선이다 (`main()`의 try/catch와 동일 방침).
+  @visibleForTesting
+  static Future<void> configureLocalTimezone(
+      {Future<String> Function()? provider}) async {
+    try {
+      final name = provider != null
+          ? await provider()
+          : (await FlutterTimezone.getLocalTimezone()).identifier;
+      tz.setLocalLocation(tz.getLocation(name));
+    } catch (e) {
+      debugPrint('Local timezone setup failed, using UTC: $e');
+    }
   }
 
   /// 씨앗 완성(열매) 1회 알림을 [completeAt]에 예약한다 (#140).
