@@ -387,6 +387,8 @@ class _ContainImage extends StatelessWidget {
     return Image.asset(
       path,
       fit: BoxFit.contain,
+      // #160: 도트 에셋은 보간 없이 또렷하게 (기본 medium 필터는 번짐).
+      filterQuality: FilterQuality.none,
       errorBuilder: (_, __, ___) =>
           const Text('🌱', style: TextStyle(fontSize: 64)),
     );
@@ -608,6 +610,8 @@ class _ThemeImage extends StatelessWidget {
       path,
       width: size,
       height: size,
+      // #160: 도트 에셋은 보간 없이 또렷하게.
+      filterQuality: FilterQuality.none,
       errorBuilder: (_, __, ___) =>
           Text('🌱', style: TextStyle(fontSize: fallbackFontSize)),
     );

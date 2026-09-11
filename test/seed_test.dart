@@ -764,6 +764,30 @@ void main() {
       expect(dateDy, lessThan(buttonDy));
     });
 
+    testWidgets('dot images use nearest-neighbor filtering (#160)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 심기 전 씨앗 이미지.
+      expect(
+        tester.widget<Image>(find.byType(Image)).filterQuality,
+        FilterQuality.none,
+      );
+
+      // 성장 중 에셋 이미지.
+      await provider.plantSeed();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Image), findsWidgets);
+      for (final image in tester.widgetList<Image>(find.byType(Image))) {
+        expect(image.filterQuality, FilterQuality.none);
+      }
+    });
+
     testWidgets('growth timer sits centered above the asset (#163)',
         (tester) async {
       final provider = _buildProvider();

@@ -1253,6 +1253,53 @@ void main() {
       );
     });
 
+    testWidgets('dot images use nearest-neighbor filtering (#160)',
+        (tester) async {
+      // 후기 카드 열매 이미지 (실에셋 로드).
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: 'assets/images/grape.png',
+              initialMemo: 'm',
+              initialScore: 4,
+              readOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<Image>(find.byType(Image)).filterQuality,
+        FilterQuality.none,
+      );
+
+      // 열매 비 방울 (실에셋 로드).
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 300,
+              height: 600,
+              child: FruitRain(
+                  imagePath: 'assets/images/grape.png', opacity: 1),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(Image), findsWidgets);
+      for (final image in tester.widgetList<Image>(find.byType(Image))) {
+        expect(image.filterQuality, FilterQuality.none);
+      }
+    });
+    });
+
     testWidgets('harvested dates show themed cells', (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final at = DateTime(2026, 9, 4, 12);
