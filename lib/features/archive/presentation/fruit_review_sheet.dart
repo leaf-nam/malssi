@@ -148,15 +148,30 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
             const Text('오늘의 후기', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 8),
             if (widget.readOnly)
-              Text(
-                _memoController.text.isEmpty
-                    ? '작성된 후기가 없어요'
-                    : _memoController.text,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: _memoController.text.isEmpty
-                      ? colors.onSurfaceVariant
-                      : colors.onSurface,
+              // #150: 내 후기가 명언과 구분되도록 카드로 감싼다.
+              // 명언(가운데 정렬·인용 스타일)과 달리 왼쪽 정렬·중간 두께로 보여준다.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.outlineVariant),
+                ),
+                child: Text(
+                  _memoController.text.isEmpty
+                      ? '작성된 후기가 없어요'
+                      : _memoController.text,
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    fontWeight: FontWeight.w600,
+                    color: _memoController.text.isEmpty
+                        ? colors.onSurfaceVariant
+                        : colors.onSurface,
+                  ),
                 ),
               )
             else ...[

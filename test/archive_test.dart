@@ -1170,6 +1170,42 @@ void main() {
       expect(find.text('출처'), findsNothing);
     });
 
+    testWidgets('read-only memo is a distinct left-aligned card (#150)',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: '명언本文',
+              author: '작자',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '내 후기',
+              initialScore: 4,
+              readOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 명언은 가운데 정렬, 내 후기는 왼쪽 정렬 카드로 구분된다.
+      final quote = tester.widget<Text>(find.text('"명언本文"'));
+      expect(quote.textAlign, TextAlign.center);
+      final memo = tester.widget<Text>(find.text('내 후기'));
+      expect(memo.textAlign, TextAlign.left);
+      expect(memo.style!.fontSize, 14);
+      // 카드 배경이 있다 (명언 영역과 시각적 분리).
+      expect(
+        find.ancestor(
+          of: find.text('내 후기'),
+          matching: find.byWidgetPredicate((w) =>
+              w is Container && w.decoration is BoxDecoration),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('harvested dates show themed cells', (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final at = DateTime(2026, 9, 4, 12);
