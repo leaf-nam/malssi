@@ -173,8 +173,18 @@ LLM 에이전트는 이슈 목록을 조회하여 처리할 이슈를 제안하�
   ```sh
   git tag vX.Y.Z origin/main
   git push origin vX.Y.Z
-  gh release create vX.Y.Z --title "X.Y.Z" \
-    --notes-file docs/releases/X.Y.Z.md
+  gh release create vX.Y.Z --title "말씨 X.Y.Z" --notes "..."
   ```
-  (`--notes-file` 대신 스토어 `복붙용` 블록만 넣을지 여부는 개발자가 결정.)
+- Release 본문 양식 (1.0.1 계승, 2026-09-12 확정 — `docs/releases/*.md` 통째가 아님):
+  ```
+  말씨 X.Y.Z입니다.
+
+  • 사용자 눈높이 변경점 1
+  • 사용자 눈높이 변경점 2
+  …
+
+  포함: #PR 짧은 설명 · #PR 짧은 설명 · …
+  ```
+  - 제목은 `말씨 X.Y.Z`, 본문은 도입문 + 불릿 + `포함:` 한 줄.
+  - `docs/releases/X.Y.Z.md`의 스토어 `복붙용` 블록도 동일 양식으로 둔다.
 - 완료된 이슈를 `completed`로 닫고, 다음 버전 마일스톤 이월 여부를 확인합니다.
