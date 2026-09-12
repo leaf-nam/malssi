@@ -742,10 +742,9 @@ void main() {
 
       expect(provider.todaySeed!.status, SeedStatus.expired);
       expect(find.text('오늘의 씨앗이 마감되었어요'), findsOneWidget);
-      // 심기 버튼은 비활성화된다.
-      final button =
-          tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-      expect(button.onPressed, isNull);
+      // 마감 후에는 심기 버튼을 보여주지 않는다.
+      expect(find.text('씨앗 심기'), findsNothing);
+      expect(find.byType(ElevatedButton), findsNothing);
     });
 
     testWidgets('locked seed centers the date below the title (#163)',

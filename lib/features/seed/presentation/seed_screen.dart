@@ -209,21 +209,23 @@ class _LockedSeed extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isBusy || isMissed
-                    ? null
-                    : () => context.read<SeedProvider>().plantSeed(),
-                child: isBusy
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('씨앗 심기'),
+            // 마감 후에는 심기 버튼을 보여주지 않는다 (문구만 남긴다).
+            if (!isMissed)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context.read<SeedProvider>().plantSeed(),
+                  child: isBusy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('씨앗 심기'),
+                ),
               ),
-            ),
             if (showDebug) ...[
               const SizedBox(height: 8),
               SizedBox(

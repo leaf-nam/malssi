@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:malssi/app.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/routing/app_router.dart';
 
@@ -15,6 +16,12 @@ Future<void> _pumpShell(WidgetTester tester, Widget shell) async {
 }
 
 void main() {
+  // 마감 규칙(#147) 탓에 실제 시각에 의존하면 오후에 깨지므로,
+  // 공용 시계를 오전으로 고정한다.
+  setUp(() {
+    DebugClock.shift(DateTime(2026, 9, 4, 8).difference(DateTime.now()));
+  });
+  tearDown(DebugClock.reset);
   testWidgets('AppShell shows the seed screen', (WidgetTester tester) async {
     await _pumpShell(tester, const AppShell());
 
