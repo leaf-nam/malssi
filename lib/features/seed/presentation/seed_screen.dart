@@ -174,19 +174,25 @@ class _LockedSeed extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              seedDateKey,
-              style:
-                  const TextStyle(fontSize: 12, color: AppTheme.muted),
-            ),
-            const SizedBox(height: 6),
-            Text(
               isMissed
                   ? '오늘의 씨앗이 마감되었어요'
                   : '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.paper,
+              ),
+            ),
+            // #163: 날짜를 타이틀 아래 중앙 클러스터로 둔다 (위 eyebrow 배치 폐기).
+            const SizedBox(height: 6),
+            Text(
+              seedDateKey,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.paperDim,
               ),
             ),
             const SizedBox(height: 24),
@@ -383,8 +389,8 @@ class _ContainImage extends StatelessWidget {
   }
 }
 
-/// 성장 중 화면. 명언 + 저자가 6, 성장 에셋이 4를 차지한다
-/// (에셋 1.2x 확대분 반영, #138 개선).
+/// 성장 중 화면. 명언(위)·남은시간(가운데)·성장 에셋(아래) 순서다 (#163).
+/// 남은시간을 화면 중앙에 두어 한눈에 들어오게 한다.
 /// 디버그에서만 빨리감기 버튼.
 class _GrowingSeed extends StatelessWidget {
   const _GrowingSeed({
@@ -406,9 +412,9 @@ class _GrowingSeed extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 명언 + 저자.
+        // 명언 + 저자 (위).
         Expanded(
-          flex: 6,
+          flex: 1,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -418,10 +424,12 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
-        // 성장 에셋 (1.2x 확대분 반영, #138 개선).
+        // 남은시간: 화면 가운데. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
+        _GrowthCountdown(seed: seed),
+        // 성장 에셋 (아래, 1.2x 확대분 반영, #138 개선).
         // 형태만 보여주고 문구·도트는 두지 않는다 (#57).
         Expanded(
-          flex: 4,
+          flex: 1,
           child: Center(
             child: _ContainImage(
               path: ThemeAssets.growthImage(
@@ -429,8 +437,6 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
-        // 남은시간: 씨앗 아래. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
-        _GrowthCountdown(seed: seed),
         if (showDebug) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 12),

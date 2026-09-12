@@ -747,6 +747,41 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
+    testWidgets('locked seed centers the date below the title (#163)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 날짜가 이미지 아래·버튼 위 중앙 클러스터에 있다.
+      final dateDy = tester.getCenter(find.text('2026-09-04')).dy;
+      final imageDy = tester.getCenter(find.byType(Image)).dy;
+      final buttonDy = tester.getCenter(find.text('씨앗 심기')).dy;
+      expect(dateDy, greaterThan(imageDy));
+      expect(dateDy, lessThan(buttonDy));
+    });
+
+    testWidgets('growth timer sits centered above the asset (#163)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 타이머가 에셋보다 위에, 화면 중앙대에 있다.
+      final labelDy = tester.getCenter(find.text('다음 성장까지')).dy;
+      final imageDy = tester.getCenter(find.byType(Image)).dy;
+      expect(labelDy, lessThan(imageDy));
+      final height = tester.view.physicalSize.height /
+          tester.view.devicePixelRatio;
+      expect(labelDy,
+          inInclusiveRange(height * 0.25, height * 0.75));
+    });
+
     testWidgets('completed seed advances to the next day (#109)',
         (tester) async {
       final provider = _buildProvider();
@@ -851,13 +886,13 @@ void main() {
       expect(find.textContaining('단계 성장 중'), findsNothing);
       expect(find.textContaining('2시간마다'), findsNothing);
       expect(find.byType(Image), findsOneWidget);
-      // #51에서 6:4로 조정 (에셋 1.2x 확대분, #138 개선).
+      // #163에서 명언·에셋 1:1 + 가운데 타이머로 변경 (종전 6:4).
       final growingFlexes = tester
           .widgetList<Expanded>(find.byType(Expanded))
           .map((e) => e.flex)
           .toList();
-      expect(growingFlexes[0], 6);
-      expect(growingFlexes[1], 4);
+      expect(growingFlexes[0], 1);
+      expect(growingFlexes[1], 1);
 
       // #64: 디버그 5초 간격이라 +1단계는 1단계만 오른다.
       await tester.tap(find.text('디버그: +1단계'));
