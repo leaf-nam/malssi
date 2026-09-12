@@ -171,6 +171,8 @@ class _FruitRainState extends State<FruitRain>
             width: spec.size,
             height: spec.size,
             fit: BoxFit.contain,
+            // #160: 도트 방울은 보간 없이 또렷하게.
+            filterQuality: FilterQuality.none,
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
         ),

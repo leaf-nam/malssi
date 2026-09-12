@@ -79,8 +79,11 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                   ? const Text('🌱', style: TextStyle(fontSize: 64))
                   : Image.asset(
                       widget.imagePath,
-                      width: 72,
-                      height: 72,
+                      // #160: 150px 소스의 정수배(0.5x = 75)로 표시.
+                      width: 75,
+                      height: 75,
+                      // #160: 도트 열매는 보간 없이 또렷하게.
+                      filterQuality: FilterQuality.none,
                       errorBuilder: (_, __, ___) => const Text('🌱',
                           style: TextStyle(fontSize: 64)),
                     ),

@@ -776,6 +776,38 @@ void main() {
       expect(find.text('씨앗 심기'), findsOneWidget);
     });
 
+    testWidgets('dot images use nearest-neighbor filtering (#160)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 심기 전 씨앗 이미지.
+      expect(
+        tester.widget<Image>(find.byType(Image)).filterQuality,
+        FilterQuality.none,
+      );
+      // #160: 75px 소스의 정수배(1x)로 표시한다.
+      expect(tester.widget<Image>(find.byType(Image)).width, 75);
+
+      // 성장 중 에셋 이미지.
+      await provider.plantSeed();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Image), findsWidgets);
+      for (final image in tester.widgetList<Image>(find.byType(Image))) {
+        expect(image.filterQuality, FilterQuality.none);
+      }
+      // #160: 170px 소스의 정수배(2x = 340)까지만 키운다.
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is ConstrainedBox && w.constraints.maxWidth == 340),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('growth timer sits centered above the asset (#163)',
         (tester) async {
       final provider = _buildProvider();

@@ -168,7 +168,8 @@ class _LockedSeed extends StatelessWidget {
               child: Center(
                 child: _ThemeImage(
                   path: ThemeAssets.seedImage(theme),
-                  size: 64,
+                  // #160: 75px 소스의 정수배(1x)로 표시해 픽셀을 균일하게.
+                  size: 75,
                   fallbackFontSize: 48,
                 ),
               ),
@@ -398,6 +399,8 @@ class _ContainImage extends StatelessWidget {
     return Image.asset(
       path,
       fit: BoxFit.contain,
+      // #160: 도트 에셋은 보간 없이 또렷하게 (기본 medium 필터는 번짐).
+      filterQuality: FilterQuality.none,
       errorBuilder: (_, __, ___) =>
           const Text('🌱', style: TextStyle(fontSize: 64)),
     );
@@ -446,9 +449,13 @@ class _GrowingSeed extends StatelessWidget {
         Expanded(
           flex: 1,
           child: Center(
-            child: _ContainImage(
-              path: ThemeAssets.growthImage(
-                  seed.theme, seed.growthStage),
+            // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
+              child: _ContainImage(
+                path: ThemeAssets.growthImage(
+                    seed.theme, seed.growthStage),
+              ),
             ),
           ),
         ),
@@ -541,8 +548,13 @@ class _OpenedQuote extends StatelessWidget {
             Expanded(
               flex: 1,
               child: Center(
-                child: _ContainImage(
-                  path: ThemeAssets.fruitImage(fruit.theme),
+                // #160: 150px 소스의 정수배(2x = 300)까지만 키운다.
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxWidth: 300, maxHeight: 300),
+                  child: _ContainImage(
+                    path: ThemeAssets.fruitImage(fruit.theme),
+                  ),
                 ),
               ),
             ),
@@ -619,6 +631,8 @@ class _ThemeImage extends StatelessWidget {
       path,
       width: size,
       height: size,
+      // #160: 도트 에셋은 보간 없이 또렷하게.
+      filterQuality: FilterQuality.none,
       errorBuilder: (_, __, ___) =>
           Text('🌱', style: TextStyle(fontSize: fallbackFontSize)),
     );
