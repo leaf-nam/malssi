@@ -756,5 +756,621 @@
   "theme": "happiness",
   "source": "한국어 위키인용집 (CC BY-SA 4.0)",
   "full": "인생에 있어 가장 중요한 것은 실패했다고 낙심하지 않는 것이며 성공했다고 지나친 기쁨에 도취되지 않는 것이다."
+ },
+ {
+  "id": "c62a28690aed65a61d5c1e71c0f5c067",
+  "text": "국화는 서리를 맞아도 꺾이지 않는다",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "bcc5355228228392f477e684b728f924",
+  "text": "강물이 돌을 굴리지 못한다",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "626df0bb96fc0db4b240c8797fdd3c86",
+  "text": "돈 주고 못 살 것은 기개",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b7cfa60dd63138887a8638e793cdbacd",
+  "text": "큰 고기를 낚기 위하여 작은 미끼를 아끼지 말라",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "f34bd4f9f38abfe87521f9dcb64b3a03",
+  "text": "말로는 사촌 기와집도 지어 준다",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b4f9d5db34cf48abcfda17519f873b23",
+  "text": "적의 눈과 귀는 멀게 하고 내 눈과 귀는 밝아야 한다",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b8280bed375c7912c913d6c590e5a06b",
+  "text": "말은 쉬워도 행동은 힘들다",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "d194eaaa0998aa493c2f71a757d46f97",
+  "text": "백 마디 말보다 실천이 귀중하다",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "ed5edd740e07576fdaf084f024d27b27",
+  "text": "하자고 결심하면 못 해낼 일이 없다",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "26efde04d4aec54e9ed64874a0b1a82b",
+  "text": "고기 보고 기뻐만 말고 가서 그물을 떠라[뜨라]",
+  "author": "우리말 속담",
+  "theme": "vitality",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "f1b1e3cdb7e723458332a14a1d89f00f",
+  "text": "웃는 집에 복이 있다",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "1b1a1f8e3a1ea93d6081c5688e6ec409",
+  "text": "뒤를 돌아보고 울기보다는 앞을 바라보고 웃으랬다",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "3964be860062efe95f650af8dbca0d4a",
+  "text": "배부르니까 평안 감사도 부럽지 않다",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "ec5806926a179b49505493767d61f564",
+  "text": "아이 놓고는 웃어도 돈 놓고는 못 웃는다",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "548cc01cb5fbb8ac1a488b0fa014ba01",
+  "text": "복 속에서 복을 모른다",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "d059e89652fe3142c72419d6291d85b2",
+  "text": "고생 끝에 낙이 온다[있다]",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "f7cac0ac9f1d8f86b6dce30e90eec25b",
+  "text": "밤이 깊어 갈수록 새벽이 가까와 온다",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "e99139d5d699db793af47dd48eff02d8",
+  "text": "대한 끝에 양춘이 있다",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "ea2563bf8f1e844474630a0814521e44",
+  "text": "거지는 논두렁 밑에 있어도 웃음이 있다",
+  "author": "우리말 속담",
+  "theme": "happiness",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "3a88967492b46040fd2cca1d97eb6240",
+  "text": "부지런한 범재가 부지런하지 못한 천재보다 낫다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "25f213e652314ffb6520fe4f35402523",
+  "text": "구르는 돌은 이끼가 안 낀다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "d138d423e080a70dd732028c42b9329f",
+  "text": "걸음새 뜬 소가 천 리를 간다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b304cf86deb4b67ac616f1e0f4d21424",
+  "text": "십 년 적공이면 한 가지 성공을 한다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "c2abdc2962b9ffe7b65a426201eb9cc4",
+  "text": "천 리 길도 한 걸음부터",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "4d028d5e4166f7de17a749cb8a18f710",
+  "text": "부지런한 부자는 하늘도 못 막는다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "97d915eddd436da79c2d49eafe80295a",
+  "text": "새벽달 보려고 으스름달 안 보랴",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "7609ff82510278edfd1a95e9567f8276",
+  "text": "하늘은 스스로 돕는 자를 돕는다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "cf5885146ab900782e33389658bb798a",
+  "text": "개미는 작아도 탑을 쌓는다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "18d05ce18fce9c6d731dfcfed25f3abe",
+  "text": "공부는 늙어 죽을 때까지 해도 다 못 한다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "acbfb8c2f42c9a6827a706add238e59c",
+  "text": "무쇠도 갈면 바늘 된다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "9b11546dab79b973329f047b51103511",
+  "text": "세월은 사람을 기다려 주지 않는다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "fc4f3e630d7fa908e3fc5a1a0b69d388",
+  "text": "쇠붙이도 늘 닦지 않으면 빛을 잃는다",
+  "author": "우리말 속담",
+  "theme": "growth",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "5fd9a5928d773902ce2f259d42435cd5",
+  "text": "병 만나기는 쉬워도 병 고치기는 힘들다",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "9ef258c188863d97f1a7810ba112d5bb",
+  "text": "밥 한 알이 귀신 열을 쫓는다",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "e9d20c0d47b2f502c155427361d03938",
+  "text": "병들어야 설움을 안다",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "2e03e312a9a6405d36eeb04facd1cc30",
+  "text": "병 자랑은 하여라",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "a8ae6c4e9091da6faaf42c20f7e393a5",
+  "text": "삼정승 부러워 말고 내 한 몸 튼튼히 가지라",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "01c01ff5f8e7dd03474e6b18b639283e",
+  "text": "콧구멍 둘 마련하기가 다행이라",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "01801099764ea9d55658657fe3ecb6e4",
+  "text": "밥이 약보다 낫다",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "2fad43fa0ec22ebb7df6e152c568b6f3",
+  "text": "긴병에 효자 없다",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b952f97c2a0062c560e247a4785add47",
+  "text": "병은 사람을 못 잡아도 약은 사람을 잡는다",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "31e4aef51598d059f3a4977ee4300320",
+  "text": "의사가 제 병 못 고친다",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "7b48698addc6f11355d7006efee17090",
+  "text": "고약으로는 속병을 고치지 못한다",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "8f8628f1ca446315048973056ec84361",
+  "text": "늙은이에게는 밥이 막대라",
+  "author": "우리말 속담",
+  "theme": "health",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "11aa76ca133ccca9dc4a90e5d43fc742",
+  "text": "지는 게 이기는 거다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "11a4b35ab70fe95f0485e925f0d19584",
+  "text": "기는 놈 위에 나는 놈이 있다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "8a683589fd02ac1499f13c72bd997313",
+  "text": "산토끼를 잡으려다가 집토끼를 놓친다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "468d24c959259a06584513088c1ffd7b",
+  "text": "재산이 늘수록 욕심도 는다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "fb375d8e9c0047200c207811adbf6c30",
+  "text": "만사가 욕심대로라면 하늘에다 집도 짓겠다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "01005c52e700eceab0ec6add03c885c7",
+  "text": "허욕에 들뜨면 한 치 앞도 못 본다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "caba94ab6c6fe364438dfb53a40ed00a",
+  "text": "바다는 메워도 사람의 욕심은 못 채운다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "3fb789e07aa38e1f3aff3fa9fa56a882",
+  "text": "귀신도 빌면 듣는다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "325fec78b8b84a4b15fb439bbfe2e9ec",
+  "text": "숙인 머리는 베지 않는다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "5c9da7c5c9a2e52fdf07a7bca232a6bc",
+  "text": "벼슬은 높이고 뜻은 낮추어라",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "d431a00fb373c083c369700941ed850b",
+  "text": "김 안 나는 숭늉이 덥다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "556132f7cb45012ee2dea8274054f66b",
+  "text": "남의 일에 흥야항야한다",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "c438fdcf538edcb2e3a4c0e2dfbbd05a",
+  "text": "개구멍에 망건 치기",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "cf3241fc317ae10b82979d0406651f3c",
+  "text": "평반에 물 담은 듯",
+  "author": "우리말 속담",
+  "theme": "peace",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "8dbf8c83ae8e0bce14381300a461e488",
+  "text": "웃는 낯에 침 못 뱉는다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "7e8835bf2ffdc13cba07a369929760a1",
+  "text": "일가 싸움은 개싸움",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "9c01255f4ec39a2fa64af96a610ccd2a",
+  "text": "가는 떡이 커야 오는 떡이 크다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "72d4f3f5834f7ffc394e1939c8e5cda5",
+  "text": "부모 명 잘 받드는 사람이 나라도 잘 받든다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "a3e3ee93cd50d357c599de3bbeb31d9e",
+  "text": "선영 덕은 못 입어도 인심 덕은 입는다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b8a2194c5884dee8e661091e904b70ae",
+  "text": "자식이 부모 사랑 절반만 해도 효자다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "f2f3b9b18b82b7147661a880c3d0ffe0",
+  "text": "가까운 남이 먼 일가보다 낫다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "308c4f86535cdec56da0a6a6d7c14d9c",
+  "text": "미운 사람 고운 데 없고 고운 사람 미운 데 없다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "6b5b4a1ea919a4ff01adfd3198e7f97a",
+  "text": "부모가 착해야 효자(가) 난다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "583290395e6222895076301d03c747f3",
+  "text": "보금자리 사랑할 줄 모르는 새는 없다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "d69dc4cd36b852de7296511f915beb4b",
+  "text": "오다가다 옷깃만 스쳐도 전세의 인연이다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "ed6109672f960021f47c97f9076fd83c",
+  "text": "좋은 친구가 없는 사람은 뿌리 깊지 못한 나무와 같다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b909425fdf0ef0f3275f19e987d6712a",
+  "text": "이웃이 사촌보다 낫다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "1691fecd4672c5e37dbd8bce51305c50",
+  "text": "소나무가 무성하면 잣나무도 기뻐한다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "d9409d9436b7b31e4aad671a3091d17c",
+  "text": "내리사랑은 있어도 치사랑은 없다",
+  "author": "우리말 속담",
+  "theme": "relationship",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "e872b0aa434a407aab2f104a3a3c0015",
+  "text": "겨울이 지나지 않고 봄이 오랴",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "475bcc556745af25ba3d0823eba7a3bf",
+  "text": "넘어진 김에 쉬어 간다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "2c1a5026e3a9047273822978970b9537",
+  "text": "누울 자리 봐 가며 발을 뻗어라",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "3617efca91a7c43879dd9cc8909e7a48",
+  "text": "셈 센 아버지가 참는다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "40b976704260e9789dc4f60737c82328",
+  "text": "무식은 암흑이요 지식은 광명이다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "c3fd9fdacfd7fc248ca424e1e07c4e34",
+  "text": "말은 바른대로 하고 큰 고기는 내 앞에 놓아라",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "4078a23e88b20c6960f86423dd8384e2",
+  "text": "살은 쏘고 주워도 말은 하고 못 줍는다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "4dd6f8c033fc724d87c2ddb889a81a22",
+  "text": "가루는 칠수록 고와지고 말은 할수록 거칠어진다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "adad1dec37b210415ed4aa1966833e3d",
+  "text": "거짓말은 도둑놈 될 장본",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b9fda6046ffcb0adad2f97e3a7400ca8",
+  "text": "말이 많으면 실언이 많다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "6be008dd89206af8229d98c883a875a4",
+  "text": "못난이 열 명의 꾀가 잘난이 한 명의 꾀보다 낫다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "4bde424974cfc9917d2a5b8bdf60d381",
+  "text": "관 속에 들어가도 막말은 말라",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "b466643a3db070a6972dcb33d1d1627a",
+  "text": "구관이 명관이다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "ffd0a2dfc6ed4234c97dbda956fa29e1",
+  "text": "사람 위에 사람 없고 사람 밑에 사람 없다",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
+ },
+ {
+  "id": "0d236d68160956326fe3839a4c7f6efe",
+  "text": "서당 개 삼 년에 풍월(을) 한다[읊는다/짓는다]",
+  "author": "우리말 속담",
+  "theme": "wisdom",
+  "source": "국립국어원 우리말샘"
  }
 ]
