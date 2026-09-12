@@ -79,8 +79,9 @@ class _LandingScreenState extends State<LandingScreen> {
             children: [
               Image.asset(
                 ThemeAssets.seedImage(SeedTheme.vitality),
-                width: 96,
-                height: 96,
+                // #160: 75px 소스의 정수배(1x)로 표시해 픽셀을 균일하게.
+                width: 75,
+                height: 75,
                 // 도트 씨앗은 보간 없이 또렷하게 (#160).
                 filterQuality: FilterQuality.none,
                 errorBuilder: (_, __, ___) =>
