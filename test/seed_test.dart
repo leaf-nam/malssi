@@ -748,6 +748,38 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
+    testWidgets('debug reset wipes seeds and restarts the morning',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
+
+      await provider.debugResetAllSeeds();
+
+      // 심기 전 잠금 씨앗으로 돌아오고 시계는 오늘 아침 8시다.
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.revealedQuote, isNull);
+      final now = DebugClock.now();
+      expect(now.hour, 8);
+      final seeds = provider.todaySeed!;
+      expect(seeds.dateKey, Seed.dateKeyFor(now));
+    });
+
+    testWidgets('reset button restores the plant screen', (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('디버그: 씨앗 초기화'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
     testWidgets('locked seed centers the date below the title (#163)',
         (tester) async {
       final provider = _buildProvider();

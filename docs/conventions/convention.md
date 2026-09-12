@@ -85,3 +85,17 @@
   알림 탭 → `/` 이동도 `context.go('/')`를 사용합니다.
   셸에서는 화면이 유지되므로 탭 선택 시 명시적 새로고침이 필요합니다
   (말씨 `refreshGrowth()`·정원 `load()` — 셸 핸들러에서 호출).
+
+## 7. 디버그 전용 코드 (운영 유출 금지)
+
+- 디버그 UI(시간 이동·빨리감기·초기화 버튼 등)는 `DebugUi.showButtons`
+  (`kDebugMode && !HIDE_DEBUG_UI && !런타임 숨김`) 게이트 안에서만 그립니다.
+  릴리즈 빌드(`kDebugMode == false`)에서는 물리적으로 렌더되지 않습니다.
+- `debug` 접두사 Repository/Provider 메서드(`debugFastForward`,
+  `debugShiftTime`, `debugReset` 등)는 릴리즈 UI에서 호출하지 마십시오.
+  메서드마다 `assert(kDebugMode, ...)` 퓨즈를 답니다 (릴리즈에서 assert는 제거됨).
+- 디버그 동작은 원자적으로 검증 가능해야 합니다: 버튼 탭 후 화면에 효과가
+  보여야 하며 (`_DebugClockText`처럼 상태 표시를 둠),
+  저장소 연결 시 변경분을 반드시 저장(`_persist`)해 재시작 후에도 일관되게 합니다.
+- 출시 전 점검: 릴리즈 빌드에서 디버그 버튼이 보이지 않는지,
+  `lib/`에 게이트 밖 `debug` 호출이 없는지 확인합니다.
