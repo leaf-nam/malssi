@@ -777,6 +777,8 @@ void main() {
         tester.widget<Image>(find.byType(Image)).filterQuality,
         FilterQuality.none,
       );
+      // #160: 75px 소스의 정수배(1x)로 표시한다.
+      expect(tester.widget<Image>(find.byType(Image)).width, 75);
 
       // 성장 중 에셋 이미지.
       await provider.plantSeed();
@@ -786,6 +788,12 @@ void main() {
       for (final image in tester.widgetList<Image>(find.byType(Image))) {
         expect(image.filterQuality, FilterQuality.none);
       }
+      // #160: 170px 소스의 정수배(2x = 340)까지만 키운다.
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is ConstrainedBox && w.constraints.maxWidth == 340),
+        findsOneWidget,
+      );
     });
 
     testWidgets('growth timer sits centered above the asset (#163)',

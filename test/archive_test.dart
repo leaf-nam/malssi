@@ -1277,6 +1277,8 @@ void main() {
         tester.widget<Image>(find.byType(Image)).filterQuality,
         FilterQuality.none,
       );
+      // #160: 150px 소스의 정수배(0.5x = 75)로 표시한다.
+      expect(tester.widget<Image>(find.byType(Image)).width, 75);
 
       // 열매 비 방울 (실에셋 로드).
       await tester.pumpWidget(
@@ -1297,7 +1299,6 @@ void main() {
       for (final image in tester.widgetList<Image>(find.byType(Image))) {
         expect(image.filterQuality, FilterQuality.none);
       }
-    });
     });
 
     testWidgets('harvested dates show themed cells', (tester) async {
