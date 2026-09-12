@@ -228,6 +228,10 @@ class _LockedSeed extends StatelessWidget {
               ),
             if (showDebug) ...[
               const SizedBox(height: 8),
+              // 디버그용 현재 시각. 시간 이동 버튼의 효과를 눈으로 확인한다.
+              // 만료 화면처럼 날짜가 안 바뀌어도 시각이 움직인 게 보인다.
+              _DebugClockText(),
+              const SizedBox(height: 4),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
@@ -475,6 +479,7 @@ class _GrowingSeed extends StatelessWidget {
           ),
         ),
         if (showDebug) ...[
+          _DebugClockText(),
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Center(
@@ -599,6 +604,7 @@ class _OpenedQuote extends StatelessWidget {
           // #109: 완성 상태에서도 날짜를 옮길 수 있어야 다음 날 씨앗을 볼 수 있다.
           // #115: 공용 시계를 미뤄 전체 플로우를 검증한다.
           if (showDebug) ...[
+            _DebugClockText(),
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Center(
@@ -639,6 +645,32 @@ class _OpenedQuote extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// 디버그용 현재 시각 표시. 시간 이동 버튼의 효과를 눈으로 확인한다.
+/// `SeedProvider`가 매번 `notifyListeners`하므로 버튼을 누를 때마다
+/// 최신 시각으로 다시 그려진다.
+class _DebugClockText extends StatelessWidget {
+  // const로 쓰면 부모 rebuild 때 build가 다시 돌지 않아 시각이 멈춘다.
+  // ignore: prefer_const_constructors_in_immutables
+  _DebugClockText();
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DebugClock.now();
+    final m = now.month.toString().padLeft(2, '0');
+    final d = now.day.toString().padLeft(2, '0');
+    final h = now.hour.toString().padLeft(2, '0');
+    final min = now.minute.toString().padLeft(2, '0');
+    final offsetHours = DebugClock.offset.inHours;
+    final suffix =
+        offsetHours == 0 ? '' : ' (${offsetHours > 0 ? '+' : ''}$offsetHours h)';
+    return Text(
+      '⏰ $m-$d $h:$min$suffix',
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 11, color: AppTheme.muted),
     );
   }
 }

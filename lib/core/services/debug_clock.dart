@@ -20,6 +20,9 @@ abstract class DebugClock {
     _offset = Duration.zero;
   }
 
+  /// 현재 미뤄둔 양. 디버그 표시용 (`+1시간` → 1시간).
+  static Duration get offset => _offset;
+
   /// 시각이 미뤄져 있는지 여부.
   static bool get isShifted => _offset != Duration.zero;
 }
