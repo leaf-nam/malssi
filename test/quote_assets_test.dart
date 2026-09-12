@@ -73,7 +73,7 @@ void main() {
   });
 
   group('assets/docs/quotes.json', () {
-    test('is a curated subset of the source with valid themes (#123)',
+    test('is a curated subset of the sources with valid themes (#123)',
         () {
       final sourceIds = (jsonDecode(
         File('assets/docs/wikiquote.json').readAsStringSync(),
@@ -85,9 +85,13 @@ void main() {
       );
 
       // 큐레이션으로 걸러져 원본의 부분집합이다.
+      // 속담(#176)은 위키가 아닌 우리말샘 원천이라 id가 없어도 된다.
       expect(quotes.isNotEmpty, isTrue);
       for (final quote in quotes) {
+        if (quote.source == '국립국어원 우리말샘') continue;
         expect(sourceIds, contains(quote.id));
+      }
+      for (final quote in quotes) {
         expect(quote.text.isNotEmpty, isTrue);
         expect(SeedTheme.isValid(quote.theme), isTrue);
         // 표시용 문구는 250자를 넘지 않는다 (초과는 핵심문장으로 단축).
@@ -95,6 +99,45 @@ void main() {
       }
       final ids = quotes.map((quote) => quote.id).toSet();
       expect(ids.length, quotes.length);
+    });
+
+    test('stays within the mobile length and script limits (#180)', () {
+      final quotes = QuoteAssets.parseQuotes(
+        File('assets/docs/quotes.json').readAsStringSync(),
+      );
+      // 기준 문구(나폴레옹 `가라, 달려라 … 시간만은 안된다`) 82자 초과 금지.
+      final hanja = RegExp(r'[一-鿿㐀-䶿豈-﫿]');
+      for (final quote in quotes) {
+        expect(quote.text.length, lessThanOrEqualTo(82));
+        expect(hanja.hasMatch(quote.text), isFalse);
+      }
+    });
+
+    test('proverbs bundle keeps 88 curated entries (#176)', () {
+      final quotes = QuoteAssets.parseQuotes(
+        File('assets/docs/quotes.json').readAsStringSync(),
+      );
+      final proverbs =
+          quotes.where((q) => q.source == '국립국어원 우리말샘').toList();
+
+      expect(proverbs.length, 88);
+      final counts = <String, int>{};
+      for (final quote in proverbs) {
+        expect(quote.author, '우리말 속담');
+        expect(SeedTheme.isValid(quote.theme), isTrue);
+        counts[quote.theme] = (counts[quote.theme] ?? 0) + 1;
+      }
+      // 선정 분포 고정 (리뷰 제외 12건 반영:
+      // 활력 10·행복 9·성장 13·건강 12·평온 14·관계 15·지혜 15).
+      expect(counts, {
+        'vitality': 10,
+        'happiness': 9,
+        'growth': 13,
+        'health': 12,
+        'peace': 14,
+        'relationship': 15,
+        'wisdom': 15,
+      });
     });
 
     test('every theme has enough quotes (#123)', () {

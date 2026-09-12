@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:malssi/app.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/features/onboarding/data/onboarding_repository.dart';
 import 'package:malssi/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:malssi/features/onboarding/providers/onboarding_providers.dart';
@@ -19,6 +20,12 @@ Widget _wrap(OnboardingProvider provider, {VoidCallback? onFinished}) {
 }
 
 void main() {
+  // 마감 규칙(#147) 탓에 실제 시각에 의존하면 오후에 깨지므로,
+  // 공용 시계를 오전으로 고정한다.
+  setUp(() {
+    DebugClock.shift(DateTime(2026, 9, 4, 8).difference(DateTime.now()));
+  });
+  tearDown(DebugClock.reset);
   group('PrefsOnboardingRepository (in-memory)', () {
     test('starts incomplete, completes, resets', () async {
       final repository = PrefsOnboardingRepository();

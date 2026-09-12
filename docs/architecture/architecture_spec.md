@@ -123,6 +123,7 @@ lib/
 | `go_router` | `^13.2.0` | 라우팅 | `appRouter` |
 | `flutter_local_notifications` | `^22.3.0` | 로컬 알림 | `NotificationService` (v22 named-parameter API) |
 | `timezone` | `^0.11.1` | 알림 예약 시각 | `zonedSchedule`용 타임존 |
+| `flutter_timezone` | `^5.1.0` | 기기 타임존 조회 | `init()`의 `tz.local` 설정 (#164) |
 | `share_plus` | `^10.1.2` | 공유 | `lib/`에서 미사용 중. 보관 상세 편입 여부는 후속 이슈에서 결정 (`feature_spec.md` §6 #6) |
 | `shared_preferences` | `^2.5.5` | 로컬 지속화 | `LocalStore` (씨앗·열매·설정·온보딩, #122·#130) |
 | `riverpod` (`dev`, 미사용) | `^2.4.9` | — | `lib/`에서 import 없음. 승격·제거 여부 이슈 분리 |
@@ -154,6 +155,10 @@ lib/
 - 채널: `channel_id`/`channel_name` (Android, high importance/priority).
 - 초기화: `init()`에서 `AndroidInitializationSettings('@mipmap/ic_launcher')` +
   타임존 초기화. 실패해도 앱 시작을 막지 않는다 (`main()`에서 try/catch).
+  타임존 초기화 직후 `tz.local`은 UTC이므로, 기기 타임존
+  (`FlutterTimezone.getLocalTimezone()` → `tz.setLocalLocation`)으로
+  바꿔야 일일 알림 wall-clock이 로컬 기준으로 예약된다 (#164).
+  조회 실패 시 UTC 기본값을 유지하고 넘어간다.
 - API: `scheduleNotification({id, title, body, scheduleTime})` (1회),
   `scheduleDailySeedNotification({id, title, body, hour, minute})`
   (매일 반복, `matchDateTimeComponents: time`),

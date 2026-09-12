@@ -7,6 +7,7 @@ import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
+import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
@@ -167,46 +168,70 @@ class _LockedSeed extends StatelessWidget {
               child: Center(
                 child: _ThemeImage(
                   path: ThemeAssets.seedImage(theme),
-                  size: 64,
+                  // #160: 75px 소스의 정수배(1x)로 표시해 픽셀을 균일하게.
+                  size: 75,
                   fallbackFontSize: 48,
                 ),
               ),
             ),
             const SizedBox(height: 20),
             Text(
-              seedDateKey,
-              style:
-                  const TextStyle(fontSize: 12, color: AppTheme.muted),
-            ),
-            const SizedBox(height: 6),
-            Text(
               isMissed
                   ? '오늘의 씨앗이 마감되었어요'
                   : '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.paper,
               ),
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isBusy || isMissed
-                    ? null
-                    : () => context.read<SeedProvider>().plantSeed(),
-                child: isBusy
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('씨앗 심기'),
+            // #163: 날짜를 타이틀 아래 중앙 클러스터로 둔다 (위 eyebrow 배치 폐기).
+            const SizedBox(height: 6),
+            Text(
+              seedDateKey,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.paperDim,
               ),
             ),
+            // #161: 아직 심을 수 있을 때만 마감 안내를 보여준다.
+            // 마감 후에는 위의 '마감되었어요' 문구가 그 역할을 한다.
+            if (!isMissed)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  '씨앗은 2시까지만 받을 수 있어요!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: AppTheme.muted),
+                ),
+              ),
+            const SizedBox(height: 24),
+            // 마감 후에는 심기 버튼을 보여주지 않는다 (문구만 남긴다).
+            if (!isMissed)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context.read<SeedProvider>().plantSeed(),
+                  child: isBusy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('씨앗 심기'),
+                ),
+              ),
             if (showDebug) ...[
               const SizedBox(height: 8),
+              // 디버그용 현재 시각. 시간 이동 버튼의 효과를 눈으로 확인한다.
+              // 만료 화면처럼 날짜가 안 바뀌어도 시각이 움직인 게 보인다.
+              _DebugClockText(),
+              const SizedBox(height: 4),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
@@ -228,6 +253,19 @@ class _LockedSeed extends StatelessWidget {
                           .read<SeedProvider>()
                           .debugAdvanceDay(),
                   child: const Text('디버그: +1일'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context
+                          .read<SeedProvider>()
+                          .debugResetAllSeeds(),
+                  // 씨앗 전체 초기화 (디버그 전용, 하네스 §7).
+                  child: const Text('디버그: 씨앗 초기화'),
                 ),
               ),
             ],
@@ -253,7 +291,8 @@ class _QuoteBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          '"${quote.text}"',
+          // #177: 단어 중간 줄바꿈 방지 (원문은 저장소에서 그대로 둔다).
+          '"${keepWordsTogether(quote.text)}"',
           textAlign: TextAlign.center,
           style: AppTheme.quoteTextStyle(fontSize: 26),
         ),
@@ -356,7 +395,9 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
           textAlign: TextAlign.center,
           // Galmuri 숫자는 monospace(1자=1em)라 40px → 너비 200.
           // 일반 폰 화면의 씨앗 너비와 같은 수준으로 맞춘다 (#138 개선).
-          style: AppTheme.quoteTextStyle(fontSize: 40),
+          // 중앙 타이머는 더 두껍게 (Bold 에셋, #163).
+          style: AppTheme.quoteTextStyle(fontSize: 40)
+              .copyWith(fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -377,14 +418,16 @@ class _ContainImage extends StatelessWidget {
     return Image.asset(
       path,
       fit: BoxFit.contain,
+      // #160: 도트 에셋은 보간 없이 또렷하게 (기본 medium 필터는 번짐).
+      filterQuality: FilterQuality.none,
       errorBuilder: (_, __, ___) =>
           const Text('🌱', style: TextStyle(fontSize: 64)),
     );
   }
 }
 
-/// 성장 중 화면. 명언 + 저자가 6, 성장 에셋이 4를 차지한다
-/// (에셋 1.2x 확대분 반영, #138 개선).
+/// 성장 중 화면. 명언(위)·남은시간(가운데)·성장 에셋(아래) 순서다 (#163).
+/// 남은시간을 화면 중앙에 두어 한눈에 들어오게 한다.
 /// 디버그에서만 빨리감기 버튼.
 class _GrowingSeed extends StatelessWidget {
   const _GrowingSeed({
@@ -406,9 +449,9 @@ class _GrowingSeed extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 명언 + 저자.
+        // 명언 + 저자 (위).
         Expanded(
-          flex: 6,
+          flex: 1,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -418,20 +461,25 @@ class _GrowingSeed extends StatelessWidget {
             ),
           ),
         ),
-        // 성장 에셋 (1.2x 확대분 반영, #138 개선).
+        // 남은시간: 화면 가운데. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
+        _GrowthCountdown(seed: seed),
+        // 성장 에셋 (아래, 1.2x 확대분 반영, #138 개선).
         // 형태만 보여주고 문구·도트는 두지 않는다 (#57).
         Expanded(
-          flex: 4,
+          flex: 1,
           child: Center(
-            child: _ContainImage(
-              path: ThemeAssets.growthImage(
-                  seed.theme, seed.growthStage),
+            // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
+              child: _ContainImage(
+                path: ThemeAssets.growthImage(
+                    seed.theme, seed.growthStage),
+              ),
             ),
           ),
         ),
-        // 남은시간: 씨앗 아래. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
-        _GrowthCountdown(seed: seed),
         if (showDebug) ...[
+          _DebugClockText(),
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Center(
@@ -473,6 +521,15 @@ class _GrowingSeed extends StatelessWidget {
                             .read<SeedProvider>()
                             .debugAdvanceDay(),
                     child: const Text('디버그: +1일'),
+                  ),
+                  // 씨앗 전체 초기화 (디버그 전용, 하네스 §7).
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugResetAllSeeds(),
+                    child: const Text('디버그: 씨앗 초기화'),
                   ),
                 ],
               ),
@@ -520,8 +577,13 @@ class _OpenedQuote extends StatelessWidget {
             Expanded(
               flex: 1,
               child: Center(
-                child: _ContainImage(
-                  path: ThemeAssets.fruitImage(fruit.theme),
+                // #160: 150px 소스의 정수배(2x = 300)까지만 키운다.
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxWidth: 300, maxHeight: 300),
+                  child: _ContainImage(
+                    path: ThemeAssets.fruitImage(fruit.theme),
+                  ),
                 ),
               ),
             ),
@@ -542,6 +604,7 @@ class _OpenedQuote extends StatelessWidget {
           // #109: 완성 상태에서도 날짜를 옮길 수 있어야 다음 날 씨앗을 볼 수 있다.
           // #115: 공용 시계를 미뤄 전체 플로우를 검증한다.
           if (showDebug) ...[
+            _DebugClockText(),
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Center(
@@ -566,6 +629,15 @@ class _OpenedQuote extends StatelessWidget {
                               .debugAdvanceDay(),
                       child: const Text('디버그: +1일'),
                     ),
+                    // 씨앗 전체 초기화 (디버그 전용, 하네스 §7).
+                    OutlinedButton(
+                      onPressed: isBusy
+                          ? null
+                          : () => context
+                              .read<SeedProvider>()
+                              .debugResetAllSeeds(),
+                      child: const Text('디버그: 씨앗 초기화'),
+                    ),
                   ],
                 ),
               ),
@@ -573,6 +645,32 @@ class _OpenedQuote extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// 디버그용 현재 시각 표시. 시간 이동 버튼의 효과를 눈으로 확인한다.
+/// `SeedProvider`가 매번 `notifyListeners`하므로 버튼을 누를 때마다
+/// 최신 시각으로 다시 그려진다.
+class _DebugClockText extends StatelessWidget {
+  // const로 쓰면 부모 rebuild 때 build가 다시 돌지 않아 시각이 멈춘다.
+  // ignore: prefer_const_constructors_in_immutables
+  _DebugClockText();
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DebugClock.now();
+    final m = now.month.toString().padLeft(2, '0');
+    final d = now.day.toString().padLeft(2, '0');
+    final h = now.hour.toString().padLeft(2, '0');
+    final min = now.minute.toString().padLeft(2, '0');
+    final offsetHours = DebugClock.offset.inHours;
+    final suffix =
+        offsetHours == 0 ? '' : ' (${offsetHours > 0 ? '+' : ''}$offsetHours h)';
+    return Text(
+      '⏰ $m-$d $h:$min$suffix',
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 11, color: AppTheme.muted),
     );
   }
 }
@@ -598,6 +696,8 @@ class _ThemeImage extends StatelessWidget {
       path,
       width: size,
       height: size,
+      // #160: 도트 에셋은 보간 없이 또렷하게.
+      filterQuality: FilterQuality.none,
       errorBuilder: (_, __, ___) =>
           Text('🌱', style: TextStyle(fontSize: fallbackFontSize)),
     );

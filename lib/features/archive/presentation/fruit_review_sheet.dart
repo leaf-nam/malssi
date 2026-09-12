@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
+import 'package:malssi/core/widgets/word_wrap.dart';
 
 /// 열매 리뷰 카드 (별점 + 한줄 후기).
 /// 메인(완성 열매 탭)에서는 작성용으로, 보관(잔디 상세)에서는 읽기 전용으로 쓴다.
@@ -78,8 +79,11 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                   ? const Text('🌱', style: TextStyle(fontSize: 64))
                   : Image.asset(
                       widget.imagePath,
-                      width: 72,
-                      height: 72,
+                      // #160: 150px 소스의 정수배(0.5x = 75)로 표시.
+                      width: 75,
+                      height: 75,
+                      // #160: 도트 열매는 보간 없이 또렷하게.
+                      filterQuality: FilterQuality.none,
                       errorBuilder: (_, __, ___) => const Text('🌱',
                           style: TextStyle(fontSize: 64)),
                     ),
@@ -93,7 +97,8 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              '"${widget.quoteText}"',
+              // #177: 단어 중간 줄바꿈 방지.
+              '"${keepWordsTogether(widget.quoteText)}"',
               textAlign: TextAlign.center,
               style: AppTheme.quoteTextStyle(fontSize: 17)
                   .copyWith(color: colors.onSurface),
@@ -148,15 +153,30 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
             const Text('오늘의 후기', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 8),
             if (widget.readOnly)
-              Text(
-                _memoController.text.isEmpty
-                    ? '작성된 후기가 없어요'
-                    : _memoController.text,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: _memoController.text.isEmpty
-                      ? colors.onSurfaceVariant
-                      : colors.onSurface,
+              // #150: 내 후기가 명언과 구분되도록 카드로 감싼다.
+              // 명언(가운데 정렬·인용 스타일)과 달리 왼쪽 정렬·중간 두께로 보여준다.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.outlineVariant),
+                ),
+                child: Text(
+                  _memoController.text.isEmpty
+                      ? '작성된 후기가 없어요'
+                      : _memoController.text,
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.6,
+                    fontWeight: FontWeight.w600,
+                    color: _memoController.text.isEmpty
+                        ? colors.onSurfaceVariant
+                        : colors.onSurface,
+                  ),
                 ),
               )
             else ...[

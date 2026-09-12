@@ -247,6 +247,36 @@ class SeedProvider extends ChangeNotifier {
   Future<void> debugAdvanceHours(int hours) =>
       debugAdvanceTime(Duration(hours: hours));
 
+  /// 디버그용: 모든 씨앗을 지우고 오늘 아침 8시로 돌린다.
+  /// 만료된 저녁에 초기화해도 곧바로 만료되지 않고 심을 수 있는 상태로
+  /// 시작한다. 묵은 완성·리마인드 알림은 취소한다.
+  /// 릴리즈 UI에서 호출하지 않는다 (하네스 `convention.md` §7).
+  Future<void> debugResetAllSeeds() async {
+    assert(kDebugMode, 'debugResetAllSeeds is debug-only');
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _notifyCompleted();
+      await _seedRepository.debugReset();
+      final now = DateTime.now();
+      DebugClock.reset();
+      DebugClock.shift(
+        DateTime(now.year, now.month, now.day, 8)
+            .difference(DateTime.now()),
+      );
+      _todaySeed = null;
+      _revealedQuote = null;
+      _plantedQuote = null;
+      _completedFruit = null;
+      _todaySeed = await _seedRepository.getActiveSeed();
+      await _maybeHarvest();
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
+  }
+
   /// 완성된 씨앗의 열매가 없으면 수확하고 명언을 공개한다.
   /// 이월 만료 (#113): 오늘 이전의 미후기 열매는 먼저 폐기한다.
   /// 다음날 씨앗 도착까지 후기를 남기지 않으면 정원에 보관되지 않는다.

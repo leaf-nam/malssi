@@ -156,14 +156,25 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             centerTick: _centerTick,
             onTapFruit: (fruit) => _openDetail(context, fruit),
           ),
-          if (state.plantedFruits.isEmpty)
+          // 오늘 수확이 없으면 씨앗 성장 중 안내를 보여준다.
+          // 열매 자체가 하나도 없을 때(#151)는 물론, 과거 열매만 있고
+          // 오늘 열매가 아직 맺히지 않았을 때도 해당한다 (#174).
+          // 오늘 수확은 됐는데 후기 전이면 후기 안내를 보여준다 (#84).
+          if (!state.fruitsByDateKey
+              .containsKey(ArchiveScreen.dateKeyOf(today)))
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Text(
-                // #84: 후기 대기 열매가 있으면 다른 안내를 보여준다.
-                state.fruits.isEmpty
-                    ? '말씨 탭에서 씨앗을 키우고 후기를 남기면 잔디가 심어져요'
-                    : '완성된 열매에 후기를 남기면 잔디가 심어져요',
+                '오늘의 씨앗이 자라는 중이에요',
+                style: TextStyle(
+                    fontSize: 12, color: colors.onSurfaceVariant),
+              ),
+            )
+          else if (state.plantedFruits.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Text(
+                '완성된 열매에 후기를 남기면 잔디가 심어져요',
                 style: TextStyle(
                     fontSize: 12, color: colors.onSurfaceVariant),
               ),

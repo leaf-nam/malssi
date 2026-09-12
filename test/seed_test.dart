@@ -6,6 +6,7 @@ import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
@@ -741,10 +742,174 @@ void main() {
 
       expect(provider.todaySeed!.status, SeedStatus.expired);
       expect(find.text('오늘의 씨앗이 마감되었어요'), findsOneWidget);
-      // 심기 버튼은 비활성화된다.
-      final button =
-          tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-      expect(button.onPressed, isNull);
+      // 마감 후에는 심기 버튼을 보여주지 않는다.
+      expect(find.text('씨앗 심기'), findsNothing);
+      expect(find.byType(ElevatedButton), findsNothing);
+    });
+
+    testWidgets('debug reset wipes seeds and restarts the morning',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
+
+      await provider.debugResetAllSeeds();
+
+      // 심기 전 잠금 씨앗으로 돌아오고 시계는 오늘 아침 8시다.
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.revealedQuote, isNull);
+      final now = DebugClock.now();
+      expect(now.hour, 8);
+      final seeds = provider.todaySeed!;
+      expect(seeds.dateKey, Seed.dateKeyFor(now));
+    });
+
+    testWidgets('reset button restores the plant screen', (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('디버그: 씨앗 초기화'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
+    testWidgets('debug clock shows up and follows time buttons',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 공용 시계(고정 오전)와 같은 시각이 보인다.
+      // (핀 고정 자체가 shift라 suffix가 붙을 수 있어 prefix로 본다.)
+      expect(find.textContaining('⏰ 09-04 08:00'), findsOneWidget);
+
+      await tester.tap(find.text('디버그: +1시간'));
+      await tester.pumpAndSettle();
+
+      // 버튼 효과(시각 이동 + 이동량)가 바로 보인다.
+      expect(find.textContaining('⏰ 09-04 09:00'), findsOneWidget);
+      final off = DebugClock.offset.inHours;
+      expect(find.textContaining('($off h)'), findsOneWidget);
+    });
+
+    testWidgets('expired seed still responds to time buttons',
+        (tester) async {
+      // 저장소 시계는 15시에 고정하고 공용 시계만 움직인다.
+      // 씨앗 상태는 그대로여도 시각 표시는 바뀌어야 한다.
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 15));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('⏰ 09-04 08:00'), findsOneWidget);
+
+      await tester.tap(find.text('디버그: +1시간'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.status, SeedStatus.expired);
+      expect(find.textContaining('⏰ 09-04 09:00'), findsOneWidget);
+    });
+
+    testWidgets('locked seed centers the date below the title (#163)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 날짜가 이미지 아래·버튼 위 중앙 클러스터에 있다.
+      final dateDy = tester.getCenter(find.text('2026-09-04')).dy;
+      final imageDy = tester.getCenter(find.byType(Image)).dy;
+      final buttonDy = tester.getCenter(find.text('씨앗 심기')).dy;
+      expect(dateDy, greaterThan(imageDy));
+      expect(dateDy, lessThan(buttonDy));
+    });
+
+    testWidgets('locked seed shows the 2PM cutoff notice (#161)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('씨앗은 2시까지만 받을 수 있어요!'), findsOneWidget);
+      expect(find.text('씨앗 심기'), findsOneWidget);
+    });
+
+    testWidgets('dot images use nearest-neighbor filtering (#160)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 심기 전 씨앗 이미지.
+      expect(
+        tester.widget<Image>(find.byType(Image)).filterQuality,
+        FilterQuality.none,
+      );
+      // #160: 75px 소스의 정수배(1x)로 표시한다.
+      expect(tester.widget<Image>(find.byType(Image)).width, 75);
+
+      // 성장 중 에셋 이미지.
+      await provider.plantSeed();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Image), findsWidgets);
+      for (final image in tester.widgetList<Image>(find.byType(Image))) {
+        expect(image.filterQuality, FilterQuality.none);
+      }
+      // #160: 170px 소스의 정수배(2x = 340)까지만 키운다.
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is ConstrainedBox && w.constraints.maxWidth == 340),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('growth timer sits centered above the asset (#163)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 타이머가 에셋보다 위에, 화면 중앙대에 있다.
+      final labelDy = tester.getCenter(find.text('다음 성장까지')).dy;
+      final imageDy = tester.getCenter(find.byType(Image)).dy;
+      expect(labelDy, lessThan(imageDy));
+      final height = tester.view.physicalSize.height /
+          tester.view.devicePixelRatio;
+      expect(labelDy,
+          inInclusiveRange(height * 0.25, height * 0.75));
+    });
+
+    testWidgets('missed seed hides the 2PM cutoff notice (#161)',
+        (tester) async {
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 15));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('오늘의 씨앗이 마감되었어요'), findsOneWidget);
+      expect(find.text('씨앗은 2시까지만 받을 수 있어요!'), findsNothing);
     });
 
     testWidgets('completed seed advances to the next day (#109)',
@@ -845,19 +1010,19 @@ void main() {
       expect(find.text('씨앗 심기'), findsNothing);
       // #46: 심자마자 명언이 보이고, 그 아래 성장 에셋이 그려진다.
       expect(provider.revealedQuote, isNotNull);
-      expect(find.textContaining(provider.revealedQuote!.text),
+      expect(find.textContaining(keepWordsTogether(provider.revealedQuote!.text)),
           findsOneWidget);
       // #57: 성장 형태(에셋)만 보이고 단계·안내 문구는 없다.
       expect(find.textContaining('단계 성장 중'), findsNothing);
       expect(find.textContaining('2시간마다'), findsNothing);
       expect(find.byType(Image), findsOneWidget);
-      // #51에서 6:4로 조정 (에셋 1.2x 확대분, #138 개선).
+      // #163에서 명언·에셋 1:1 + 가운데 타이머로 변경 (종전 6:4).
       final growingFlexes = tester
           .widgetList<Expanded>(find.byType(Expanded))
           .map((e) => e.flex)
           .toList();
-      expect(growingFlexes[0], 6);
-      expect(growingFlexes[1], 4);
+      expect(growingFlexes[0], 1);
+      expect(growingFlexes[1], 1);
 
       // #64: 디버그 5초 간격이라 +1단계는 1단계만 오른다.
       await tester.tap(find.text('디버그: +1단계'));
@@ -871,7 +1036,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(provider.todaySeed!.isComplete, isTrue);
-      expect(find.textContaining(provider.revealedQuote!.text),
+      expect(find.textContaining(keepWordsTogether(provider.revealedQuote!.text)),
           findsOneWidget);
     });
 

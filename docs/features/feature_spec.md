@@ -170,6 +170,7 @@
 | 2 | 정원 (열매) | `fruits` | `Fruit` | `FruitRepository` | `ArchiveScreen`, `ArchiveProvider` | 구현됨 |
 | 3 | 설정 | `settings` | `AppSettings` | `SettingsRepository` | `SettingsScreen`, `SettingsProvider` | 구현됨 |
 | 4 | 첫 실행 도움말 | — (로컬 플래그) | — | `OnboardingRepository` | `OnboardingScreen`, `OnboardingProvider` | 구현됨 (#130) |
+| 5 | 랜딩 (매 실행) | — | — | — | `LandingScreen` (`lib/features/landing/presentation/`) | 구현됨 (#162) |
 
 ## 6. 폐기된 기존 7기능과 사유 (2026-09-04 확정)
 

@@ -5,6 +5,7 @@ import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/presentation/archive_screen.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
 import 'package:malssi/features/auth/presentation/login_screen.dart';
+import 'package:malssi/features/landing/presentation/landing_screen.dart';
 import 'package:malssi/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:malssi/features/onboarding/providers/onboarding_providers.dart';
 import 'package:malssi/features/seed/presentation/seed_screen.dart';
@@ -12,7 +13,8 @@ import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/features/settings/presentation/settings_screen.dart';
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/',
+  // 매 실행 랜딩을 짧게 보여준다 (#162).
+  initialLocation: '/landing',
   routes: [
     // 3탭 셸 (#79). 하단 바 1개가 상주하고 내용만 교체되므로,
     // 탭 전환에 페이지 슬라이드가 없고 바 색상 블렌딩이 그대로 보인다.
@@ -54,6 +56,11 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
+    ),
+    // 매 실행 짧게 보여주는 랜딩. 셸 밖 전체 화면이다 (#162).
+    GoRoute(
+      path: '/landing',
+      builder: (context, state) => const LandingScreen(),
     ),
   ],
 );
