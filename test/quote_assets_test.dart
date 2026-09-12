@@ -101,6 +101,18 @@ void main() {
       expect(ids.length, quotes.length);
     });
 
+    test('stays within the mobile length and script limits (#180)', () {
+      final quotes = QuoteAssets.parseQuotes(
+        File('assets/docs/quotes.json').readAsStringSync(),
+      );
+      // 기준 문구(나폴레옹 `가라, 달려라 … 시간만은 안된다`) 82자 초과 금지.
+      final hanja = RegExp(r'[一-鿿㐀-䶿豈-﫿]');
+      for (final quote in quotes) {
+        expect(quote.text.length, lessThanOrEqualTo(82));
+        expect(hanja.hasMatch(quote.text), isFalse);
+      }
+    });
+
     test('proverbs bundle keeps 88 curated entries (#176)', () {
       final quotes = QuoteAssets.parseQuotes(
         File('assets/docs/quotes.json').readAsStringSync(),
