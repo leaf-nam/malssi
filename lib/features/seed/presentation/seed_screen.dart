@@ -196,6 +196,17 @@ class _LockedSeed extends StatelessWidget {
                 color: AppTheme.paperDim,
               ),
             ),
+            // #161: 아직 심을 수 있을 때만 마감 안내를 보여준다.
+            // 마감 후에는 위의 '마감되었어요' 문구가 그 역할을 한다.
+            if (!isMissed)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text(
+                  '씨앗은 2시까지만 받을 수 있어요!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: AppTheme.muted),
+                ),
+              ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
