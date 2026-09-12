@@ -6,6 +6,7 @@ import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
@@ -880,7 +881,7 @@ void main() {
       expect(find.text('씨앗 심기'), findsNothing);
       // #46: 심자마자 명언이 보이고, 그 아래 성장 에셋이 그려진다.
       expect(provider.revealedQuote, isNotNull);
-      expect(find.textContaining(provider.revealedQuote!.text),
+      expect(find.textContaining(keepWordsTogether(provider.revealedQuote!.text)),
           findsOneWidget);
       // #57: 성장 형태(에셋)만 보이고 단계·안내 문구는 없다.
       expect(find.textContaining('단계 성장 중'), findsNothing);
@@ -906,7 +907,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(provider.todaySeed!.isComplete, isTrue);
-      expect(find.textContaining(provider.revealedQuote!.text),
+      expect(find.textContaining(keepWordsTogether(provider.revealedQuote!.text)),
           findsOneWidget);
     });
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
+import 'package:malssi/core/widgets/word_wrap.dart';
 
 /// 열매 리뷰 카드 (별점 + 한줄 후기).
 /// 메인(완성 열매 탭)에서는 작성용으로, 보관(잔디 상세)에서는 읽기 전용으로 쓴다.
@@ -93,7 +94,8 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              '"${widget.quoteText}"',
+              // #177: 단어 중간 줄바꿈 방지.
+              '"${keepWordsTogether(widget.quoteText)}"',
               textAlign: TextAlign.center,
               style: AppTheme.quoteTextStyle(fontSize: 17)
                   .copyWith(color: colors.onSurface),

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
@@ -1236,7 +1237,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 명언은 가운데 정렬, 내 후기는 왼쪽 정렬 카드로 구분된다.
-      final quote = tester.widget<Text>(find.text('"명언本文"'));
+      final quote = tester.widget<Text>(find.text('"${keepWordsTogether('명언本文')}"'));
       expect(quote.textAlign, TextAlign.center);
       final memo = tester.widget<Text>(find.text('내 후기'));
       expect(memo.textAlign, TextAlign.left);
@@ -1302,7 +1303,7 @@ void main() {
           .tap(find.byKey(const ValueKey('grass-2026-09-04')));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('성장 열매'), findsOneWidget);
+      expect(find.textContaining(keepWordsTogether('성장 열매')), findsOneWidget);
       expect(find.text('오늘의 점수'), findsOneWidget);
       expect(find.text('오늘의 후기'), findsOneWidget);
       // #48: 보관에서는 저장 UI가 없다.

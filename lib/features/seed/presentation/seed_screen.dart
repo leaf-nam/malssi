@@ -7,6 +7,7 @@ import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
+import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
@@ -259,7 +260,8 @@ class _QuoteBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          '"${quote.text}"',
+          // #177: 단어 중간 줄바꿈 방지 (원문은 저장소에서 그대로 둔다).
+          '"${keepWordsTogether(quote.text)}"',
           textAlign: TextAlign.center,
           style: AppTheme.quoteTextStyle(fontSize: 26),
         ),
