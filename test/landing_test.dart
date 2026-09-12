@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:malssi/app.dart';
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/landing/presentation/landing_screen.dart';
 import 'package:malssi/features/onboarding/data/onboarding_repository.dart';
 import 'package:malssi/routing/app_router.dart';
 
 void main() {
+  // 마감 규칙(#147) 탓에 실제 시각에 의존하면 오후에 깨지므로,
+  // 공용 시계를 오전으로 고정한다.
+  setUp(() {
+    DebugClock.shift(DateTime(2026, 9, 4, 8).difference(DateTime.now()));
+  });
+  tearDown(DebugClock.reset);
   group('LandingScreen', () {
     // 열매 비가 무한 반복이라 settle 대신 단발 pump로 렌더한다.
     testWidgets('shows the brand', (tester) async {

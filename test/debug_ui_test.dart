@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
@@ -34,6 +35,12 @@ Widget _wrapSettings(SettingsProvider provider, DebugUiProvider debugUi) {
 }
 
 void main() {
+  // 마감 규칙(#147) 탓에 실제 시각에 의존하면 오후에 깨지므로,
+  // 공용 시계를 오전으로 고정한다.
+  setUp(() {
+    DebugClock.shift(DateTime(2026, 9, 4, 8).difference(DateTime.now()));
+  });
+  tearDown(DebugClock.reset);
   group('DebugUiProvider', () {
     test('shows buttons by default in debug mode', () {
       final debugUi = DebugUiProvider();
