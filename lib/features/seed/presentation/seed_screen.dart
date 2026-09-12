@@ -362,7 +362,9 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
           textAlign: TextAlign.center,
           // Galmuri 숫자는 monospace(1자=1em)라 40px → 너비 200.
           // 일반 폰 화면의 씨앗 너비와 같은 수준으로 맞춘다 (#138 개선).
-          style: AppTheme.quoteTextStyle(fontSize: 40),
+          // 중앙 타이머는 더 두껍게 (Bold 에셋, #163).
+          style: AppTheme.quoteTextStyle(fontSize: 40)
+              .copyWith(fontWeight: FontWeight.w700),
         ),
       ],
     );
