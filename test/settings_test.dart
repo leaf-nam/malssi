@@ -73,6 +73,16 @@ void main() {
       expect(AppSettings.isValidSeedTime('9:00'), isFalse);
       expect(AppSettings.isValidSeedTime(''), isFalse);
     });
+
+    test('isAllowedSeedTime blocks past the 14:00 deadline (#159)', () {
+      expect(AppSettings.isAllowedSeedTime('08:00'), isTrue);
+      expect(AppSettings.isAllowedSeedTime('13:59'), isTrue);
+      expect(AppSettings.isAllowedSeedTime('14:00'), isTrue);
+      expect(AppSettings.isAllowedSeedTime('14:01'), isFalse);
+      expect(AppSettings.isAllowedSeedTime('23:59'), isFalse);
+      expect(AppSettings.isAllowedSeedTime('9시'), isFalse);
+      expect(AppSettings.isAllowedSeedTime(''), isFalse);
+    });
   });
 
   group('InMemorySettingsRepository', () {
@@ -90,6 +100,16 @@ void main() {
       final repo = InMemorySettingsRepository();
 
       expect(() => repo.updateSeedTime('9시'), throwsArgumentError);
+    });
+
+    test('updateSeedTime rejects past the 14:00 deadline (#159)', () async {
+      final repo = InMemorySettingsRepository();
+
+      expect((await repo.updateSeedTime('14:00')).seedTime, '14:00');
+      expect(() => repo.updateSeedTime('14:01'), throwsArgumentError);
+      expect(() => repo.updateSeedTime('23:00'), throwsArgumentError);
+      // 거부된 값은 저장되지 않는다.
+      expect((await repo.getSettings()).seedTime, '14:00');
     });
 
     test('setThemeMode stores light/dark/system only', () async {
@@ -151,6 +171,26 @@ void main() {
       expect(provider.settings!.notifyEnabled, isFalse);
       expect(calls.last.enabled, isFalse);
       expect(provider.errorMessage, isNull);
+    });
+
+    test('updateSeedTime past the deadline keeps old value + error (#159)',
+        () async {
+      final calls = <_ScheduleCall>[];
+      final provider = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+        onSettingsChanged:
+            ({required hour, required minute, required enabled}) async {
+          calls.add(_ScheduleCall(hour, minute, enabled));
+        },
+      );
+      await provider.load();
+      calls.clear();
+
+      await provider.updateSeedTime('20:00');
+
+      expect(provider.settings!.seedTime, '08:00');
+      expect(provider.errorMessage, isNotNull);
+      expect(calls, isEmpty);
     });
 
     test('setThemeMode stores the mode without rescheduling', () async {
