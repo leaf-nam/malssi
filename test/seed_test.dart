@@ -748,6 +748,47 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
+    testWidgets('debug clock shows up and follows time buttons',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 공용 시계(고정 오전)와 같은 시각이 보인다.
+      // (핀 고정 자체가 shift라 suffix가 붙을 수 있어 prefix로 본다.)
+      expect(find.textContaining('⏰ 09-04 08:00'), findsOneWidget);
+
+      await tester.tap(find.text('디버그: +1시간'));
+      await tester.pumpAndSettle();
+
+      // 버튼 효과(시각 이동 + 이동량)가 바로 보인다.
+      expect(find.textContaining('⏰ 09-04 09:00'), findsOneWidget);
+      final off = DebugClock.offset.inHours;
+      expect(find.textContaining('($off h)'), findsOneWidget);
+    });
+
+    testWidgets('expired seed still responds to time buttons',
+        (tester) async {
+      // 저장소 시계는 15시에 고정하고 공용 시계만 움직인다.
+      // 씨앗 상태는 그대로여도 시각 표시는 바뀌어야 한다.
+      final provider =
+          _buildProvider(clock: () => DateTime(2026, 9, 4, 15));
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('⏰ 09-04 08:00'), findsOneWidget);
+
+      await tester.tap(find.text('디버그: +1시간'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.status, SeedStatus.expired);
+      expect(find.textContaining('⏰ 09-04 09:00'), findsOneWidget);
+    });
+
     testWidgets('locked seed centers the date below the title (#163)',
         (tester) async {
       final provider = _buildProvider();
