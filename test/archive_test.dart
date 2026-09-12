@@ -660,6 +660,51 @@ void main() {
       ArchiveScreen.debugToday = null;
     });
 
+    testWidgets('past harvest without today shows the growing notice (#174)',
+        (tester) async {
+      // 어제 수확(후기 대기)만 있고 오늘은 아직 없음 → 성장 중 안내.
+      ArchiveScreen.debugToday = DateTime(2026, 9, 5);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '어제', at: at);
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('오늘의 씨앗이 자라는 중이에요'), findsOneWidget);
+      expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
+          findsNothing);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('planted past harvest without today shows growing (#174)',
+        (tester) async {
+      // 어제 수확+후기(잔디 있음)만 있고 오늘은 아직 없음 → 성장 중 안내.
+      ArchiveScreen.debugToday = DateTime(2026, 9, 5);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-04', text: '어제', at: at);
+      await repo.updateReview(
+        fruitId: 'fruit-2026-09-04',
+        memo: '좋았다',
+        fidelityScore: 4,
+      );
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('오늘의 씨앗이 자라는 중이에요'), findsOneWidget);
+      expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
+          findsNothing);
+      ArchiveScreen.debugToday = null;
+    });
+
     testWidgets('reviewed fruits show color stats below the grid (#88)',
         (tester) async {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
