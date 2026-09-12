@@ -251,6 +251,19 @@ class _LockedSeed extends StatelessWidget {
                   child: const Text('디버그: +1일'),
                 ),
               ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => context
+                          .read<SeedProvider>()
+                          .debugResetAllSeeds(),
+                  // 씨앗 전체 초기화 (디버그 전용, 하네스 §7).
+                  child: const Text('디버그: 씨앗 초기화'),
+                ),
+              ),
             ],
           ],
         ),
@@ -504,6 +517,15 @@ class _GrowingSeed extends StatelessWidget {
                             .debugAdvanceDay(),
                     child: const Text('디버그: +1일'),
                   ),
+                  // 씨앗 전체 초기화 (디버그 전용, 하네스 §7).
+                  OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .debugResetAllSeeds(),
+                    child: const Text('디버그: 씨앗 초기화'),
+                  ),
                 ],
               ),
             ),
@@ -600,6 +622,15 @@ class _OpenedQuote extends StatelessWidget {
                               .read<SeedProvider>()
                               .debugAdvanceDay(),
                       child: const Text('디버그: +1일'),
+                    ),
+                    // 씨앗 전체 초기화 (디버그 전용, 하네스 §7).
+                    OutlinedButton(
+                      onPressed: isBusy
+                          ? null
+                          : () => context
+                              .read<SeedProvider>()
+                              .debugResetAllSeeds(),
+                      child: const Text('디버그: 씨앗 초기화'),
                     ),
                   ],
                 ),
