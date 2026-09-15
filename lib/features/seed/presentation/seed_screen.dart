@@ -128,6 +128,8 @@ class _SeedScreenState extends State<SeedScreen> {
       seedDateKey: seed.dateKey,
       theme: seed.theme,
       isBusy: state.isLoading,
+      // #196: 배달 대기 중이면 오는 중 문구 + 심기 버튼 숨김.
+      deliveryPending: state.deliveryPending,
     );
   }
 }
@@ -138,6 +140,7 @@ class _LockedSeed extends StatelessWidget {
     required this.theme,
     required this.isBusy,
     this.isMissed = false,
+    this.deliveryPending = false,
   });
 
   final String seedDateKey;
@@ -146,6 +149,9 @@ class _LockedSeed extends StatelessWidget {
 
   /// 14시 마감 여부 (#147). `true`면 심기 버튼을 비활성화하고 마감 안내를 보여준다.
   final bool isMissed;
+
+  /// 배달 대기 여부 (#196). `true`면 오는 중 문구만 보여주고 심기 버튼을 숨긴다.
+  final bool deliveryPending;
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +184,10 @@ class _LockedSeed extends StatelessWidget {
             Text(
               isMissed
                   ? '오늘의 씨앗이 마감되었어요'
-                  : '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
+                  // #196: 배달 시각 전·수확 쿨다운에는 오는 중 문구.
+                  : deliveryPending
+                      ? '씨앗이 오는 중이에요'
+                      : '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,
@@ -199,7 +208,8 @@ class _LockedSeed extends StatelessWidget {
             ),
             // #161: 아직 심을 수 있을 때만 마감 안내를 보여준다.
             // 마감 후에는 위의 '마감되었어요' 문구가 그 역할을 한다.
-            if (!isMissed)
+            // #196: 배달 대기 중에는 마감 안내도 숨긴다 (오는 중 문구만).
+            if (!isMissed && !deliveryPending)
               const Padding(
                 padding: EdgeInsets.only(top: 6),
                 child: Text(
@@ -209,8 +219,8 @@ class _LockedSeed extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 24),
-            // 마감 후에는 심기 버튼을 보여주지 않는다 (문구만 남긴다).
-            if (!isMissed)
+            // 마감 후·배달 대기 중에는 심기 버튼을 보여주지 않는다 (문구만 남긴다).
+            if (!isMissed && !deliveryPending)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

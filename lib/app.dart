@@ -74,6 +74,12 @@ class AppShell extends StatelessWidget {
             fruitRepository: fruitRepository,
             // #62: 앱 사용 중에도 15분마다 성장을 갱신한다.
             enableAutoRefresh: true,
+            // #196: 배달 시각을 설정 저장소에서 읽는다.
+            seedTimeLoader: () async =>
+                (await (settingsRepository ??
+                        InMemorySettingsRepository())
+                    .getSettings())
+                    .seedTime,
             // #140: 완성 알림 예약·취소. 매일 알림 스위치가 꺼져 있으면 예약하지 않는다.
             onSeedPlanted: ({required completeAt}) async {
               final settings = await (settingsRepository ??

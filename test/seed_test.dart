@@ -21,7 +21,8 @@ SeedProvider _buildProvider(
     String Function()? themePicker,
     ScheduleCompleteNotification? onSeedPlanted,
     CancelCompleteNotification? onSeedCompleted,
-    ScheduleReminderNotification? onReminderDue}) {
+    ScheduleReminderNotification? onReminderDue,
+    Future<String> Function()? seedTimeLoader}) {
   final seedRepository =
       InMemorySeedRepository(clock: clock, themePicker: themePicker);
   return SeedProvider(
@@ -31,6 +32,7 @@ SeedProvider _buildProvider(
     onSeedPlanted: onSeedPlanted,
     onSeedCompleted: onSeedCompleted,
     onReminderDue: onReminderDue,
+    seedTimeLoader: seedTimeLoader,
   );
 }
 
@@ -1393,6 +1395,149 @@ void main() {
       final second =
           tester.widget<Transform>(groundSway()).transform.clone();
       expect(second, isNot(first));
+    });
+  });
+
+  group('delivery gate (#196)', () {
+    Seed lockedSeed() => Seed(
+          id: '2026-09-04',
+          dateKey: '2026-09-04',
+          quoteId: '',
+          status: SeedStatus.locked,
+          createdAt: DateTime(2026, 9, 4),
+          plantedAt: DateTime(2026, 9, 4),
+        );
+
+    test('isAwaitingDelivery before the delivery time', () {
+      expect(
+        lockedSeed().isAwaitingDelivery(
+          DateTime(2026, 9, 4, 7, 59),
+          DateTime(2026, 9, 4, 8),
+        ),
+        isTrue,
+      );
+      expect(
+        lockedSeed().isAwaitingDelivery(
+          DateTime(2026, 9, 4, 8),
+          DateTime(2026, 9, 4, 8),
+        ),
+        isFalse,
+      );
+    });
+
+    test('isAwaitingDelivery ignores non-locked and past seeds', () {
+      final growing = lockedSeed().copyWith(status: SeedStatus.growing);
+      expect(
+        growing.isAwaitingDelivery(
+          DateTime(2026, 9, 4, 7),
+          DateTime(2026, 9, 4, 8),
+        ),
+        isFalse,
+      );
+      expect(
+        lockedSeed().isAwaitingDelivery(
+          DateTime(2026, 9, 5, 7),
+          DateTime(2026, 9, 5, 8),
+        ),
+        isFalse,
+      );
+    });
+
+    test('isCoolingDown within 12 hours of harvest', () {
+      final now = DateTime(2026, 9, 4, 8, 30);
+      expect(Seed.isCoolingDown(now, null), isFalse);
+      expect(
+        Seed.isCoolingDown(now, DateTime(2026, 9, 3, 22)),
+        isTrue,
+      );
+      expect(
+        Seed.isCoolingDown(now, DateTime(2026, 9, 3, 20, 29)),
+        isFalse,
+      );
+    });
+
+    test('provider pends locked seed before seedTime', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 7).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.deliveryPending, isTrue);
+
+      // 대기 중 심기는 막힌다.
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.errorMessage, contains('deliverable'));
+    });
+
+    test('provider releases locked seed after seedTime', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 9).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+
+      expect(provider.deliveryPending, isFalse);
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
+    });
+
+    test('provider pends seed within 12 hours of harvest', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 3, 13).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      // 9/3 13:00 심기 → 10시간 경과(23:00) 후 수확 + 후기까지 마친다.
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      DebugClock.shift(const Duration(hours: 10));
+      await provider.refreshGrowth();
+      await provider.ensureTodaySeed();
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+
+      // 다음날 배달 시각은 지났지만 수확 9.5시간 → 대기.
+      DebugClock.shift(const Duration(hours: 9, minutes: 30));
+      await provider.ensureTodaySeed();
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.deliveryPending, isTrue);
+
+      // 수확 12시간이 지나면 받을 수 있다.
+      DebugClock.shift(const Duration(hours: 3));
+      await provider.refreshGrowth();
+      expect(provider.deliveryPending, isFalse);
+    });
+
+    testWidgets('shows coming-soon instead of plant button',
+        (tester) async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 7).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('씨앗이 오는 중이에요'), findsOneWidget);
+      expect(find.text('씨앗 심기'), findsNothing);
     });
   });
 }
