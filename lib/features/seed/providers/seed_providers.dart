@@ -94,6 +94,11 @@ class SeedProvider extends ChangeNotifier {
   bool _deliveryPending = false;
   bool get deliveryPending => _deliveryPending;
 
+  /// 대기 사유 (#203): `'delivery'`(배달 시각 전) · `'cooldown'`(수확 12시간 이내) ·
+  /// `''`(대기 없음). 디버그 표시용이라 릴리즈 문구에는 쓰지 않는다.
+  String _deliveryGateReason = '';
+  String get deliveryGateReason => _deliveryGateReason;
+
   /// 당일 배달 시각. 로더 실패·미지정 시 자정 (게이트 없음).
   Future<DateTime> _deliveryAt(DateTime day) async {
     var hour = 0;
@@ -129,16 +134,20 @@ class SeedProvider extends ChangeNotifier {
   /// 배달 게이트를 갱신한다 (#196). `ensureTodaySeed`·`refreshGrowth` 말미 호출.
   Future<void> _updateDeliveryGate() async {
     _deliveryPending = false;
+    _deliveryGateReason = '';
     final seed = _todaySeed;
     if (seed == null || !seed.isLocked) return;
     final now = DebugClock.now();
     if (seed.dateKey != Seed.dateKeyFor(now)) return;
     if (seed.isAwaitingDelivery(now, await _deliveryAt(now))) {
       _deliveryPending = true;
+      _deliveryGateReason = 'delivery';
       return;
     }
-    _deliveryPending =
-        Seed.isCoolingDown(now, await _lastHarvestAt());
+    if (Seed.isCoolingDown(now, await _lastHarvestAt())) {
+      _deliveryPending = true;
+      _deliveryGateReason = 'cooldown';
+    }
   }
 
   @override
@@ -284,6 +293,8 @@ class SeedProvider extends ChangeNotifier {
       await _seedRepository.debugFastForward(seedId: seed.id, by: by);
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 시간 이동 시 게이트도 갱신한다 (stale 방지).
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -299,6 +310,8 @@ class SeedProvider extends ChangeNotifier {
       DebugClock.shift(by);
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 시간 이동 시 게이트도 갱신한다 (stale 방지).
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -338,6 +351,8 @@ class SeedProvider extends ChangeNotifier {
       _completedFruit = null;
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 초기화(오늘 8시) 기준 게이트도 갱신한다.
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {

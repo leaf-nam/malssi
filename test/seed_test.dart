@@ -1469,6 +1469,7 @@ void main() {
 
       expect(provider.todaySeed!.isLocked, isTrue);
       expect(provider.deliveryPending, isTrue);
+      expect(provider.deliveryGateReason, 'delivery');
 
       // 대기 중 심기는 막힌다.
       await provider.plantSeed();
@@ -1514,16 +1515,17 @@ void main() {
       await provider.ensureTodaySeed();
       expect(provider.todaySeed!.isLocked, isTrue);
       expect(provider.deliveryPending, isTrue);
+      expect(provider.deliveryGateReason, 'cooldown');
 
       // 수확 12시간이 지나면 받을 수 있다.
       DebugClock.shift(const Duration(hours: 3));
       await provider.refreshGrowth();
       expect(provider.deliveryPending, isFalse);
+      expect(provider.deliveryGateReason, isEmpty);
     });
 
     testWidgets('shows coming-soon instead of plant button',
-        (tester) async {
-      DebugClock.reset();
+        (tester) async {      DebugClock.reset();
       DebugClock.shift(
           DateTime(2026, 9, 4, 7).difference(DateTime.now()));
       final provider = _buildProvider(
@@ -1538,6 +1540,26 @@ void main() {
 
       expect(find.text('씨앗이 오는 중이에요'), findsOneWidget);
       expect(find.text('씨앗 심기'), findsNothing);
+      // #203: 디버그에서는 대기 사유가 보인다.
+      expect(find.text('게이트: 배달시각 전'), findsOneWidget);
+    });
+
+    test('debug time travel refreshes the gate (#203)', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 7).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+      expect(provider.deliveryPending, isTrue);
+
+      // 탭 재진입(refresh) 없이 +1시간만으로 게이트가 풀린다.
+      await provider.debugAdvanceHours(2);
+      expect(provider.deliveryPending, isFalse);
+      expect(provider.todaySeed!.isLocked, isTrue);
     });
   });
 }
