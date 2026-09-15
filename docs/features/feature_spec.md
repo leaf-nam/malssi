@@ -36,6 +36,8 @@
 - **동작 플로우 (목표)**:
   1. 설정 시각(`AppSettings.seedTime`, 기본 08:00)에 당일 `Seed` 문서 1개 생성
      (문서 ID = 날짜키, 예: `'2026-09-04'`, 테마 랜덤 부여) + 씨앗 알림 발송.
+     배달 시각 전·수확 12시간 이내에는 받을 수 없고 `씨앗이 오는 중이에요`를
+     보여준다 (배달 게이트, #196).
   2. 사용자가 씨앗을 탭 1회 → `plantSeed()` → `status: locked → growing` →
      같은 테마의 명언 확정 + **명언 즉시 공개** (해당 테마가 없으면 전체 랜덤 폴백).
      당일 14시를 넘긴 미심김 씨앗은 만료되어 심을 수 없다
@@ -171,6 +173,7 @@
 | 3 | 설정 | `settings` | `AppSettings` | `SettingsRepository` | `SettingsScreen`, `SettingsProvider` | 구현됨 |
 | 4 | 첫 실행 도움말 | — (로컬 플래그) | — | `OnboardingRepository` | `OnboardingScreen`, `OnboardingProvider` | 구현됨 (#130) |
 | 5 | 랜딩 (매 실행) | — | — | — | `LandingScreen` (`lib/features/landing/presentation/`) | 구현됨 (#162) |
+| 6 | 스토어 업데이트 유도 | — | — | — (스토어 직접 조회) | `UpdateGate` (`lib/core/widgets/update_gate.dart`, `upgrader` 패키지) | 구현됨 (#192) |
 
 ## 6. 폐기된 기존 7기능과 사유 (2026-09-04 확정)
 

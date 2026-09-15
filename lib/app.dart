@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/widgets/update_gate.dart';
 import 'package:malssi/features/auth/data/dummy_auth_service.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
@@ -27,6 +28,7 @@ class AppShell extends StatelessWidget {
     this.quoteRepository,
     this.onboardingRepository,
     this.autoShowOnFirstLaunch = false,
+    this.updateCheckEnabled = true,
   });
 
   final List<Quote> initialQuotes;
@@ -45,6 +47,10 @@ class AppShell extends StatelessWidget {
   /// `true`일 때만 첫 실행에 도움말로 자동 이동한다.
   /// `main()`에서만 `true`로 넘기고, 테스트 기본값은 `false`이다.
   final bool autoShowOnFirstLaunch;
+
+  /// 스토어 업데이트 확인 여부 (#192). 테스트에서는 `false`로 둔다
+  /// (스토어 조회 네트워크 방지). `main()` 기본값은 `true`이다.
+  final bool updateCheckEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +80,12 @@ class AppShell extends StatelessWidget {
             fruitRepository: fruitRepository,
             // #62: 앱 사용 중에도 15분마다 성장을 갱신한다.
             enableAutoRefresh: true,
+            // #196: 배달 시각을 설정 저장소에서 읽는다.
+            seedTimeLoader: () async =>
+                (await (settingsRepository ??
+                        InMemorySettingsRepository())
+                    .getSettings())
+                    .seedTime,
             // #140: 완성 알림 예약·취소. 매일 알림 스위치가 꺼져 있으면 예약하지 않는다.
             onSeedPlanted: ({required completeAt}) async {
               final settings = await (settingsRepository ??
@@ -162,6 +174,19 @@ class AppShell extends StatelessWidget {
             darkTheme: AppTheme.dark(),
             themeMode: themeMode,
             routerConfig: appRouter,
+            // #192: 전 화면에서 스토어 업데이트를 확인한다 (랜딩 포함).
+            // #201: 시스템 글씨 크기를 고정 레이아웃이 깨지지 않는 범위로
+            // 고정한다. Android는 시스템 글씨 크기가 textScaler로 그대로
+            // 들어오고(iOS는 1.0 유지), 상한이 없으면 고정 박스가 잘린다.
+            builder: (context, child) =>
+                MediaQuery.withClampedTextScaling(
+              minScaleFactor: 1.0,
+              maxScaleFactor: 1.2,
+              child: UpdateGate(
+                enabled: updateCheckEnabled,
+                child: child ?? const SizedBox.shrink(),
+              ),
+            ),
           );
         },
       ),

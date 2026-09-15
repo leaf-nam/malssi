@@ -8,6 +8,7 @@ import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
+import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
@@ -128,6 +129,10 @@ class _SeedScreenState extends State<SeedScreen> {
       seedDateKey: seed.dateKey,
       theme: seed.theme,
       isBusy: state.isLoading,
+      // #196: 배달 대기 중이면 오는 중 문구 + 심기 버튼 숨김.
+      deliveryPending: state.deliveryPending,
+      // #203: 디버그에서 대기 사유를 보여준다.
+      gateReason: state.deliveryGateReason,
     );
   }
 }
@@ -138,6 +143,8 @@ class _LockedSeed extends StatelessWidget {
     required this.theme,
     required this.isBusy,
     this.isMissed = false,
+    this.deliveryPending = false,
+    this.gateReason = '',
   });
 
   final String seedDateKey;
@@ -146,6 +153,12 @@ class _LockedSeed extends StatelessWidget {
 
   /// 14시 마감 여부 (#147). `true`면 심기 버튼을 비활성화하고 마감 안내를 보여준다.
   final bool isMissed;
+
+  /// 배달 대기 여부 (#196). `true`면 오는 중 문구만 보여주고 심기 버튼을 숨긴다.
+  final bool deliveryPending;
+
+  /// 대기 사유 (#203, 디버그 표시용): `'delivery'` · `'cooldown'` · `''`.
+  final String gateReason;
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +191,10 @@ class _LockedSeed extends StatelessWidget {
             Text(
               isMissed
                   ? '오늘의 씨앗이 마감되었어요'
-                  : '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
+                  // #196: 배달 시각 전·수확 쿨다운에는 오는 중 문구.
+                  : deliveryPending
+                      ? '씨앗이 오는 중이에요'
+                      : '${ThemeAssets.labelOf(theme)} 씨앗이 도착했어요',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,
@@ -199,7 +215,9 @@ class _LockedSeed extends StatelessWidget {
             ),
             // #161: 아직 심을 수 있을 때만 마감 안내를 보여준다.
             // 마감 후에는 위의 '마감되었어요' 문구가 그 역할을 한다.
-            if (!isMissed)
+            // #196: 배달 대기 중에는 마감 안내도 숨긴다 (오는 중 문구만).
+            // #203: 디버그에서는 대기 사유를 함께 보여준다.
+            if (!isMissed && !deliveryPending)
               const Padding(
                 padding: EdgeInsets.only(top: 6),
                 child: Text(
@@ -208,9 +226,21 @@ class _LockedSeed extends StatelessWidget {
                   style: TextStyle(fontSize: 12, color: AppTheme.muted),
                 ),
               ),
+            if (deliveryPending && showDebug && gateReason.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  gateReason == 'cooldown'
+                      ? '수확 후 12시간이 지나지 않았어요!'
+                      : '아직 배달시간이 되지 않았어요!',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 11, color: AppTheme.muted),
+                ),
+              ),
             const SizedBox(height: 24),
-            // 마감 후에는 심기 버튼을 보여주지 않는다 (문구만 남긴다).
-            if (!isMissed)
+            // 마감 후·배달 대기 중에는 심기 버튼을 보여주지 않는다 (문구만 남긴다).
+            if (!isMissed && !deliveryPending)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -404,9 +434,158 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
   }
 }
 
+/// 성장 중 에셋 (#154). 단계 전환은 크로스페이드로 보여주고,
+/// 자라는 동안에는 심장 맥박처럼 두 번 쿵쾅이고 쉬는 확대/축소를 반복한다.
+/// 하단 중앙 고정이라 흙은 가만있고 이음매가 없다 (#208).
+/// - 진입 시 이미 단계가 올라가 있으면 이전 단계부터 보여주고 현재로 넘어간다.
+/// - 맥박은 단일 반복 컨트롤러이며 `dispose`에서 해제한다 (저전력).
+/// - 테스트에서는 [debugStill]로 흔들림을 멈춘다.
+///   무한 반복은 `pumpAndSettle`이 끝나지 않으므로
+///   `ArchiveScreen.debugToday`와 같은 테스트 고정 패턴을 쓴다.
+class GrowthStageImage extends StatefulWidget {
+  const GrowthStageImage({super.key, required this.path, this.seedKey = ''});
+
+  final String path;
+
+  /// 씨앗 구분키 (날짜키, #207). 진입 시 변화 보여주기는 같은 씨앗일 때만
+  /// 동작한다. 날짜가 바뀌면 전날 그림이 잠깐 보였다 사라지는 플래시가
+  /// 생기므로, 키가 다르면 이전 경로를 보여주지 않는다.
+  final String seedKey;
+
+  /// 테스트 고정: `true`면 흔들림을 멈추고 0도로 둔다.
+  static bool debugStill = false;
+
+  /// 마지막 표시 경로 (진입 시 변화 감지용). 테스트 격리용으로 초기화한다.
+  static String _lastPath = '';
+
+  /// 마지막 씨앗 키 (날짜 변경 플래시 방지용, #207).
+  static String _lastSeedKey = '';
+
+  /// 테스트 간 정적 캐시를 비운다.
+  static void debugReset() {
+    _lastPath = '';
+    _lastSeedKey = '';
+  }
+
+  /// 흔들림 주기 (#208). 심장 맥박처럼 두 번 쿵쾅이고 쉰다.
+  static const swayPeriod = Duration(milliseconds: 1200);
+
+  /// 맥박 파형: 1.0 → 1.045 → 1.0 → 1.028 → 1.0 (두근두근 + 휴지기).
+  static final TweenSequence<double> pulseTween = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(begin: 1.0, end: 1.045)
+          .chain(CurveTween(curve: Curves.easeOut)),
+      weight: 12,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.045, end: 1.0)
+          .chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 12,
+    ),
+    TweenSequenceItem(
+      tween:
+          Tween(begin: 1.0, end: 1.028).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 10,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.028, end: 1.0)
+          .chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 86,
+    ),
+  ]);
+
+  /// 단계 전환 크로스페이드 길이.
+  static const fadeDuration = Duration(milliseconds: 450);
+
+  @override
+  State<GrowthStageImage> createState() => _GrowthStageImageState();
+}
+
+class _GrowthStageImageState extends State<GrowthStageImage>
+    with SingleTickerProviderStateMixin {
+  late String _displayPath;
+  late final AnimationController _sway;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    // 진입 시 변화가 있으면 이전 단계부터 보여준다.
+    // 단 날짜가 바뀐 씨앗이면 전날 그림을 보여주지 않는다 (#207).
+    final last = GrowthStageImage._lastPath;
+    final sameSeed = widget.seedKey.isNotEmpty &&
+        widget.seedKey == GrowthStageImage._lastSeedKey;
+    _displayPath =
+        last.isNotEmpty && last != widget.path && sameSeed
+            ? last
+            : widget.path;
+    GrowthStageImage._lastPath = widget.path;
+    GrowthStageImage._lastSeedKey = widget.seedKey;
+    _sway = AnimationController(
+      vsync: this,
+      duration: GrowthStageImage.swayPeriod,
+    );
+    _pulse = GrowthStageImage.pulseTween.animate(_sway);
+    if (!GrowthStageImage.debugStill) _sway.repeat();
+    if (_displayPath != widget.path) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _displayPath = widget.path);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(GrowthStageImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    GrowthStageImage._lastSeedKey = widget.seedKey;
+    if (widget.path != oldWidget.path && widget.path != _displayPath) {
+      setState(() => _displayPath = widget.path);
+      GrowthStageImage._lastPath = widget.path;
+    }
+  }
+
+  @override
+  void dispose() {
+    _sway.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 정사각 박스로 고정한다 (#208).
+    // 기존 `_ContainImage` 단독 배치와 같은 크기(최대 340)로 맞춰진다.
+    return AspectRatio(
+      aspectRatio: 1,
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (_, __) {
+          final s = _pulse.value;
+          return Transform(
+            // 하단 중앙 고정 확대/축소: 흙은 가만있고 전체가 두근거린다.
+            transform: Matrix4.diagonal3Values(s, s, 1),
+            alignment: Alignment.bottomCenter,
+            // #160: 변형 중에도 보간 없이 또렷하게.
+            filterQuality: FilterQuality.none,
+            child: AnimatedSwitcher(
+              duration: GrowthStageImage.fadeDuration,
+              transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation, child: child),
+              child: _ContainImage(
+                key: ValueKey(_displayPath),
+                path: _displayPath,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 /// 영역에 맞춰 들어가는 테마 이미지. 에셋이 없거나 로드에 실패하면 🌱를 보여준다.
 class _ContainImage extends StatelessWidget {
-  const _ContainImage({required this.path});
+  const _ContainImage({super.key, required this.path});
 
   final String path;
 
@@ -463,6 +642,17 @@ class _GrowingSeed extends StatelessWidget {
         ),
         // 남은시간: 화면 가운데. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
         _GrowthCountdown(seed: seed),
+        // #191: 심겨진 씨앗 종류 (성장 중에도 확인). 미등록 테마는 기본 문구.
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            seed.theme.isEmpty
+                ? '오늘의 씨앗이 자라는 중이에요'
+                : '${ThemeAssets.labelOf(seed.theme)} 씨앗이 자라는 중이에요',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+          ),
+        ),
         // 성장 에셋 (아래, 1.2x 확대분 반영, #138 개선).
         // 형태만 보여주고 문구·도트는 두지 않는다 (#57).
         Expanded(
@@ -471,9 +661,12 @@ class _GrowingSeed extends StatelessWidget {
             // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
-              child: _ContainImage(
+              // #154: 단계 전환 크로스페이드 + 흔들림.
+              // #207: 날짜 변경 플래시 방지용 씨앗 키 전달.
+              child: GrowthStageImage(
                 path: ThemeAssets.growthImage(
                     seed.theme, seed.growthStage),
+                seedKey: seed.dateKey,
               ),
             ),
           ),
@@ -540,7 +733,7 @@ class _GrowingSeed extends StatelessWidget {
     );
   }
 }
-class _OpenedQuote extends StatelessWidget {
+class _OpenedQuote extends StatefulWidget {
   const _OpenedQuote({
     required this.quote,
     required this.fruit,
@@ -554,40 +747,141 @@ class _OpenedQuote extends StatelessWidget {
   final bool isBusy;
 
   @override
+  State<_OpenedQuote> createState() => _OpenedQuoteState();
+}
+
+/// 완성 화면 상태 (#210). 미후기 열매는 열매 비 + 팝으로 축하하고,
+/// 후기를 남긴 열매는 조용히 보여준다.
+/// 10분 같은 시간 기준 대신 후기 여부를 기준으로 삼는다:
+/// 못 본 이벤트(미후기)는 들어올 때마다 축하하고, 처리된(후기) 열매는 조용하다.
+class _OpenedQuoteState extends State<_OpenedQuote>
+    with SingleTickerProviderStateMixin {
+  /// 열매 비 지속 시간 (짧은 버스트).
+  static const rainDuration = Duration(seconds: 3);
+
+  late final AnimationController _pop;
+  late final Animation<double> _popScale;
+  Timer? _rainTimer;
+  bool _raining = false;
+
+  /// 축하 대상: 후기를 남기지 않은 열매 (#210).
+  bool get _celebrate => widget.fruit?.isReviewed == false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pop = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _popScale = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _pop, curve: Curves.easeOutBack),
+    );
+    _maybeCelebrate();
+  }
+
+  @override
+  void didUpdateWidget(_OpenedQuote oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 다른 열매로 바뀌면 처음부터 축하하고, 후기를 마치면 조용해진다.
+    if (widget.fruit?.id != oldWidget.fruit?.id ||
+        widget.fruit?.isReviewed == true) {
+      _maybeCelebrate();
+    }
+  }
+
+  /// 미후기면 팝 + 비를 시작한다. 후기 완료면 정적 표시.
+  /// 비는 테스트 고정 시 띄우지 않는다 (`pumpAndSettle` 무한 틱 방지).
+  void _maybeCelebrate() {
+    _rainTimer?.cancel();
+    _raining = false;
+    if (!_celebrate) {
+      _pop.value = 1;
+      return;
+    }
+    _pop.forward(from: 0);
+    if (!GrowthStageImage.debugStill) {
+      _raining = true;
+      _rainTimer = Timer(rainDuration, () {
+        if (mounted) setState(() => _raining = false);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    _rainTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final fruit = this.fruit;
+    final fruit = widget.fruit;
     final showDebug = context.watch<DebugUiProvider>().showButtons;
     return GestureDetector(
-      onTap: onTapReview,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      onTap: widget.onTapReview,
+      child: Stack(
         children: [
-          // 명언 + 저자: 나머지 2/3.
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: _QuoteBlock(quote: quote),
-              ),
-            ),
-          ),
-          // 완성 열매: 화면의 1/3 (#51).
-          if (fruit != null)
-            Expanded(
-              flex: 1,
-              child: Center(
-                // #160: 150px 소스의 정수배(2x = 300)까지만 키운다.
-                child: ConstrainedBox(
-                  constraints:
-                      const BoxConstraints(maxWidth: 300, maxHeight: 300),
-                  child: _ContainImage(
-                    path: ThemeAssets.fruitImage(fruit.theme),
+          Positioned.fill(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 명언 + 저자: 나머지 2/3.
+                Expanded(
+                  flex: 2,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 32),
+                      child: _QuoteBlock(quote: widget.quote),
+                    ),
                   ),
                 ),
+                // 완성 열매: 화면의 1/3 (#51).
+                if (fruit != null)
+                  Expanded(
+                    flex: 1,
+                    child: Center(
+                      // #160: 150px 소스의 정수배(2x = 300)까지만 키운다.
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                            maxWidth: 300, maxHeight: 300),
+                          child: AnimatedBuilder(
+                          animation: _popScale,
+                          builder: (_, child) {
+                            final s = _popScale.value;
+                            return Transform(
+                              key: const ValueKey('harvest-pop'),
+                              transform:
+                                  Matrix4.diagonal3Values(s, s, 1),
+                              alignment: Alignment.center,
+                              // #160: 변형 중에도 보간 없이 또렷하게.
+                              filterQuality: FilterQuality.none,
+                              child: child,
+                            );
+                          },
+                          child: _ContainImage(
+                            path:
+                                ThemeAssets.fruitImage(fruit.theme),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+          // #191: 심겨진 씨앗 종류 (완성 열매 테마). 미등록 테마는 숨긴다.
+          if (fruit != null && fruit.theme.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(
+                  top: 8, bottom: widget.onTapReview == null ? 20 : 2),
+              child: Text(
+                '${ThemeAssets.labelOf(fruit.theme)} 열매',
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontSize: 11, color: AppTheme.muted),
               ),
             ),
-          if (onTapReview != null) ...[
+          if (widget.onTapReview != null) ...[
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 20),
               child: Text(
@@ -614,7 +908,7 @@ class _OpenedQuote extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     OutlinedButton(
-                      onPressed: isBusy
+                      onPressed: widget.isBusy
                           ? null
                           : () => context
                               .read<SeedProvider>()
@@ -622,7 +916,7 @@ class _OpenedQuote extends StatelessWidget {
                       child: const Text('디버그: +1시간'),
                     ),
                     OutlinedButton(
-                      onPressed: isBusy
+                      onPressed: widget.isBusy
                           ? null
                           : () => context
                               .read<SeedProvider>()
@@ -631,7 +925,7 @@ class _OpenedQuote extends StatelessWidget {
                     ),
                     // 씨앗 전체 초기화 (디버그 전용, 하네스 §7).
                     OutlinedButton(
-                      onPressed: isBusy
+                      onPressed: widget.isBusy
                           ? null
                           : () => context
                               .read<SeedProvider>()
@@ -643,6 +937,19 @@ class _OpenedQuote extends StatelessWidget {
               ),
             ),
           ],
+                ],
+              ),
+            ),
+          // #210: 수확 직후 3초 열매 비 버스트 (내용 가리지 않게 무시 통과).
+          if (_raining && fruit != null)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: FruitRain(
+                  imagePath: ThemeAssets.fruitImage(fruit.theme),
+                  opacity: 0.45,
+                ),
+              ),
+            ),
         ],
       ),
     );

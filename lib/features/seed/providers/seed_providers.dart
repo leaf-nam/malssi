@@ -31,6 +31,9 @@ typedef ScheduleReminderNotification = Future<void> Function({
 /// 완성 시 열매 수확. 명언 아래에 성장 에셋을 함께 보여준다.
 /// `enableAutoRefresh`가 켜지면 15분마다 성장을 갱신한다 (앱 실사용).
 /// 테스트에서는 꺼둔다 (보류 타이머 방지).
+///
+/// 배달 게이트 (#196): 00시에 도착해도 배달 시각 전·수확 12시간 이내에는
+/// 받을 수 없고 `deliveryPending`이 `true`가 된다.
 class SeedProvider extends ChangeNotifier {
   SeedProvider({
     required this._seedRepository,
@@ -40,7 +43,8 @@ class SeedProvider extends ChangeNotifier {
     this._onSeedPlanted,
     this._onSeedCompleted,
     this._onReminderDue,
-  }) {
+    Future<String> Function()? seedTimeLoader,
+  })  : _loadSeedTime = seedTimeLoader {
     if (enableAutoRefresh) {
       _timer = Timer.periodic(
         refreshInterval,
@@ -58,6 +62,10 @@ class SeedProvider extends ChangeNotifier {
   final ScheduleCompleteNotification? _onSeedPlanted;
   final CancelCompleteNotification? _onSeedCompleted;
   final ScheduleReminderNotification? _onReminderDue;
+
+  /// 당일 배달 시각(`'HH:mm'`) 로더 (#196). 실제 연결은 `app.dart`에서
+  /// 설정 저장소로 주입한다. `null`이면 자정 (게이트 없음, 기존 동작).
+  final Future<String> Function()? _loadSeedTime;
   Timer? _timer;
 
   Seed? _todaySeed;
@@ -80,6 +88,67 @@ class SeedProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+
+  /// 배달 대기 중 (#196). 당일 `locked` 씨앗이 배달 시각 전이거나
+  /// 수확 12시간 이내면 `true` — 심기 버튼 대신 오는 중 문구를 보여준다.
+  bool _deliveryPending = false;
+  bool get deliveryPending => _deliveryPending;
+
+  /// 대기 사유 (#203): `'delivery'`(배달 시각 전) · `'cooldown'`(수확 12시간 이내) ·
+  /// `''`(대기 없음). 디버그 표시용이라 릴리즈 문구에는 쓰지 않는다.
+  String _deliveryGateReason = '';
+  String get deliveryGateReason => _deliveryGateReason;
+
+  /// 당일 배달 시각. 로더 실패·미지정 시 자정 (게이트 없음).
+  Future<DateTime> _deliveryAt(DateTime day) async {
+    var hour = 0;
+    var minute = 0;
+    final loader = _loadSeedTime;
+    if (loader != null) {
+      try {
+        final parts = (await loader()).split(':');
+        hour = int.parse(parts[0]);
+        minute = int.parse(parts[1]);
+      } catch (_) {
+        // 기본 자정 유지.
+      }
+    }
+    return DateTime(day.year, day.month, day.day, hour, minute);
+  }
+
+  /// 가장 최근 수확 시각. 기록이 없으면 `null`.
+  Future<DateTime?> _lastHarvestAt() async {
+    try {
+      DateTime? latest;
+      for (final fruit in await _fruitRepository.getFruits()) {
+        if (latest == null || fruit.harvestedAt.isAfter(latest)) {
+          latest = fruit.harvestedAt;
+        }
+      }
+      return latest;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 배달 게이트를 갱신한다 (#196). `ensureTodaySeed`·`refreshGrowth` 말미 호출.
+  Future<void> _updateDeliveryGate() async {
+    _deliveryPending = false;
+    _deliveryGateReason = '';
+    final seed = _todaySeed;
+    if (seed == null || !seed.isLocked) return;
+    final now = DebugClock.now();
+    if (seed.dateKey != Seed.dateKeyFor(now)) return;
+    if (seed.isAwaitingDelivery(now, await _deliveryAt(now))) {
+      _deliveryPending = true;
+      _deliveryGateReason = 'delivery';
+      return;
+    }
+    if (Seed.isCoolingDown(now, await _lastHarvestAt())) {
+      _deliveryPending = true;
+      _deliveryGateReason = 'cooldown';
+    }
+  }
 
   @override
   void dispose() {
@@ -142,6 +211,8 @@ class SeedProvider extends ChangeNotifier {
       await _notifyPlanted(seed);
       // 미심김이면 마감 리마인드를 예약한다 (#147).
       await _notifyReminderDue(seed);
+      // 배달 게이트를 갱신한다 (#196).
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -151,6 +222,7 @@ class SeedProvider extends ChangeNotifier {
   }
 
   /// 씨앗을 심는다 (`locked` → `growing`). 명언은 심는 즉시 공개된다 (#46).
+  /// 배달 대기 중이면 심을 수 없다 (#196).
   Future<void> plantSeed() async {
     final seed = _todaySeed;
     if (seed == null || !seed.isLocked) return;
@@ -158,6 +230,10 @@ class SeedProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
+      await _updateDeliveryGate();
+      if (_deliveryPending) {
+        throw StateError('Seed not yet deliverable: ${seed.id}');
+      }
       // 씨앗과 같은 테마의 명언을 미리 확정한다.
       // 해당 테마 명언이 없으면 전체에서 랜덤 (저장소 폴백).
       final quote =
@@ -181,6 +257,7 @@ class SeedProvider extends ChangeNotifier {
     try {
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -216,6 +293,8 @@ class SeedProvider extends ChangeNotifier {
       await _seedRepository.debugFastForward(seedId: seed.id, by: by);
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 시간 이동 시 게이트도 갱신한다 (stale 방지).
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -231,6 +310,8 @@ class SeedProvider extends ChangeNotifier {
       DebugClock.shift(by);
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 시간 이동 시 게이트도 갱신한다 (stale 방지).
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -250,6 +331,7 @@ class SeedProvider extends ChangeNotifier {
   /// 디버그용: 모든 씨앗을 지우고 오늘 아침 8시로 돌린다.
   /// 만료된 저녁에 초기화해도 곧바로 만료되지 않고 심을 수 있는 상태로
   /// 시작한다. 묵은 완성·리마인드 알림은 취소한다.
+  /// 수확 기록도 함께 지워 쿨다운 없이 바로 받을 수 있다 (#212).
   /// 릴리즈 UI에서 호출하지 않는다 (하네스 `convention.md` §7).
   Future<void> debugResetAllSeeds() async {
     assert(kDebugMode, 'debugResetAllSeeds is debug-only');
@@ -258,6 +340,7 @@ class SeedProvider extends ChangeNotifier {
     try {
       await _notifyCompleted();
       await _seedRepository.debugReset();
+      await _fruitRepository.debugReset();
       final now = DateTime.now();
       DebugClock.reset();
       DebugClock.shift(
@@ -270,6 +353,8 @@ class SeedProvider extends ChangeNotifier {
       _completedFruit = null;
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 초기화(오늘 8시) 기준 게이트도 갱신한다.
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {

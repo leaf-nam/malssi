@@ -105,6 +105,7 @@ void main() {
       appRouter.go('/landing');
       await tester.pumpWidget(
         AppShell(
+          updateCheckEnabled: false,
           onboardingRepository: PrefsOnboardingRepository(completed: false),
           autoShowOnFirstLaunch: true,
         ),
@@ -120,6 +121,7 @@ void main() {
       appRouter.go('/landing');
       await tester.pumpWidget(
         AppShell(
+          updateCheckEnabled: false,
           onboardingRepository: PrefsOnboardingRepository(completed: true),
           autoShowOnFirstLaunch: true,
         ),

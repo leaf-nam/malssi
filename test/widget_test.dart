@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:malssi/app.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/features/seed/presentation/seed_screen.dart';
 import 'package:malssi/routing/app_router.dart';
 
 /// `appRouter`는 테스트 간에도 살아있는 싱글톤이다.
@@ -23,10 +24,22 @@ void main() {
   });
   tearDown(DebugClock.reset);
   testWidgets('AppShell shows the seed screen', (WidgetTester tester) async {
-    await _pumpShell(tester, const AppShell());
+    await _pumpShell(tester, const AppShell(updateCheckEnabled: false));
 
     expect(find.text('말씨'), findsOneWidget);
     expect(find.text('씨앗 심기'), findsOneWidget);
+  });
+
+  testWidgets('clamps system text scaling (#201)', (WidgetTester tester) async {
+    // Android 시스템 글씨 최대치 시뮬레이션.
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    addTearDown(
+        tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    await _pumpShell(tester, const AppShell(updateCheckEnabled: false));
+
+    final context = tester.element(find.byType(SeedScreen));
+    expect(MediaQuery.textScalerOf(context).scale(10), 12.0);
   });
 
   testWidgets('shell keeps one bottom nav and blends color per tab (#79)',
@@ -38,7 +51,7 @@ void main() {
       return (nav.decoration as BoxDecoration).color!;
     }
 
-    await _pumpShell(tester, const AppShell());
+    await _pumpShell(tester, const AppShell(updateCheckEnabled: false));
 
     // 바는 셸에 1개만 상주한다.
     expect(find.byType(BottomNavigationBar), findsOneWidget);

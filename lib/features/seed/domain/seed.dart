@@ -32,6 +32,9 @@ class Seed {
   /// 14시 심기 → 10시간 성장 → 24시 완성으로 당일 수확이 가능하다.
   static const deadlineHour = 14;
 
+  /// 수확 후 새 씨앗 쿨다운 (#196). 수확 12시간 이내에는 새 씨앗을 받을 수 없다.
+  static const cooldown = Duration(hours: 12);
+
   /// 마감 리마인드 시각(시). 마감 1시간 전 고정 (#147).
   static const reminderHour = 13;
 
@@ -127,6 +130,25 @@ class Seed {
     if (dateKey != dateKeyFor(now)) return false;
     final noon = DateTime(now.year, now.month, now.day, deadlineHour);
     return now.isAfter(noon);
+  }
+
+  /// 배달 대기 (#196). 당일 `locked` 씨앗이 배달 시각 전이면 `true`다.
+  /// 00시에 도착해도 배달 시각 전에는 받을 수 없고 `씨앗이 오는 중이에요`를 보여준다.
+  /// `growing`·`complete` 등 수령 이후 상태와 당일이 아닌 씨앗에는 해당 없다.
+  bool isAwaitingDelivery(DateTime now, DateTime deliveryAt) {
+    if (!isLocked) return false;
+    if (dateKey != dateKeyFor(now)) return false;
+    return now.isBefore(deliveryAt);
+  }
+
+  /// 수확 쿨다운 (#196). [lastHarvestAt] 이후 12시간 이내면 `true`다.
+  /// 수확 기록이 없으면 `false` (첫 씨앗은 바로 받을 수 있다).
+  /// 시계를 되돌려 수확 시각이 미래에 있으면 `false`다 (#212, 영구 차단 방지).
+  static bool isCoolingDown(DateTime now, DateTime? lastHarvestAt) {
+    if (lastHarvestAt == null) return false;
+    final elapsed = now.difference(lastHarvestAt);
+    if (elapsed.isNegative) return false;
+    return elapsed < cooldown;
   }
 
   /// [date] 당일 리마인드 시각(13:00) (#147).

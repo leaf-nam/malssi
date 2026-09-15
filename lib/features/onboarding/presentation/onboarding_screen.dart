@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/features/onboarding/providers/onboarding_providers.dart';
 
 /// 도움말 한 페이지를 표현하는 정적 데이터.
@@ -194,13 +195,19 @@ class _PageBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            data.body,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.7,
-                  color: colors.onSurfaceVariant,
-                ),
+          // #201: 본문은 단어 단위로만 넘어가고, 길면 스크롤된다
+          // (좁은 화면·큰 글씨에서도 잘리지 않는다).
+          Flexible(
+            child: SingleChildScrollView(
+              child: Text(
+                keepWordsTogether(data.body),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      height: 1.7,
+                      color: colors.onSurfaceVariant,
+                    ),
+              ),
+            ),
           ),
         ],
       ),

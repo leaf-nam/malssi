@@ -269,6 +269,76 @@ class _ThemeStats extends StatelessWidget {
   }
 }
 
+/// 갓 심긴 잔디 칸의 1회성 팝 (#195). 후기 저장으로 새로 심긴 칸이
+/// 처음 그려질 때 한 번만 커졌다가 자리잡는다.
+/// - 같은 날짜키는 세션 중 다시 재생하지 않는다.
+/// - 수확한 지 [recentWindow]을 넘긴 칸은 팝하지 않는다
+///   (보관 첫 진입에 묵은 칸이 일제히 뛰는 것을 막는다).
+/// - 테스트 격리용 [debugReset] (`ArchiveScreen.debugToday` 패턴).
+class PlantCell extends StatefulWidget {
+  const PlantCell({
+    super.key,
+    required this.dateKey,
+    required this.animate,
+    required this.child,
+  });
+
+  /// 수확일 날짜키 (`'YYYY-MM-DD'`). 재생 여부 기억용.
+  final String dateKey;
+
+  /// `true`인 첫 표시에서만 팝한다.
+  final bool animate;
+  final Widget child;
+
+  /// 최근 심김으로 취급하는 범위.
+  static const recentWindow = Duration(days: 7);
+
+  /// 팝 길이 (짧은 1회성, 저전력).
+  static const popDuration = Duration(milliseconds: 400);
+
+  static final _played = <String>{};
+
+  /// 테스트 간 재생 기억을 비운다.
+  static void debugReset() => _played.clear();
+
+  @override
+  State<PlantCell> createState() => _PlantCellState();
+}
+
+class _PlantCellState extends State<PlantCell>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pop;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pop = AnimationController(
+      vsync: this,
+      duration: PlantCell.popDuration,
+    );
+    _scale = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _pop, curve: Curves.easeOutBack),
+    );
+    if (widget.animate && PlantCell._played.add(widget.dateKey)) {
+      _pop.forward();
+    } else {
+      _pop.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(scale: _scale, child: widget.child);
+  }
+}
+
 /// GitHub 잔디 스타일 그리드. 열 = 주, 행 = 월~일.
 /// [year]년 범위(1월 1일이 속한 주~다음 해 시작 주)를 보여준다 (#97, #99).
 /// 좁으면 가로 스크롤(항상 보이는 스크롤바, #86),
@@ -446,19 +516,33 @@ class _GrassGridState extends State<_GrassGrid> {
     return GestureDetector(
       key: ValueKey('grass-${fruit.harvestDateKey}'),
       onTap: () => widget.onTapFruit(fruit),
-      child: Container(
-        width: cell,
-        height: cell,
-        decoration: BoxDecoration(
-          // #56: 라이트 테마에서는 밝은 열매색, 다크에서는 다크톤.
-          color: ThemeAssets.cellColor(
-              fruit.theme, Theme.of(context).brightness),
-          border: isToday
-              ? Border.all(color: outline, width: 2)
-              : null,
-          borderRadius: BorderRadius.circular(5),
+      // #195: 갓 심긴 칸은 한 번 팝한다. 묵은 칸은 정적 유지.
+      child: PlantCell(
+        dateKey: fruit.harvestDateKey,
+        animate: _isFreshPlant(widget.today, fruit.harvestedAt),
+        child: Container(
+          width: cell,
+          height: cell,
+          decoration: BoxDecoration(
+            // #56: 라이트 테마에서는 밝은 열매색, 다크에서는 다크톤.
+            color: ThemeAssets.cellColor(
+                fruit.theme, Theme.of(context).brightness),
+            border: isToday
+                ? Border.all(color: outline, width: 2)
+                : null,
+            borderRadius: BorderRadius.circular(5),
+          ),
         ),
       ),
     );
+  }
+
+  /// [harvestedAt]이 [today] 기준 최근 심김이면 `true` (#195).
+  static bool _isFreshPlant(DateTime today, DateTime harvestedAt) {
+    final diff = DateTime(today.year, today.month, today.day)
+        .difference(DateTime(
+            harvestedAt.year, harvestedAt.month, harvestedAt.day))
+        .inDays;
+    return diff >= 0 && diff <= PlantCell.recentWindow.inDays;
   }
 }

@@ -121,6 +121,20 @@ void main() {
       expect(provider.completed, isTrue);
     });
 
+    testWidgets('body breaks by word, not by syllable (#201)',
+        (tester) async {
+      final provider = OnboardingProvider(
+        repository: PrefsOnboardingRepository(),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 본문에 단어 결합자(U+2060)가 들어가 음절 중간 끊김이 없다.
+      expect(find.textContaining('\u2060'), findsWidgets);
+    });
+
     testWidgets('shows screenshots on tab pages only', (tester) async {
       final provider = OnboardingProvider(
         repository: PrefsOnboardingRepository(),
@@ -219,7 +233,7 @@ void main() {
 
     testWidgets('does not auto-show without opt-in (default)',
         (tester) async {
-      await pumpShell(tester, const AppShell());
+      await pumpShell(tester, const AppShell(updateCheckEnabled: false));
 
       expect(find.text('씨앗 심기'), findsOneWidget);
       expect(find.text('말씨에 오신 것을 환영해요'), findsNothing);
@@ -229,6 +243,7 @@ void main() {
       appRouter.go('/');
       await tester.pumpWidget(
         AppShell(
+          updateCheckEnabled: false,
           onboardingRepository: PrefsOnboardingRepository(completed: false),
           autoShowOnFirstLaunch: true,
         ),
@@ -242,6 +257,7 @@ void main() {
       await pumpShell(
         tester,
         AppShell(
+          updateCheckEnabled: false,
           onboardingRepository: PrefsOnboardingRepository(completed: true),
           autoShowOnFirstLaunch: true,
         ),
@@ -252,7 +268,7 @@ void main() {
     });
 
     testWidgets('settings has a rewatch entry', (tester) async {
-      await pumpShell(tester, const AppShell());
+      await pumpShell(tester, const AppShell(updateCheckEnabled: false));
 
       await tester.tap(find.text('설정'));
       await tester.pumpAndSettle();

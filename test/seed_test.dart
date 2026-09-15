@@ -9,6 +9,7 @@ import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
+import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
@@ -21,7 +22,8 @@ SeedProvider _buildProvider(
     String Function()? themePicker,
     ScheduleCompleteNotification? onSeedPlanted,
     CancelCompleteNotification? onSeedCompleted,
-    ScheduleReminderNotification? onReminderDue}) {
+    ScheduleReminderNotification? onReminderDue,
+    Future<String> Function()? seedTimeLoader}) {
   final seedRepository =
       InMemorySeedRepository(clock: clock, themePicker: themePicker);
   return SeedProvider(
@@ -31,6 +33,7 @@ SeedProvider _buildProvider(
     onSeedPlanted: onSeedPlanted,
     onSeedCompleted: onSeedCompleted,
     onReminderDue: onReminderDue,
+    seedTimeLoader: seedTimeLoader,
   );
 }
 
@@ -59,6 +62,9 @@ void main() {
   // 공용 시계를 오전으로 고정한다. 개별 테스트의 shift는 누적된다.
   setUp(() {
     DebugClock.shift(DateTime(2026, 9, 4, 8).difference(DateTime.now()));
+    // #154: 흔들림 정지 + 진입 캐시 초기화 (테스트 격리).
+    GrowthStageImage.debugStill = true;
+    GrowthStageImage.debugReset();
   });
 
   group('Seed model', () {
@@ -1219,8 +1225,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // 완성 화면에는 태그·안내 문구를 노출하지 않는다.
+      // #191: 테마 라벨('○○ 열매') 1개만 허용한다.
       expect(find.textContaining('#'), findsNothing);
-      expect(find.textContaining('열매'), findsNothing);
+      expect(find.textContaining('열매'), findsOneWidget);
+      expect(find.text('성장 열매'), findsOneWidget);
       expect(find.textContaining('보관 탭에서'), findsNothing);
       expect(find.text('— 노자'), findsOneWidget);
       // #51: 완성 시 명언과 함께 열매 이미지가 나온다 (명언 2/3 : 열매 1/3).
@@ -1269,6 +1277,406 @@ void main() {
       expect(find.text('오늘 잘 지켰다'), findsOneWidget);
       expect(find.text('후기 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('fresh harvest celebrates with rain and pop (#210)',
+        (tester) async {
+      GrowthStageImage.debugStill = false;
+      addTearDown(() => GrowthStageImage.debugStill = true);
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pump();
+      await provider.debugCompleteNow();
+      await tester.pump();
+
+      // 열매 비가 내리면서 열매가 튀어오른다.
+      expect(find.byType(FruitRain), findsOneWidget);
+      Finder pop() => find.byKey(const ValueKey('harvest-pop'));
+      expect(pop(), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 200));
+      final mid = tester.widget<Transform>(pop()).transform;
+      expect(mid.entry(0, 0), isNot(1.0));
+
+      // 3초 버스트가 끝나면 비가 그치고 열매가 자리잡는다.
+      await tester.pump(const Duration(seconds: 4));
+      expect(find.byType(FruitRain), findsNothing);
+      await tester.pumpAndSettle();
+      final done = tester.widget<Transform>(pop()).transform;
+      expect(done.entry(0, 0), 1.0);
+    });
+
+    testWidgets('reviewed harvest shows quietly (#210)', (tester) async {
+      GrowthStageImage.debugStill = false;
+      addTearDown(() => GrowthStageImage.debugStill = true);
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pump();
+      await provider.debugCompleteNow();
+      await tester.pump();
+
+      // 미후기에는 축하한다.
+      expect(find.byType(FruitRain), findsOneWidget);
+
+      // 후기 저장 후 재진입: 조용히 보인다.
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pump();
+
+      expect(find.byType(FruitRain), findsNothing);
+      Finder pop() => find.byKey(const ValueKey('harvest-pop'));
+      expect(pop(), findsOneWidget);
+      expect(tester.widget<Transform>(pop()).transform.entry(0, 0), 1.0);
+    });
+
+    testWidgets('growing seed shows its planted type (#191)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('성장 씨앗이 자라는 중이에요'), findsOneWidget);
+    });
+
+    testWidgets('completed fruit shows its seed type (#191)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('성장 열매'), findsOneWidget);
+      // 기존 후기 안내는 그대로 유지된다 (#71).
+      expect(find.text('눌러서 오늘의 리뷰 남기기'), findsOneWidget);
+    });
+  });
+
+  group('growth stage animation (#154)', () {
+    List<String> shownPaths(WidgetTester tester) => tester
+        .widgetList<Image>(find.byType(Image))
+        .map((w) => (w.image as AssetImage).assetName)
+        .toList();
+
+    Finder swayOf() => find.descendant(
+          of: find.byType(GrowthStageImage),
+          matching: find.byWidgetPredicate((w) => w is Transform),
+        );
+
+    testWidgets('stage advance crossfades old into new', (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon_seed.png']);
+
+      // +1단계: 전환 중에는 이전·현재 에셋이 함께 보인다.
+      await tester.tap(find.text('디버그: +1단계'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        shownPaths(tester),
+        containsAll(
+            ['assets/images/lemon_seed.png', 'assets/images/lemon-1.png']),
+      );
+
+      // 전환이 끝나면 현재 단계만 남는다.
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon-1.png']);
+    });
+
+    testWidgets('entry reveals a change since last seen', (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon_seed.png']);
+
+      // 화면 밖에서 단계가 올라도, 다시 들어오면 변화를 보여준다.
+      await provider.debugAdvanceOneStage();
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        shownPaths(tester),
+        containsAll(
+            ['assets/images/lemon_seed.png', 'assets/images/lemon-1.png']),
+      );
+
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon-1.png']);
+    });
+
+    testWidgets('day change does not flash yesterday image (#207)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('디버그: +1단계'));
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon-1.png']);
+
+      // 다음날: 어제 완성 → 오늘 새 씨앗. 심자마자 첫 프레임부터
+      // 오늘 씨앗만 보이고 전날(lemon-1) 플래시가 없다.
+      await provider.debugCompleteNow();
+      await provider.debugAdvanceDay();
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(find.text('씨앗 심기'), findsOneWidget);
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pump();
+      expect(shownPaths(tester), ['assets/images/lemon_seed.png']);
+    });
+
+    testWidgets('sways around the ground pivot while growing',
+        (tester) async {
+      GrowthStageImage.debugStill = false;
+      addTearDown(() => GrowthStageImage.debugStill = true);
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      // 흔들림은 무한 반복이라 settle 대신 고정 펌프로만 진행한다.
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // 맥박 확대/축소로 두근거린다: 단일 Transform, 전단 없음 (#208).
+      expect(swayOf(), findsOneWidget);
+      expect(tester.widget<Transform>(swayOf()).filterQuality,
+          FilterQuality.none);
+
+      // 한 주기(1.2초)를 샘플링하면 커졌다 작아졌다 한다.
+      final scales = <double>[];
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        final m = tester.widget<Transform>(swayOf()).transform;
+        expect(m.entry(0, 1), 0);
+        scales.add(m.entry(0, 0));
+      }
+      expect(scales.reduce((a, b) => a > b ? a : b), greaterThan(1.0));
+      expect(scales.toSet().length, greaterThan(1));
+    });
+  });
+
+  group('delivery gate (#196)', () {
+    Seed lockedSeed() => Seed(
+          id: '2026-09-04',
+          dateKey: '2026-09-04',
+          quoteId: '',
+          status: SeedStatus.locked,
+          createdAt: DateTime(2026, 9, 4),
+          plantedAt: DateTime(2026, 9, 4),
+        );
+
+    test('isAwaitingDelivery before the delivery time', () {
+      expect(
+        lockedSeed().isAwaitingDelivery(
+          DateTime(2026, 9, 4, 7, 59),
+          DateTime(2026, 9, 4, 8),
+        ),
+        isTrue,
+      );
+      expect(
+        lockedSeed().isAwaitingDelivery(
+          DateTime(2026, 9, 4, 8),
+          DateTime(2026, 9, 4, 8),
+        ),
+        isFalse,
+      );
+    });
+
+    test('isAwaitingDelivery ignores non-locked and past seeds', () {
+      final growing = lockedSeed().copyWith(status: SeedStatus.growing);
+      expect(
+        growing.isAwaitingDelivery(
+          DateTime(2026, 9, 4, 7),
+          DateTime(2026, 9, 4, 8),
+        ),
+        isFalse,
+      );
+      expect(
+        lockedSeed().isAwaitingDelivery(
+          DateTime(2026, 9, 5, 7),
+          DateTime(2026, 9, 5, 8),
+        ),
+        isFalse,
+      );
+    });
+
+    test('isCoolingDown within 12 hours of harvest', () {
+      final now = DateTime(2026, 9, 4, 8, 30);
+      expect(Seed.isCoolingDown(now, null), isFalse);
+      expect(
+        Seed.isCoolingDown(now, DateTime(2026, 9, 3, 22)),
+        isTrue,
+      );
+      expect(
+        Seed.isCoolingDown(now, DateTime(2026, 9, 3, 20, 29)),
+        isFalse,
+      );
+      // #212: 시계를 되돌려 수확이 미래에 있어도 차단하지 않는다.
+      expect(
+        Seed.isCoolingDown(now, DateTime(2026, 11, 1, 12)),
+        isFalse,
+      );
+    });
+
+    test('provider pends locked seed before seedTime', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 7).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.deliveryPending, isTrue);
+      expect(provider.deliveryGateReason, 'delivery');
+
+      // 대기 중 심기는 막힌다.
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.errorMessage, contains('deliverable'));
+    });
+
+    test('provider releases locked seed after seedTime', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 9).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+
+      expect(provider.deliveryPending, isFalse);
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
+    });
+
+    test('provider pends seed within 12 hours of harvest', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 3, 13).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      // 9/3 13:00 심기 → 10시간 경과(23:00) 후 수확 + 후기까지 마친다.
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      DebugClock.shift(const Duration(hours: 10));
+      await provider.refreshGrowth();
+      await provider.ensureTodaySeed();
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+
+      // 다음날 배달 시각은 지났지만 수확 9.5시간 → 대기.
+      DebugClock.shift(const Duration(hours: 9, minutes: 30));
+      await provider.ensureTodaySeed();
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.deliveryPending, isTrue);
+      expect(provider.deliveryGateReason, 'cooldown');
+
+      // 수확 12시간이 지나면 받을 수 있다.
+      DebugClock.shift(const Duration(hours: 3));
+      await provider.refreshGrowth();
+      expect(provider.deliveryPending, isFalse);
+      expect(provider.deliveryGateReason, isEmpty);
+    });
+
+    testWidgets('shows coming-soon instead of plant button',        (tester) async {      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 7).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('씨앗이 오는 중이에요'), findsOneWidget);
+      expect(find.text('씨앗 심기'), findsNothing);
+      // #203: 디버그에서는 대기 사유가 보인다.
+      expect(find.text('아직 배달시간이 되지 않았어요!'), findsOneWidget);
+    });
+
+    test('debug time travel refreshes the gate (#203)', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 7).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+      expect(provider.deliveryPending, isTrue);
+
+      // 탭 재진입(refresh) 없이 +1시간만으로 게이트가 풀린다.
+      await provider.debugAdvanceHours(2);
+      expect(provider.deliveryPending, isFalse);
+      expect(provider.todaySeed!.isLocked, isTrue);
+    });
+
+    test('debug reset clears harvests and cooldown (#212)', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 9).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      // 수확 기록을 남긴 뒤 초기화하면 당일 씨앗을 바로 받을 수 있다.
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+      await provider.ensureTodaySeed();
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+
+      await provider.debugResetAllSeeds();
+      await provider.ensureTodaySeed();
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.deliveryPending, isFalse);
     });
   });
 }

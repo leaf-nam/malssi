@@ -27,6 +27,10 @@ abstract class FruitRepository {
 
   /// 디버그용: 저장소 시각을 [by]만큼 앞당긴다 (날짜 이동, #95).
   Future<void> debugShiftTime(Duration by);
+
+  /// 디버그용: 모든 열매를 지운다 (처음부터 다시 테스트, #212).
+  /// 로컬 저장소도 함께 비운다. 릴리즈 UI에서 호출하지 않는다.
+  Future<void> debugReset();
 }
 
 /// 로컬 저장(`LocalStore`) 기반 인메모리 구현. 서버 동기화는 미계획.
@@ -132,5 +136,11 @@ class InMemoryFruitRepository implements FruitRepository {
   Future<void> debugShiftTime(Duration by) async {
     final base = _clock;
     _clock = () => base().add(by);
+  }
+
+  @override
+  Future<void> debugReset() async {
+    _fruits.clear();
+    await _persist();
   }
 }
