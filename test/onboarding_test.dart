@@ -219,7 +219,7 @@ void main() {
 
     testWidgets('does not auto-show without opt-in (default)',
         (tester) async {
-      await pumpShell(tester, const AppShell());
+      await pumpShell(tester, const AppShell(updateCheckEnabled: false));
 
       expect(find.text('씨앗 심기'), findsOneWidget);
       expect(find.text('말씨에 오신 것을 환영해요'), findsNothing);
@@ -229,6 +229,7 @@ void main() {
       appRouter.go('/');
       await tester.pumpWidget(
         AppShell(
+          updateCheckEnabled: false,
           onboardingRepository: PrefsOnboardingRepository(completed: false),
           autoShowOnFirstLaunch: true,
         ),
@@ -242,6 +243,7 @@ void main() {
       await pumpShell(
         tester,
         AppShell(
+          updateCheckEnabled: false,
           onboardingRepository: PrefsOnboardingRepository(completed: true),
           autoShowOnFirstLaunch: true,
         ),
@@ -252,7 +254,7 @@ void main() {
     });
 
     testWidgets('settings has a rewatch entry', (tester) async {
-      await pumpShell(tester, const AppShell());
+      await pumpShell(tester, const AppShell(updateCheckEnabled: false));
 
       await tester.tap(find.text('설정'));
       await tester.pumpAndSettle();

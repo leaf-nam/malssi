@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/widgets/update_gate.dart';
 import 'package:malssi/features/auth/data/dummy_auth_service.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
@@ -27,6 +28,7 @@ class AppShell extends StatelessWidget {
     this.quoteRepository,
     this.onboardingRepository,
     this.autoShowOnFirstLaunch = false,
+    this.updateCheckEnabled = true,
   });
 
   final List<Quote> initialQuotes;
@@ -45,6 +47,10 @@ class AppShell extends StatelessWidget {
   /// `true`일 때만 첫 실행에 도움말로 자동 이동한다.
   /// `main()`에서만 `true`로 넘기고, 테스트 기본값은 `false`이다.
   final bool autoShowOnFirstLaunch;
+
+  /// 스토어 업데이트 확인 여부 (#192). 테스트에서는 `false`로 둔다
+  /// (스토어 조회 네트워크 방지). `main()` 기본값은 `true`이다.
+  final bool updateCheckEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +174,11 @@ class AppShell extends StatelessWidget {
             darkTheme: AppTheme.dark(),
             themeMode: themeMode,
             routerConfig: appRouter,
+            // #192: 전 화면에서 스토어 업데이트를 확인한다 (랜딩 포함).
+            builder: (context, child) => UpdateGate(
+              enabled: updateCheckEnabled,
+              child: child ?? const SizedBox.shrink(),
+            ),
           );
         },
       ),

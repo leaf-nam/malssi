@@ -23,7 +23,7 @@ void main() {
   });
   tearDown(DebugClock.reset);
   testWidgets('AppShell shows the seed screen', (WidgetTester tester) async {
-    await _pumpShell(tester, const AppShell());
+    await _pumpShell(tester, const AppShell(updateCheckEnabled: false));
 
     expect(find.text('말씨'), findsOneWidget);
     expect(find.text('씨앗 심기'), findsOneWidget);
@@ -38,7 +38,7 @@ void main() {
       return (nav.decoration as BoxDecoration).color!;
     }
 
-    await _pumpShell(tester, const AppShell());
+    await _pumpShell(tester, const AppShell(updateCheckEnabled: false));
 
     // 바는 셸에 1개만 상주한다.
     expect(find.byType(BottomNavigationBar), findsOneWidget);
