@@ -121,6 +121,20 @@ void main() {
       expect(provider.completed, isTrue);
     });
 
+    testWidgets('body breaks by word, not by syllable (#201)',
+        (tester) async {
+      final provider = OnboardingProvider(
+        repository: PrefsOnboardingRepository(),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 본문에 단어 결합자(U+2060)가 들어가 음절 중간 끊김이 없다.
+      expect(find.textContaining('\u2060'), findsWidgets);
+    });
+
     testWidgets('shows screenshots on tab pages only', (tester) async {
       final provider = OnboardingProvider(
         repository: PrefsOnboardingRepository(),
