@@ -404,9 +404,110 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
   }
 }
 
+/// 성장 중 에셋 (#154). 단계 전환은 크로스페이드로 보여주고,
+/// 자라는 동안에는 땅(하단 중앙)을 기준으로 좌우로 살짝 흔들어 살아있게 한다.
+/// - 진입 시 이미 단계가 올라가 있으면 이전 단계부터 보여주고 현재로 넘어간다.
+/// - 흔들림은 단일 반복 컨트롤러(회전만)이며 `dispose`에서 해제한다 (저전력).
+/// - 테스트에서는 [debugStill]로 흔들림을 멈춘다.
+///   무한 반복은 `pumpAndSettle`이 끝나지 않으므로
+///   `ArchiveScreen.debugToday`와 같은 테스트 고정 패턴을 쓴다.
+class GrowthStageImage extends StatefulWidget {
+  const GrowthStageImage({super.key, required this.path});
+
+  final String path;
+
+  /// 테스트 고정: `true`면 흔들림을 멈추고 0도로 둔다.
+  static bool debugStill = false;
+
+  /// 마지막 표시 경로 (진입 시 변화 감지용). 테스트 격리용으로 초기화한다.
+  static String _lastPath = '';
+
+  /// 테스트 간 정적 캐시를 비운다.
+  static void debugReset() => _lastPath = '';
+
+  /// 흔들림 주기·진폭 (±0.045rad ≈ ±2.6°).
+  static const swayPeriod = Duration(milliseconds: 2600);
+  static const swayRadians = 0.045;
+
+  /// 단계 전환 크로스페이드 길이.
+  static const fadeDuration = Duration(milliseconds: 450);
+
+  @override
+  State<GrowthStageImage> createState() => _GrowthStageImageState();
+}
+
+class _GrowthStageImageState extends State<GrowthStageImage>
+    with SingleTickerProviderStateMixin {
+  late String _displayPath;
+  late final AnimationController _sway;
+
+  @override
+  void initState() {
+    super.initState();
+    // 진입 시 변화가 있으면 이전 단계부터 보여준다.
+    final last = GrowthStageImage._lastPath;
+    _displayPath =
+        last.isNotEmpty && last != widget.path ? last : widget.path;
+    GrowthStageImage._lastPath = widget.path;
+    _sway = AnimationController(
+      vsync: this,
+      duration: GrowthStageImage.swayPeriod,
+    );
+    if (!GrowthStageImage.debugStill) _sway.repeat(reverse: true);
+    if (_displayPath != widget.path) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _displayPath = widget.path);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(GrowthStageImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.path != oldWidget.path && widget.path != _displayPath) {
+      setState(() => _displayPath = widget.path);
+      GrowthStageImage._lastPath = widget.path;
+    }
+  }
+
+  @override
+  void dispose() {
+    _sway.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _sway,
+      builder: (_, child) {
+        // 정지 모드에서는 0도 (테스트·스크린샷).
+        final t = GrowthStageImage.debugStill ? 0.5 : _sway.value;
+        return Transform.rotate(
+          angle:
+              (t - 0.5) * 2 * GrowthStageImage.swayRadians,
+          // 땅을 기준으로 흔들린다 (하단 중앙 고정).
+          alignment: Alignment.bottomCenter,
+          child: child,
+        );
+      },
+      child: AnimatedSwitcher(
+        duration: GrowthStageImage.fadeDuration,
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
+        child: _ContainImage(
+          key: ValueKey(_displayPath),
+          path: _displayPath,
+        ),
+      ),
+    );
+  }
+}
+
 /// 영역에 맞춰 들어가는 테마 이미지. 에셋이 없거나 로드에 실패하면 🌱를 보여준다.
 class _ContainImage extends StatelessWidget {
-  const _ContainImage({required this.path});
+  const _ContainImage({super.key, required this.path});
 
   final String path;
 
@@ -471,7 +572,8 @@ class _GrowingSeed extends StatelessWidget {
             // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
-              child: _ContainImage(
+              // #154: 단계 전환 크로스페이드 + 땅 기준 흔들림.
+              child: GrowthStageImage(
                 path: ThemeAssets.growthImage(
                     seed.theme, seed.growthStage),
               ),

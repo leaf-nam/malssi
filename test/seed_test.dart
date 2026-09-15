@@ -59,6 +59,9 @@ void main() {
   // 공용 시계를 오전으로 고정한다. 개별 테스트의 shift는 누적된다.
   setUp(() {
     DebugClock.shift(DateTime(2026, 9, 4, 8).difference(DateTime.now()));
+    // #154: 흔들림 정지 + 진입 캐시 초기화 (테스트 격리).
+    GrowthStageImage.debugStill = true;
+    GrowthStageImage.debugReset();
   });
 
   group('Seed model', () {
@@ -1269,6 +1272,95 @@ void main() {
       expect(find.text('오늘 잘 지켰다'), findsOneWidget);
       expect(find.text('후기 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
+    });
+  });
+
+  group('growth stage animation (#154)', () {
+    List<String> shownPaths(WidgetTester tester) => tester
+        .widgetList<Image>(find.byType(Image))
+        .map((w) => (w.image as AssetImage).assetName)
+        .toList();
+
+    Finder groundSway() => find.descendant(
+          of: find.byType(GrowthStageImage),
+          matching: find.byWidgetPredicate((w) =>
+              w is Transform && w.alignment == Alignment.bottomCenter),
+        );
+
+    testWidgets('stage advance crossfades old into new', (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon_seed.png']);
+
+      // +1단계: 전환 중에는 이전·현재 에셋이 함께 보인다.
+      await tester.tap(find.text('디버그: +1단계'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        shownPaths(tester),
+        containsAll(
+            ['assets/images/lemon_seed.png', 'assets/images/lemon-1.png']),
+      );
+
+      // 전환이 끝나면 현재 단계만 남는다.
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon-1.png']);
+    });
+
+    testWidgets('entry reveals a change since last seen', (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon_seed.png']);
+
+      // 화면 밖에서 단계가 올라도, 다시 들어오면 변화를 보여준다.
+      await provider.debugAdvanceOneStage();
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        shownPaths(tester),
+        containsAll(
+            ['assets/images/lemon_seed.png', 'assets/images/lemon-1.png']),
+      );
+
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon-1.png']);
+    });
+
+    testWidgets('sways around the ground pivot while growing',
+        (tester) async {
+      GrowthStageImage.debugStill = false;
+      addTearDown(() => GrowthStageImage.debugStill = true);
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      // 흔들림은 무한 반복이라 settle 대신 고정 펌프로만 진행한다.
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // 땅(하단 중앙)을 축으로 흔들린다.
+      expect(groundSway(), findsOneWidget);
+      final first =
+          tester.widget<Transform>(groundSway()).transform.clone();
+
+      await tester.pump(const Duration(milliseconds: 600));
+      final second =
+          tester.widget<Transform>(groundSway()).transform.clone();
+      expect(second, isNot(first));
     });
   });
 }
