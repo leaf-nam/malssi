@@ -8,6 +8,7 @@ import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
+import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
@@ -682,7 +683,7 @@ class _GrowingSeed extends StatelessWidget {
     );
   }
 }
-class _OpenedQuote extends StatelessWidget {
+class _OpenedQuote extends StatefulWidget {
   const _OpenedQuote({
     required this.quote,
     required this.fruit,
@@ -696,43 +697,133 @@ class _OpenedQuote extends StatelessWidget {
   final bool isBusy;
 
   @override
+  State<_OpenedQuote> createState() => _OpenedQuoteState();
+}
+
+/// 완성 화면 상태 (#210). 미후기 열매는 열매 비 + 팝으로 축하하고,
+/// 후기를 남긴 열매는 조용히 보여준다.
+/// 10분 같은 시간 기준 대신 후기 여부를 기준으로 삼는다:
+/// 못 본 이벤트(미후기)는 들어올 때마다 축하하고, 처리된(후기) 열매는 조용하다.
+class _OpenedQuoteState extends State<_OpenedQuote>
+    with SingleTickerProviderStateMixin {
+  /// 열매 비 지속 시간 (짧은 버스트).
+  static const rainDuration = Duration(seconds: 3);
+
+  late final AnimationController _pop;
+  late final Animation<double> _popScale;
+  Timer? _rainTimer;
+  bool _raining = false;
+
+  /// 축하 대상: 후기를 남기지 않은 열매 (#210).
+  bool get _celebrate => widget.fruit?.isReviewed == false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pop = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _popScale = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _pop, curve: Curves.easeOutBack),
+    );
+    _maybeCelebrate();
+  }
+
+  @override
+  void didUpdateWidget(_OpenedQuote oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 다른 열매로 바뀌면 처음부터 축하하고, 후기를 마치면 조용해진다.
+    if (widget.fruit?.id != oldWidget.fruit?.id ||
+        widget.fruit?.isReviewed == true) {
+      _maybeCelebrate();
+    }
+  }
+
+  /// 미후기면 팝 + 비를 시작한다. 후기 완료면 정적 표시.
+  /// 비는 테스트 고정 시 띄우지 않는다 (`pumpAndSettle` 무한 틱 방지).
+  void _maybeCelebrate() {
+    _rainTimer?.cancel();
+    _raining = false;
+    if (!_celebrate) {
+      _pop.value = 1;
+      return;
+    }
+    _pop.forward(from: 0);
+    if (!GrowthStageImage.debugStill) {
+      _raining = true;
+      _rainTimer = Timer(rainDuration, () {
+        if (mounted) setState(() => _raining = false);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    _rainTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final fruit = this.fruit;
+    final fruit = widget.fruit;
     final showDebug = context.watch<DebugUiProvider>().showButtons;
     return GestureDetector(
-      onTap: onTapReview,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      onTap: widget.onTapReview,
+      child: Stack(
         children: [
-          // 명언 + 저자: 나머지 2/3.
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: _QuoteBlock(quote: quote),
-              ),
-            ),
-          ),
-          // 완성 열매: 화면의 1/3 (#51).
-          if (fruit != null)
-            Expanded(
-              flex: 1,
-              child: Center(
-                // #160: 150px 소스의 정수배(2x = 300)까지만 키운다.
-                child: ConstrainedBox(
-                  constraints:
-                      const BoxConstraints(maxWidth: 300, maxHeight: 300),
-                  child: _ContainImage(
-                    path: ThemeAssets.fruitImage(fruit.theme),
+          Positioned.fill(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 명언 + 저자: 나머지 2/3.
+                Expanded(
+                  flex: 2,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 32),
+                      child: _QuoteBlock(quote: widget.quote),
+                    ),
                   ),
                 ),
-              ),
-            ),
+                // 완성 열매: 화면의 1/3 (#51).
+                if (fruit != null)
+                  Expanded(
+                    flex: 1,
+                    child: Center(
+                      // #160: 150px 소스의 정수배(2x = 300)까지만 키운다.
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                            maxWidth: 300, maxHeight: 300),
+                          child: AnimatedBuilder(
+                          animation: _popScale,
+                          builder: (_, child) {
+                            final s = _popScale.value;
+                            return Transform(
+                              key: const ValueKey('harvest-pop'),
+                              transform:
+                                  Matrix4.diagonal3Values(s, s, 1),
+                              alignment: Alignment.center,
+                              // #160: 변형 중에도 보간 없이 또렷하게.
+                              filterQuality: FilterQuality.none,
+                              child: child,
+                            );
+                          },
+                          child: _ContainImage(
+                            path:
+                                ThemeAssets.fruitImage(fruit.theme),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
           // #191: 심겨진 씨앗 종류 (완성 열매 테마). 미등록 테마는 숨긴다.
           if (fruit != null && fruit.theme.isNotEmpty)
             Padding(
-              padding: EdgeInsets.only(top: 8, bottom: onTapReview == null ? 20 : 2),
+              padding: EdgeInsets.only(
+                  top: 8, bottom: widget.onTapReview == null ? 20 : 2),
               child: Text(
                 '${ThemeAssets.labelOf(fruit.theme)} 열매',
                 textAlign: TextAlign.center,
@@ -740,7 +831,7 @@ class _OpenedQuote extends StatelessWidget {
                     const TextStyle(fontSize: 11, color: AppTheme.muted),
               ),
             ),
-          if (onTapReview != null) ...[
+          if (widget.onTapReview != null) ...[
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 20),
               child: Text(
@@ -767,7 +858,7 @@ class _OpenedQuote extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     OutlinedButton(
-                      onPressed: isBusy
+                      onPressed: widget.isBusy
                           ? null
                           : () => context
                               .read<SeedProvider>()
@@ -775,7 +866,7 @@ class _OpenedQuote extends StatelessWidget {
                       child: const Text('디버그: +1시간'),
                     ),
                     OutlinedButton(
-                      onPressed: isBusy
+                      onPressed: widget.isBusy
                           ? null
                           : () => context
                               .read<SeedProvider>()
@@ -784,7 +875,7 @@ class _OpenedQuote extends StatelessWidget {
                     ),
                     // 씨앗 전체 초기화 (디버그 전용, 하네스 §7).
                     OutlinedButton(
-                      onPressed: isBusy
+                      onPressed: widget.isBusy
                           ? null
                           : () => context
                               .read<SeedProvider>()
@@ -796,6 +887,19 @@ class _OpenedQuote extends StatelessWidget {
               ),
             ),
           ],
+                ],
+              ),
+            ),
+          // #210: 수확 직후 3초 열매 비 버스트 (내용 가리지 않게 무시 통과).
+          if (_raining && fruit != null)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: FruitRain(
+                  imagePath: ThemeAssets.fruitImage(fruit.theme),
+                  opacity: 0.45,
+                ),
+              ),
+            ),
         ],
       ),
     );

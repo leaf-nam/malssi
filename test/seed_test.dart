@@ -9,6 +9,7 @@ import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
+import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
@@ -1276,6 +1277,65 @@ void main() {
       expect(find.text('오늘 잘 지켰다'), findsOneWidget);
       expect(find.text('후기 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('fresh harvest celebrates with rain and pop (#210)',
+        (tester) async {
+      GrowthStageImage.debugStill = false;
+      addTearDown(() => GrowthStageImage.debugStill = true);
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pump();
+      await provider.debugCompleteNow();
+      await tester.pump();
+
+      // 열매 비가 내리면서 열매가 튀어오른다.
+      expect(find.byType(FruitRain), findsOneWidget);
+      Finder pop() => find.byKey(const ValueKey('harvest-pop'));
+      expect(pop(), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 200));
+      final mid = tester.widget<Transform>(pop()).transform;
+      expect(mid.entry(0, 0), isNot(1.0));
+
+      // 3초 버스트가 끝나면 비가 그치고 열매가 자리잡는다.
+      await tester.pump(const Duration(seconds: 4));
+      expect(find.byType(FruitRain), findsNothing);
+      await tester.pumpAndSettle();
+      final done = tester.widget<Transform>(pop()).transform;
+      expect(done.entry(0, 0), 1.0);
+    });
+
+    testWidgets('reviewed harvest shows quietly (#210)', (tester) async {
+      GrowthStageImage.debugStill = false;
+      addTearDown(() => GrowthStageImage.debugStill = true);
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pump();
+      await provider.debugCompleteNow();
+      await tester.pump();
+
+      // 미후기에는 축하한다.
+      expect(find.byType(FruitRain), findsOneWidget);
+
+      // 후기 저장 후 재진입: 조용히 보인다.
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pump();
+
+      expect(find.byType(FruitRain), findsNothing);
+      Finder pop() => find.byKey(const ValueKey('harvest-pop'));
+      expect(pop(), findsOneWidget);
+      expect(tester.widget<Transform>(pop()).transform.entry(0, 0), 1.0);
     });
 
     testWidgets('growing seed shows its planted type (#191)',
