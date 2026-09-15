@@ -1636,7 +1636,7 @@ void main() {
       expect(find.text('씨앗이 오는 중이에요'), findsOneWidget);
       expect(find.text('씨앗 심기'), findsNothing);
       // #203: 디버그에서는 대기 사유가 보인다.
-      expect(find.text('게이트: 배달시각 전'), findsOneWidget);
+      expect(find.text('아직 배달시간이 되지 않았어요!'), findsOneWidget);
     });
 
     test('debug time travel refreshes the gate (#203)', () async {
