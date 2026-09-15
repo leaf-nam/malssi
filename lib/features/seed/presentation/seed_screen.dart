@@ -463,6 +463,17 @@ class _GrowingSeed extends StatelessWidget {
         ),
         // 남은시간: 화면 가운데. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
         _GrowthCountdown(seed: seed),
+        // #191: 심겨진 씨앗 종류 (성장 중에도 확인). 미등록 테마는 기본 문구.
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            seed.theme.isEmpty
+                ? '오늘의 씨앗이 자라는 중이에요'
+                : '${ThemeAssets.labelOf(seed.theme)} 씨앗이 자라는 중이에요',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+          ),
+        ),
         // 성장 에셋 (아래, 1.2x 확대분 반영, #138 개선).
         // 형태만 보여주고 문구·도트는 두지 않는다 (#57).
         Expanded(
@@ -585,6 +596,17 @@ class _OpenedQuote extends StatelessWidget {
                     path: ThemeAssets.fruitImage(fruit.theme),
                   ),
                 ),
+              ),
+            ),
+          // #191: 심겨진 씨앗 종류 (완성 열매 테마). 미등록 테마는 숨긴다.
+          if (fruit != null && fruit.theme.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: 8, bottom: onTapReview == null ? 20 : 2),
+              child: Text(
+                '${ThemeAssets.labelOf(fruit.theme)} 열매',
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontSize: 11, color: AppTheme.muted),
               ),
             ),
           if (onTapReview != null) ...[
