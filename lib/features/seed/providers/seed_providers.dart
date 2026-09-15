@@ -284,6 +284,8 @@ class SeedProvider extends ChangeNotifier {
       await _seedRepository.debugFastForward(seedId: seed.id, by: by);
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 시간 이동 시 게이트도 갱신한다 (stale 방지).
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -299,6 +301,8 @@ class SeedProvider extends ChangeNotifier {
       DebugClock.shift(by);
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 시간 이동 시 게이트도 갱신한다 (stale 방지).
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -338,6 +342,8 @@ class SeedProvider extends ChangeNotifier {
       _completedFruit = null;
       _todaySeed = await _seedRepository.getActiveSeed();
       await _maybeHarvest();
+      // #203: 초기화(오늘 8시) 기준 게이트도 갱신한다.
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {

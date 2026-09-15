@@ -1522,8 +1522,7 @@ void main() {
     });
 
     testWidgets('shows coming-soon instead of plant button',
-        (tester) async {
-      DebugClock.reset();
+        (tester) async {      DebugClock.reset();
       DebugClock.shift(
           DateTime(2026, 9, 4, 7).difference(DateTime.now()));
       final provider = _buildProvider(
@@ -1538,6 +1537,24 @@ void main() {
 
       expect(find.text('씨앗이 오는 중이에요'), findsOneWidget);
       expect(find.text('씨앗 심기'), findsNothing);
+    });
+
+    test('debug time travel refreshes the gate (#203)', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 4, 7).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
+      );
+      await provider.ensureTodaySeed();
+      expect(provider.deliveryPending, isTrue);
+
+      // 탭 재진입(refresh) 없이 +1시간만으로 게이트가 풀린다.
+      await provider.debugAdvanceHours(2);
+      expect(provider.deliveryPending, isFalse);
+      expect(provider.todaySeed!.isLocked, isTrue);
     });
   });
 }
