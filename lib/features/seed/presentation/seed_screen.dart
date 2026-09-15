@@ -130,6 +130,8 @@ class _SeedScreenState extends State<SeedScreen> {
       isBusy: state.isLoading,
       // #196: 배달 대기 중이면 오는 중 문구 + 심기 버튼 숨김.
       deliveryPending: state.deliveryPending,
+      // #203: 디버그에서 대기 사유를 보여준다.
+      gateReason: state.deliveryGateReason,
     );
   }
 }
@@ -141,6 +143,7 @@ class _LockedSeed extends StatelessWidget {
     required this.isBusy,
     this.isMissed = false,
     this.deliveryPending = false,
+    this.gateReason = '',
   });
 
   final String seedDateKey;
@@ -152,6 +155,9 @@ class _LockedSeed extends StatelessWidget {
 
   /// 배달 대기 여부 (#196). `true`면 오는 중 문구만 보여주고 심기 버튼을 숨긴다.
   final bool deliveryPending;
+
+  /// 대기 사유 (#203, 디버그 표시용): `'delivery'` · `'cooldown'` · `''`.
+  final String gateReason;
 
   @override
   Widget build(BuildContext context) {
@@ -209,6 +215,7 @@ class _LockedSeed extends StatelessWidget {
             // #161: 아직 심을 수 있을 때만 마감 안내를 보여준다.
             // 마감 후에는 위의 '마감되었어요' 문구가 그 역할을 한다.
             // #196: 배달 대기 중에는 마감 안내도 숨긴다 (오는 중 문구만).
+            // #203: 디버그에서는 대기 사유를 함께 보여준다.
             if (!isMissed && !deliveryPending)
               const Padding(
                 padding: EdgeInsets.only(top: 6),
@@ -216,6 +223,18 @@ class _LockedSeed extends StatelessWidget {
                   '씨앗은 2시까지만 받을 수 있어요!',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 12, color: AppTheme.muted),
+                ),
+              ),
+            if (deliveryPending && showDebug && gateReason.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  gateReason == 'cooldown'
+                      ? '게이트: 수확 쿨다운'
+                      : '게이트: 배달시각 전',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 11, color: AppTheme.muted),
                 ),
               ),
             const SizedBox(height: 24),
