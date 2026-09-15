@@ -90,6 +90,8 @@ void main() {
   tearDown(() {
     DebugClock.reset();
     ArchiveScreen.debugToday = null;
+    // #195: 심김 모션 재생 기억을 비운다.
+    PlantCell.debugReset();
   });
 
   group('Fruit model', () {
@@ -1441,6 +1443,95 @@ void main() {
       expect(find.text('작성된 후기가 없어요'), findsOneWidget);
       expect(find.text('후기 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
+    });
+  });
+
+  group('plant motion (#195)', () {
+    // 티커를 끄지 않은 래퍼 (1회성 팝은 settle된다).
+    // 열매 비는 설정으로 꺼서 무한 낙하를 피한다.
+    Widget wrapTickerOn(
+      ArchiveProvider provider, {
+      required SettingsProvider settings,
+      required SeedProvider seed,
+    }) {
+      return MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: provider),
+          ChangeNotifierProvider.value(value: settings),
+          ChangeNotifierProvider.value(value: seed),
+        ],
+        child: const MaterialApp(home: ArchiveScreen()),
+      );
+    }
+
+    Future<(ArchiveProvider, SettingsProvider, SeedProvider)> setupReviewed({
+      required DateTime at,
+      required DateTime today,
+    }) async {
+      ArchiveScreen.debugToday = today;
+      // 수확 시각을 고정해야 수확일 칸에 심긴다 (기본 시계는 실제 현재 시각).
+      final fruitRepo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(fruitRepo,
+          seedId: 's', text: 't', at: at, theme: SeedTheme.vitality);
+      await fruitRepo.updateReview(
+        fruitId: 'fruit-s',
+        memo: '충실했다',
+        fidelityScore: 5,
+      );
+      final provider = ArchiveProvider(fruitRepository: fruitRepo);
+      await provider.load();
+      final settingsRepo = InMemorySettingsRepository();
+      await settingsRepo.setFruitRainEnabled(false);
+      final settings =
+          SettingsProvider(settingsRepository: settingsRepo);
+      await settings.load();
+      final seed = SeedProvider(
+        seedRepository: InMemorySeedRepository(),
+        quoteRepository: InMemoryQuoteRepository(),
+        fruitRepository: InMemoryFruitRepository(),
+      );
+      return (provider, settings, seed);
+    }
+
+    ScaleTransition popOf(WidgetTester tester) =>
+        tester.widget<ScaleTransition>(find.descendant(
+          of: find.byType(PlantCell),
+          matching: find.byType(ScaleTransition),
+        ));
+
+    testWidgets('newly planted cell pops once', (tester) async {
+      final at = DateTime(2026, 9, 4, 12);
+      final (provider, settings, seed) =
+          await setupReviewed(at: at, today: DateTime(2026, 9, 4));
+
+      await tester.pumpWidget(wrapTickerOn(provider,
+          settings: settings, seed: seed));
+      await tester.pump();
+      expect(find.byType(PlantCell), findsOneWidget);
+      // 전환 중에는 1.0이 아니다.
+      expect(popOf(tester).scale.value, isNot(1.0));
+
+      await tester.pumpAndSettle();
+      expect(popOf(tester).scale.value, 1.0);
+
+      // 다시 그려도 재생하지 않는다.
+      await tester.pumpWidget(wrapTickerOn(provider,
+          settings: settings, seed: seed));
+      await tester.pump();
+      expect(popOf(tester).scale.value, 1.0);
+    });
+
+    testWidgets('old cells stay still', (tester) async {
+      final (provider, settings, seed) = await setupReviewed(
+          at: DateTime(2026, 6, 1, 12), today: DateTime(2026, 9, 4));
+
+      await tester.pumpWidget(wrapTickerOn(provider,
+          settings: settings, seed: seed));
+      await tester.pump();
+
+      // 묵은 칸은 첫 프레임부터 정적이다.
+      expect(find.byType(PlantCell), findsOneWidget);
+      expect(popOf(tester).scale.value, 1.0);
     });
   });
 }
