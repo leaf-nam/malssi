@@ -435,16 +435,22 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
 }
 
 /// 성장 중 에셋 (#154). 단계 전환은 크로스페이드로 보여주고,
-/// 자라는 동안에는 땅(하단 중앙)을 기준으로 좌우로 살짝 흔들어 살아있게 한다.
+/// 자라는 동안에는 심장 맥박처럼 두 번 쿵쾅이고 쉬는 확대/축소를 반복한다.
+/// 하단 중앙 고정이라 흙은 가만있고 이음매가 없다 (#208).
 /// - 진입 시 이미 단계가 올라가 있으면 이전 단계부터 보여주고 현재로 넘어간다.
-/// - 흔들림은 단일 반복 컨트롤러(회전만)이며 `dispose`에서 해제한다 (저전력).
+/// - 맥박은 단일 반복 컨트롤러이며 `dispose`에서 해제한다 (저전력).
 /// - 테스트에서는 [debugStill]로 흔들림을 멈춘다.
 ///   무한 반복은 `pumpAndSettle`이 끝나지 않으므로
 ///   `ArchiveScreen.debugToday`와 같은 테스트 고정 패턴을 쓴다.
 class GrowthStageImage extends StatefulWidget {
-  const GrowthStageImage({super.key, required this.path});
+  const GrowthStageImage({super.key, required this.path, this.seedKey = ''});
 
   final String path;
+
+  /// 씨앗 구분키 (날짜키, #207). 진입 시 변화 보여주기는 같은 씨앗일 때만
+  /// 동작한다. 날짜가 바뀌면 전날 그림이 잠깐 보였다 사라지는 플래시가
+  /// 생기므로, 키가 다르면 이전 경로를 보여주지 않는다.
+  final String seedKey;
 
   /// 테스트 고정: `true`면 흔들림을 멈추고 0도로 둔다.
   static bool debugStill = false;
@@ -452,12 +458,41 @@ class GrowthStageImage extends StatefulWidget {
   /// 마지막 표시 경로 (진입 시 변화 감지용). 테스트 격리용으로 초기화한다.
   static String _lastPath = '';
 
-  /// 테스트 간 정적 캐시를 비운다.
-  static void debugReset() => _lastPath = '';
+  /// 마지막 씨앗 키 (날짜 변경 플래시 방지용, #207).
+  static String _lastSeedKey = '';
 
-  /// 흔들림 주기·진폭 (±0.045rad ≈ ±2.6°).
-  static const swayPeriod = Duration(milliseconds: 2600);
-  static const swayRadians = 0.045;
+  /// 테스트 간 정적 캐시를 비운다.
+  static void debugReset() {
+    _lastPath = '';
+    _lastSeedKey = '';
+  }
+
+  /// 흔들림 주기 (#208). 심장 맥박처럼 두 번 쿵쾅이고 쉰다.
+  static const swayPeriod = Duration(milliseconds: 1200);
+
+  /// 맥박 파형: 1.0 → 1.045 → 1.0 → 1.028 → 1.0 (두근두근 + 휴지기).
+  static final TweenSequence<double> pulseTween = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(begin: 1.0, end: 1.045)
+          .chain(CurveTween(curve: Curves.easeOut)),
+      weight: 12,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.045, end: 1.0)
+          .chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 12,
+    ),
+    TweenSequenceItem(
+      tween:
+          Tween(begin: 1.0, end: 1.028).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 10,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.028, end: 1.0)
+          .chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 86,
+    ),
+  ]);
 
   /// 단계 전환 크로스페이드 길이.
   static const fadeDuration = Duration(milliseconds: 450);
@@ -470,20 +505,28 @@ class _GrowthStageImageState extends State<GrowthStageImage>
     with SingleTickerProviderStateMixin {
   late String _displayPath;
   late final AnimationController _sway;
+  late final Animation<double> _pulse;
 
   @override
   void initState() {
     super.initState();
     // 진입 시 변화가 있으면 이전 단계부터 보여준다.
+    // 단 날짜가 바뀐 씨앗이면 전날 그림을 보여주지 않는다 (#207).
     final last = GrowthStageImage._lastPath;
+    final sameSeed = widget.seedKey.isNotEmpty &&
+        widget.seedKey == GrowthStageImage._lastSeedKey;
     _displayPath =
-        last.isNotEmpty && last != widget.path ? last : widget.path;
+        last.isNotEmpty && last != widget.path && sameSeed
+            ? last
+            : widget.path;
     GrowthStageImage._lastPath = widget.path;
+    GrowthStageImage._lastSeedKey = widget.seedKey;
     _sway = AnimationController(
       vsync: this,
       duration: GrowthStageImage.swayPeriod,
     );
-    if (!GrowthStageImage.debugStill) _sway.repeat(reverse: true);
+    _pulse = GrowthStageImage.pulseTween.animate(_sway);
+    if (!GrowthStageImage.debugStill) _sway.repeat();
     if (_displayPath != widget.path) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -495,6 +538,7 @@ class _GrowthStageImageState extends State<GrowthStageImage>
   @override
   void didUpdateWidget(GrowthStageImage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    GrowthStageImage._lastSeedKey = widget.seedKey;
     if (widget.path != oldWidget.path && widget.path != _displayPath) {
       setState(() => _displayPath = widget.path);
       GrowthStageImage._lastPath = widget.path;
@@ -509,27 +553,31 @@ class _GrowthStageImageState extends State<GrowthStageImage>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _sway,
-      builder: (_, child) {
-        // 정지 모드에서는 0도 (테스트·스크린샷).
-        final t = GrowthStageImage.debugStill ? 0.5 : _sway.value;
-        return Transform.rotate(
-          angle:
-              (t - 0.5) * 2 * GrowthStageImage.swayRadians,
-          // 땅을 기준으로 흔들린다 (하단 중앙 고정).
-          alignment: Alignment.bottomCenter,
-          child: child,
-        );
-      },
-      child: AnimatedSwitcher(
-        duration: GrowthStageImage.fadeDuration,
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-        child: _ContainImage(
-          key: ValueKey(_displayPath),
-          path: _displayPath,
-        ),
+    // 정사각 박스로 고정한다 (#208).
+    // 기존 `_ContainImage` 단독 배치와 같은 크기(최대 340)로 맞춰진다.
+    return AspectRatio(
+      aspectRatio: 1,
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (_, __) {
+          final s = _pulse.value;
+          return Transform(
+            // 하단 중앙 고정 확대/축소: 흙은 가만있고 전체가 두근거린다.
+            transform: Matrix4.diagonal3Values(s, s, 1),
+            alignment: Alignment.bottomCenter,
+            // #160: 변형 중에도 보간 없이 또렷하게.
+            filterQuality: FilterQuality.none,
+            child: AnimatedSwitcher(
+              duration: GrowthStageImage.fadeDuration,
+              transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation, child: child),
+              child: _ContainImage(
+                key: ValueKey(_displayPath),
+                path: _displayPath,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -613,10 +661,12 @@ class _GrowingSeed extends StatelessWidget {
             // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
-              // #154: 단계 전환 크로스페이드 + 땅 기준 흔들림.
+              // #154: 단계 전환 크로스페이드 + 흔들림.
+              // #207: 날짜 변경 플래시 방지용 씨앗 키 전달.
               child: GrowthStageImage(
                 path: ThemeAssets.growthImage(
                     seed.theme, seed.growthStage),
+                seedKey: seed.dateKey,
               ),
             ),
           ),

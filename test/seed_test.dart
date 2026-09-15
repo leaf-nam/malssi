@@ -1375,10 +1375,9 @@ void main() {
         .map((w) => (w.image as AssetImage).assetName)
         .toList();
 
-    Finder groundSway() => find.descendant(
+    Finder swayOf() => find.descendant(
           of: find.byType(GrowthStageImage),
-          matching: find.byWidgetPredicate((w) =>
-              w is Transform && w.alignment == Alignment.bottomCenter),
+          matching: find.byWidgetPredicate((w) => w is Transform),
         );
 
     testWidgets('stage advance crossfades old into new', (tester) async {
@@ -1432,6 +1431,32 @@ void main() {
       expect(shownPaths(tester), ['assets/images/lemon-1.png']);
     });
 
+    testWidgets('day change does not flash yesterday image (#207)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('디버그: +1단계'));
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon-1.png']);
+
+      // 다음날: 어제 완성 → 오늘 새 씨앗. 심자마자 첫 프레임부터
+      // 오늘 씨앗만 보이고 전날(lemon-1) 플래시가 없다.
+      await provider.debugCompleteNow();
+      await provider.debugAdvanceDay();
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(find.text('씨앗 심기'), findsOneWidget);
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pump();
+      expect(shownPaths(tester), ['assets/images/lemon_seed.png']);
+    });
+
     testWidgets('sways around the ground pivot while growing',
         (tester) async {
       GrowthStageImage.debugStill = false;
@@ -1446,15 +1471,21 @@ void main() {
       // 흔들림은 무한 반복이라 settle 대신 고정 펌프로만 진행한다.
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 땅(하단 중앙)을 축으로 흔들린다.
-      expect(groundSway(), findsOneWidget);
-      final first =
-          tester.widget<Transform>(groundSway()).transform.clone();
+      // 맥박 확대/축소로 두근거린다: 단일 Transform, 전단 없음 (#208).
+      expect(swayOf(), findsOneWidget);
+      expect(tester.widget<Transform>(swayOf()).filterQuality,
+          FilterQuality.none);
 
-      await tester.pump(const Duration(milliseconds: 600));
-      final second =
-          tester.widget<Transform>(groundSway()).transform.clone();
-      expect(second, isNot(first));
+      // 한 주기(1.2초)를 샘플링하면 커졌다 작아졌다 한다.
+      final scales = <double>[];
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        final m = tester.widget<Transform>(swayOf()).transform;
+        expect(m.entry(0, 1), 0);
+        scales.add(m.entry(0, 0));
+      }
+      expect(scales.reduce((a, b) => a > b ? a : b), greaterThan(1.0));
+      expect(scales.toSet().length, greaterThan(1));
     });
   });
 
