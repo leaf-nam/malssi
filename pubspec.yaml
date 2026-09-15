@@ -16,6 +16,7 @@ dependencies:
   share_plus: ^10.1.2
   shared_preferences: ^2.5.5
   flutter_timezone: ^5.1.0
+  upgrader: ^13.7.0
 
 dev_dependencies:
   flutter_test:
