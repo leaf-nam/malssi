@@ -231,8 +231,8 @@ class _LockedSeed extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   gateReason == 'cooldown'
-                      ? '게이트: 수확 쿨다운'
-                      : '게이트: 배달시각 전',
+                      ? '수확 후 12시간이 지나지 않았어요!'
+                      : '아직 배달시간이 되지 않았어요!',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 11, color: AppTheme.muted),
