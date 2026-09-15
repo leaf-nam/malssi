@@ -331,6 +331,7 @@ class SeedProvider extends ChangeNotifier {
   /// 디버그용: 모든 씨앗을 지우고 오늘 아침 8시로 돌린다.
   /// 만료된 저녁에 초기화해도 곧바로 만료되지 않고 심을 수 있는 상태로
   /// 시작한다. 묵은 완성·리마인드 알림은 취소한다.
+  /// 수확 기록도 함께 지워 쿨다운 없이 바로 받을 수 있다 (#212).
   /// 릴리즈 UI에서 호출하지 않는다 (하네스 `convention.md` §7).
   Future<void> debugResetAllSeeds() async {
     assert(kDebugMode, 'debugResetAllSeeds is debug-only');
@@ -339,6 +340,7 @@ class SeedProvider extends ChangeNotifier {
     try {
       await _notifyCompleted();
       await _seedRepository.debugReset();
+      await _fruitRepository.debugReset();
       final now = DateTime.now();
       DebugClock.reset();
       DebugClock.shift(

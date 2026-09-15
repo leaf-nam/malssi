@@ -143,9 +143,12 @@ class Seed {
 
   /// 수확 쿨다운 (#196). [lastHarvestAt] 이후 12시간 이내면 `true`다.
   /// 수확 기록이 없으면 `false` (첫 씨앗은 바로 받을 수 있다).
+  /// 시계를 되돌려 수확 시각이 미래에 있으면 `false`다 (#212, 영구 차단 방지).
   static bool isCoolingDown(DateTime now, DateTime? lastHarvestAt) {
     if (lastHarvestAt == null) return false;
-    return now.difference(lastHarvestAt) < cooldown;
+    final elapsed = now.difference(lastHarvestAt);
+    if (elapsed.isNegative) return false;
+    return elapsed < cooldown;
   }
 
   /// [date] 당일 리마인드 시각(13:00) (#147).
