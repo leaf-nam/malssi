@@ -422,9 +422,14 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
 ///   무한 반복은 `pumpAndSettle`이 끝나지 않으므로
 ///   `ArchiveScreen.debugToday`와 같은 테스트 고정 패턴을 쓴다.
 class GrowthStageImage extends StatefulWidget {
-  const GrowthStageImage({super.key, required this.path});
+  const GrowthStageImage({super.key, required this.path, this.seedKey = ''});
 
   final String path;
+
+  /// 씨앗 구분키 (날짜키, #207). 진입 시 변화 보여주기는 같은 씨앗일 때만
+  /// 동작한다. 날짜가 바뀌면 전날 그림이 잠깐 보였다 사라지는 플래시가
+  /// 생기므로, 키가 다르면 이전 경로를 보여주지 않는다.
+  final String seedKey;
 
   /// 테스트 고정: `true`면 흔들림을 멈추고 0도로 둔다.
   static bool debugStill = false;
@@ -432,8 +437,14 @@ class GrowthStageImage extends StatefulWidget {
   /// 마지막 표시 경로 (진입 시 변화 감지용). 테스트 격리용으로 초기화한다.
   static String _lastPath = '';
 
+  /// 마지막 씨앗 키 (날짜 변경 플래시 방지용, #207).
+  static String _lastSeedKey = '';
+
   /// 테스트 간 정적 캐시를 비운다.
-  static void debugReset() => _lastPath = '';
+  static void debugReset() {
+    _lastPath = '';
+    _lastSeedKey = '';
+  }
 
   /// 흔들림 주기·진폭 (상단 ±3%, #208).
   static const swayPeriod = Duration(milliseconds: 2600);
@@ -455,10 +466,16 @@ class _GrowthStageImageState extends State<GrowthStageImage>
   void initState() {
     super.initState();
     // 진입 시 변화가 있으면 이전 단계부터 보여준다.
+    // 단 날짜가 바뀐 씨앗이면 전날 그림을 보여주지 않는다 (#207).
     final last = GrowthStageImage._lastPath;
+    final sameSeed = widget.seedKey.isNotEmpty &&
+        widget.seedKey == GrowthStageImage._lastSeedKey;
     _displayPath =
-        last.isNotEmpty && last != widget.path ? last : widget.path;
+        last.isNotEmpty && last != widget.path && sameSeed
+            ? last
+            : widget.path;
     GrowthStageImage._lastPath = widget.path;
+    GrowthStageImage._lastSeedKey = widget.seedKey;
     _sway = AnimationController(
       vsync: this,
       duration: GrowthStageImage.swayPeriod,
@@ -475,6 +492,7 @@ class _GrowthStageImageState extends State<GrowthStageImage>
   @override
   void didUpdateWidget(GrowthStageImage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    GrowthStageImage._lastSeedKey = widget.seedKey;
     if (widget.path != oldWidget.path && widget.path != _displayPath) {
       setState(() => _displayPath = widget.path);
       GrowthStageImage._lastPath = widget.path;
@@ -608,10 +626,12 @@ class _GrowingSeed extends StatelessWidget {
             // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
-              // #154: 단계 전환 크로스페이드 + 땅 기준 흔들림.
+              // #154: 단계 전환 크로스페이드 + 흔들림.
+              // #207: 날짜 변경 플래시 방지용 씨앗 키 전달.
               child: GrowthStageImage(
                 path: ThemeAssets.growthImage(
                     seed.theme, seed.growthStage),
+                seedKey: seed.dateKey,
               ),
             ),
           ),

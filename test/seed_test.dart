@@ -1371,6 +1371,32 @@ void main() {
       expect(shownPaths(tester), ['assets/images/lemon-1.png']);
     });
 
+    testWidgets('day change does not flash yesterday image (#207)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('디버그: +1단계'));
+      await tester.pumpAndSettle();
+      expect(shownPaths(tester), ['assets/images/lemon-1.png']);
+
+      // 다음날: 어제 완성 → 오늘 새 씨앗. 심자마자 첫 프레임부터
+      // 오늘 씨앗만 보이고 전날(lemon-1) 플래시가 없다.
+      await provider.debugCompleteNow();
+      await provider.debugAdvanceDay();
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(find.text('씨앗 심기'), findsOneWidget);
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pump();
+      expect(shownPaths(tester), ['assets/images/lemon_seed.png']);
+    });
+
     testWidgets('sways around the ground pivot while growing',
         (tester) async {
       GrowthStageImage.debugStill = false;
