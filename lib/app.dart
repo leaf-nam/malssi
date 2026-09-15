@@ -175,9 +175,17 @@ class AppShell extends StatelessWidget {
             themeMode: themeMode,
             routerConfig: appRouter,
             // #192: 전 화면에서 스토어 업데이트를 확인한다 (랜딩 포함).
-            builder: (context, child) => UpdateGate(
-              enabled: updateCheckEnabled,
-              child: child ?? const SizedBox.shrink(),
+            // #201: 시스템 글씨 크기를 고정 레이아웃이 깨지지 않는 범위로
+            // 고정한다. Android는 시스템 글씨 크기가 textScaler로 그대로
+            // 들어오고(iOS는 1.0 유지), 상한이 없으면 고정 박스가 잘린다.
+            builder: (context, child) =>
+                MediaQuery.withClampedTextScaling(
+              minScaleFactor: 1.0,
+              maxScaleFactor: 1.2,
+              child: UpdateGate(
+                enabled: updateCheckEnabled,
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           );
         },
