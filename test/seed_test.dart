@@ -1310,9 +1310,11 @@ void main() {
   });
 
   group('growth stage animation (#154)', () {
+    // #205: 상·하층 분리로 같은 경로 이미지가 2개 보이므로 중복을 걷는다.
     List<String> shownPaths(WidgetTester tester) => tester
         .widgetList<Image>(find.byType(Image))
         .map((w) => (w.image as AssetImage).assetName)
+        .toSet()
         .toList();
 
     Finder groundSway() => find.descendant(
@@ -1395,6 +1397,35 @@ void main() {
       final second =
           tester.widget<Transform>(groundSway()).transform.clone();
       expect(second, isNot(first));
+    });
+
+    testWidgets('soil stays still while the top sways (#205)',
+        (tester) async {
+      Finder clipped() => find.descendant(
+            of: find.byType(GrowthStageImage),
+            matching: find.byType(ClipRect),
+          );
+      Finder transforms() => find.descendant(
+            of: find.byType(GrowthStageImage),
+            matching: find.byWidgetPredicate((w) => w is Transform),
+          );
+
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      // stage 0 씨앗(흙 없음): 분리 없이 통째로 흔든다.
+      expect(clipped(), findsNothing);
+
+      // 1단계부터 상·하층 분리: 회전은 상층 1개에만 있다.
+      await tester.tap(find.text('디버그: +1단계'));
+      await tester.pumpAndSettle();
+      expect(clipped(), findsOneWidget);
+      expect(transforms(), findsOneWidget);
     });
   });
 

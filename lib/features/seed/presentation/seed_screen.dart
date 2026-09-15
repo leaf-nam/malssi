@@ -415,16 +415,23 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
 }
 
 /// 성장 중 에셋 (#154). 단계 전환은 크로스페이드로 보여주고,
-/// 자라는 동안에는 땅(하단 중앙)을 기준으로 좌우로 살짝 흔들어 살아있게 한다.
+/// 자라는 동안에는 위쪽만 좌우로 살짝 흔들어 살아있게 한다 (#205).
 /// - 진입 시 이미 단계가 올라가 있으면 이전 단계부터 보여주고 현재로 넘어간다.
 /// - 흔들림은 단일 반복 컨트롤러(회전만)이며 `dispose`에서 해제한다 (저전력).
 /// - 테스트에서는 [debugStill]로 흔들림을 멈춘다.
 ///   무한 반복은 `pumpAndSettle`이 끝나지 않으므로
 ///   `ArchiveScreen.debugToday`와 같은 테스트 고정 패턴을 쓴다.
 class GrowthStageImage extends StatefulWidget {
-  const GrowthStageImage({super.key, required this.path});
+  const GrowthStageImage(
+      {super.key, required this.path, this.soilFraction = 0});
 
   final String path;
+
+  /// 하단 고정 비율 (#205). `0`이면 통째로 흔든다 (흙 없는 씨앗).
+  final double soilFraction;
+
+  /// 성장 단계 흙 비율 (실측 최대 + 여유). 위로 삐져나와도 같은 픽셀이라 보인다.
+  static const stageSoilFraction = 0.18;
 
   /// 테스트 고정: `true`면 흔들림을 멈추고 0도로 둔다.
   static bool debugStill = false;
@@ -491,33 +498,75 @@ class _GrowthStageImageState extends State<GrowthStageImage>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _sway,
-      builder: (_, child) {
+      builder: (_, __) {
         // 정지 모드에서는 0도 (테스트·스크린샷).
         final t = GrowthStageImage.debugStill ? 0.5 : _sway.value;
-        return Transform.rotate(
-          angle:
-              (t - 0.5) * 2 * GrowthStageImage.swayRadians,
-          // 땅을 기준으로 흔들린다 (하단 중앙 고정).
-          alignment: Alignment.bottomCenter,
-          child: child,
+        final angle =
+            (t - 0.5) * 2 * GrowthStageImage.swayRadians;
+        return AnimatedSwitcher(
+          duration: GrowthStageImage.fadeDuration,
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: _GrowthLayers(
+            key: ValueKey(_displayPath),
+            path: _displayPath,
+            angle: angle,
+            soilFraction: widget.soilFraction,
+          ),
         );
       },
-      child: AnimatedSwitcher(
-        duration: GrowthStageImage.fadeDuration,
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-        child: _ContainImage(
-          key: ValueKey(_displayPath),
-          path: _displayPath,
+    );
+  }
+}
+
+/// 상층 흔들림 + 하층 흙 고정 분리 렌더 (#205).
+/// 하층(전체 이미지 정적)이 항상 깔려 있어 회전으로 벌어지는 틈이 생기지 않고,
+/// 상층은 경계선 중심을 축으로 돌아 흙 위 나무만 흔들리는 것처럼 보인다.
+class _GrowthLayers extends StatelessWidget {
+  const _GrowthLayers({
+    super.key,
+    required this.path,
+    required this.angle,
+    required this.soilFraction,
+  });
+
+  final String path;
+  final double angle;
+  final double soilFraction;
+
+  @override
+  Widget build(BuildContext context) {
+    final full = _ContainImage(path: path);
+    if (soilFraction <= 0) {
+      return Transform.rotate(
+        angle: angle,
+        alignment: Alignment.bottomCenter,
+        child: full,
+      );
+    }
+    return Stack(
+      children: [
+        full,
+        Transform.rotate(
+          angle: angle,
+          // 상층 하단 = 흙 경계선 고정.
+          alignment: Alignment.bottomCenter,
+          child: ClipRect(
+            child: Align(
+              alignment: Alignment.topCenter,
+              heightFactor: 1 - soilFraction,
+              child: _ContainImage(path: path),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
 
 /// 영역에 맞춰 들어가는 테마 이미지. 에셋이 없거나 로드에 실패하면 🌱를 보여준다.
 class _ContainImage extends StatelessWidget {
-  const _ContainImage({super.key, required this.path});
+  const _ContainImage({required this.path});
 
   final String path;
 
@@ -593,10 +642,19 @@ class _GrowingSeed extends StatelessWidget {
             // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
-              // #154: 단계 전환 크로스페이드 + 땅 기준 흔들림.
-              child: GrowthStageImage(
-                path: ThemeAssets.growthImage(
-                    seed.theme, seed.growthStage),
+              child: Builder(
+                builder: (context) {
+                  final growthPath = ThemeAssets.growthImage(
+                      seed.theme, seed.growthStage);
+                  return GrowthStageImage(
+                    path: growthPath,
+                    // #205: 흙 있는 단계(1~5)만 하층 고정, 씨앗은 통째로.
+                    soilFraction: seed.growthStage > 0 &&
+                            growthPath.isNotEmpty
+                        ? GrowthStageImage.stageSoilFraction
+                        : 0,
+                  );
+                },
               ),
             ),
           ),
