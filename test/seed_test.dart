@@ -1315,10 +1315,9 @@ void main() {
         .map((w) => (w.image as AssetImage).assetName)
         .toList();
 
-    Finder groundSway() => find.descendant(
+    Finder swayOf() => find.descendant(
           of: find.byType(GrowthStageImage),
-          matching: find.byWidgetPredicate((w) =>
-              w is Transform && w.alignment == Alignment.bottomCenter),
+          matching: find.byWidgetPredicate((w) => w is Transform),
         );
 
     testWidgets('stage advance crossfades old into new', (tester) async {
@@ -1386,15 +1385,18 @@ void main() {
       // 흔들림은 무한 반복이라 settle 대신 고정 펌프로만 진행한다.
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 땅(하단 중앙)을 축으로 흔들린다.
-      expect(groundSway(), findsOneWidget);
+      // 전단(shear) 변형으로 흔들린다: 단일 Transform, 하단 고정 (#208).
+      expect(swayOf(), findsOneWidget);
       final first =
-          tester.widget<Transform>(groundSway()).transform.clone();
+          tester.widget<Transform>(swayOf()).transform.clone();
+      expect(first.entry(0, 1), isNot(0));
+      expect(tester.widget<Transform>(swayOf()).filterQuality,
+          FilterQuality.none);
 
       await tester.pump(const Duration(milliseconds: 600));
       final second =
-          tester.widget<Transform>(groundSway()).transform.clone();
-      expect(second, isNot(first));
+          tester.widget<Transform>(swayOf()).transform.clone();
+      expect(second.entry(0, 1), isNot(first.entry(0, 1)));
     });
   });
 

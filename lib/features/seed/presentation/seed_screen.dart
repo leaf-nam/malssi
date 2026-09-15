@@ -415,9 +415,9 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
 }
 
 /// 성장 중 에셋 (#154). 단계 전환은 크로스페이드로 보여주고,
-/// 자라는 동안에는 땅(하단 중앙)을 기준으로 좌우로 살짝 흔들어 살아있게 한다.
+/// 자라는 동안에는 위쪽만 좌우로 살짝 흔들어 살아있게 한다 (#208).
 /// - 진입 시 이미 단계가 올라가 있으면 이전 단계부터 보여주고 현재로 넘어간다.
-/// - 흔들림은 단일 반복 컨트롤러(회전만)이며 `dispose`에서 해제한다 (저전력).
+/// - 흔들림은 단일 반복 컨트롤러(전단 변형)이며 `dispose`에서 해제한다 (저전력).
 /// - 테스트에서는 [debugStill]로 흔들림을 멈춘다.
 ///   무한 반복은 `pumpAndSettle`이 끝나지 않으므로
 ///   `ArchiveScreen.debugToday`와 같은 테스트 고정 패턴을 쓴다.
@@ -435,9 +435,9 @@ class GrowthStageImage extends StatefulWidget {
   /// 테스트 간 정적 캐시를 비운다.
   static void debugReset() => _lastPath = '';
 
-  /// 흔들림 주기·진폭 (±0.045rad ≈ ±2.6°).
+  /// 흔들림 주기·진폭 (상단 ±3%, #208).
   static const swayPeriod = Duration(milliseconds: 2600);
-  static const swayRadians = 0.045;
+  static const swayShear = 0.03;
 
   /// 단계 전환 크로스페이드 길이.
   static const fadeDuration = Duration(milliseconds: 450);
@@ -489,27 +489,42 @@ class _GrowthStageImageState extends State<GrowthStageImage>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _sway,
-      builder: (_, child) {
-        // 정지 모드에서는 0도 (테스트·스크린샷).
-        final t = GrowthStageImage.debugStill ? 0.5 : _sway.value;
-        return Transform.rotate(
-          angle:
-              (t - 0.5) * 2 * GrowthStageImage.swayRadians,
-          // 땅을 기준으로 흔들린다 (하단 중앙 고정).
-          alignment: Alignment.bottomCenter,
-          child: child,
-        );
-      },
-      child: AnimatedSwitcher(
-        duration: GrowthStageImage.fadeDuration,
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-        child: _ContainImage(
-          key: ValueKey(_displayPath),
-          path: _displayPath,
-        ),
+    // 정사각 박스를 고정해 전단 기준 높이(h)를 확정한다 (#208).
+    // 기존 `_ContainImage` 단독 배치와 같은 크기(최대 340)로 맞춰진다.
+    return AspectRatio(
+      aspectRatio: 1,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final h = constraints.maxHeight;
+          return AnimatedBuilder(
+            animation: _sway,
+            builder: (_, __) {
+              // 정지 모드에서는 0 (테스트·스크린샷).
+              final t =
+                  GrowthStageImage.debugStill ? 0.5 : _sway.value;
+              final s = (t - 0.5) * 2 * GrowthStageImage.swayShear;
+              return Transform(
+                // x' = x - s*y + s*h: 하단(y=h) 고정, 위로 갈수록 이동.
+                // 단일 이미지라 이음매가 없고 흙(하단)은 거의 가만있다.
+                transform: Matrix4.identity()
+                  ..setEntry(0, 1, -s)
+                  ..setEntry(0, 3, s * h),
+                // #160: 변형 중에도 보간 없이 또렷하게.
+                filterQuality: FilterQuality.none,
+                child: AnimatedSwitcher(
+                  duration: GrowthStageImage.fadeDuration,
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(
+                          opacity: animation, child: child),
+                  child: _ContainImage(
+                    key: ValueKey(_displayPath),
+                    path: _displayPath,
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
