@@ -1222,8 +1222,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // 완성 화면에는 태그·안내 문구를 노출하지 않는다.
+      // #191: 테마 라벨('○○ 열매') 1개만 허용한다.
       expect(find.textContaining('#'), findsNothing);
-      expect(find.textContaining('열매'), findsNothing);
+      expect(find.textContaining('열매'), findsOneWidget);
+      expect(find.text('성장 열매'), findsOneWidget);
       expect(find.textContaining('보관 탭에서'), findsNothing);
       expect(find.text('— 노자'), findsOneWidget);
       // #51: 완성 시 명언과 함께 열매 이미지가 나온다 (명언 2/3 : 열매 1/3).
@@ -1272,6 +1274,36 @@ void main() {
       expect(find.text('오늘 잘 지켰다'), findsOneWidget);
       expect(find.text('후기 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('growing seed shows its planted type (#191)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('성장 씨앗이 자라는 중이에요'), findsOneWidget);
+    });
+
+    testWidgets('completed fruit shows its seed type (#191)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('성장 열매'), findsOneWidget);
+      // 기존 후기 안내는 그대로 유지된다 (#71).
+      expect(find.text('눌러서 오늘의 리뷰 남기기'), findsOneWidget);
     });
   });
 
