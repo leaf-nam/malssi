@@ -415,9 +415,10 @@ class _GrowthCountdownState extends State<_GrowthCountdown> {
 }
 
 /// 성장 중 에셋 (#154). 단계 전환은 크로스페이드로 보여주고,
-/// 자라는 동안에는 위쪽만 좌우로 살짝 흔들어 살아있게 한다 (#208).
+/// 자라는 동안에는 심장 맥박처럼 두 번 쿵쾅이고 쉬는 확대/축소를 반복한다.
+/// 하단 중앙 고정이라 흙은 가만있고 이음매가 없다 (#208).
 /// - 진입 시 이미 단계가 올라가 있으면 이전 단계부터 보여주고 현재로 넘어간다.
-/// - 흔들림은 단일 반복 컨트롤러(전단 변형)이며 `dispose`에서 해제한다 (저전력).
+/// - 맥박은 단일 반복 컨트롤러이며 `dispose`에서 해제한다 (저전력).
 /// - 테스트에서는 [debugStill]로 흔들림을 멈춘다.
 ///   무한 반복은 `pumpAndSettle`이 끝나지 않으므로
 ///   `ArchiveScreen.debugToday`와 같은 테스트 고정 패턴을 쓴다.
@@ -446,9 +447,32 @@ class GrowthStageImage extends StatefulWidget {
     _lastSeedKey = '';
   }
 
-  /// 흔들림 주기·진폭 (상단 ±3%, #208).
-  static const swayPeriod = Duration(milliseconds: 2600);
-  static const swayShear = 0.03;
+  /// 흔들림 주기 (#208). 심장 맥박처럼 두 번 쿵쾅이고 쉰다.
+  static const swayPeriod = Duration(milliseconds: 1200);
+
+  /// 맥박 파형: 1.0 → 1.045 → 1.0 → 1.028 → 1.0 (두근두근 + 휴지기).
+  static final TweenSequence<double> pulseTween = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(begin: 1.0, end: 1.045)
+          .chain(CurveTween(curve: Curves.easeOut)),
+      weight: 12,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.045, end: 1.0)
+          .chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 12,
+    ),
+    TweenSequenceItem(
+      tween:
+          Tween(begin: 1.0, end: 1.028).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 10,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.028, end: 1.0)
+          .chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 86,
+    ),
+  ]);
 
   /// 단계 전환 크로스페이드 길이.
   static const fadeDuration = Duration(milliseconds: 450);
@@ -461,6 +485,7 @@ class _GrowthStageImageState extends State<GrowthStageImage>
     with SingleTickerProviderStateMixin {
   late String _displayPath;
   late final AnimationController _sway;
+  late final Animation<double> _pulse;
 
   @override
   void initState() {
@@ -480,7 +505,8 @@ class _GrowthStageImageState extends State<GrowthStageImage>
       vsync: this,
       duration: GrowthStageImage.swayPeriod,
     );
-    if (!GrowthStageImage.debugStill) _sway.repeat(reverse: true);
+    _pulse = GrowthStageImage.pulseTween.animate(_sway);
+    if (!GrowthStageImage.debugStill) _sway.repeat();
     if (_displayPath != widget.path) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -507,40 +533,29 @@ class _GrowthStageImageState extends State<GrowthStageImage>
 
   @override
   Widget build(BuildContext context) {
-    // 정사각 박스를 고정해 전단 기준 높이(h)를 확정한다 (#208).
+    // 정사각 박스로 고정한다 (#208).
     // 기존 `_ContainImage` 단독 배치와 같은 크기(최대 340)로 맞춰진다.
     return AspectRatio(
       aspectRatio: 1,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final h = constraints.maxHeight;
-          return AnimatedBuilder(
-            animation: _sway,
-            builder: (_, __) {
-              // 정지 모드에서는 0 (테스트·스크린샷).
-              final t =
-                  GrowthStageImage.debugStill ? 0.5 : _sway.value;
-              final s = (t - 0.5) * 2 * GrowthStageImage.swayShear;
-              return Transform(
-                // x' = x - s*y + s*h: 하단(y=h) 고정, 위로 갈수록 이동.
-                // 단일 이미지라 이음매가 없고 흙(하단)은 거의 가만있다.
-                transform: Matrix4.identity()
-                  ..setEntry(0, 1, -s)
-                  ..setEntry(0, 3, s * h),
-                // #160: 변형 중에도 보간 없이 또렷하게.
-                filterQuality: FilterQuality.none,
-                child: AnimatedSwitcher(
-                  duration: GrowthStageImage.fadeDuration,
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(
-                          opacity: animation, child: child),
-                  child: _ContainImage(
-                    key: ValueKey(_displayPath),
-                    path: _displayPath,
-                  ),
-                ),
-              );
-            },
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (_, __) {
+          final s = _pulse.value;
+          return Transform(
+            // 하단 중앙 고정 확대/축소: 흙은 가만있고 전체가 두근거린다.
+            transform: Matrix4.diagonal3Values(s, s, 1),
+            alignment: Alignment.bottomCenter,
+            // #160: 변형 중에도 보간 없이 또렷하게.
+            filterQuality: FilterQuality.none,
+            child: AnimatedSwitcher(
+              duration: GrowthStageImage.fadeDuration,
+              transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation, child: child),
+              child: _ContainImage(
+                key: ValueKey(_displayPath),
+                path: _displayPath,
+              ),
+            ),
           );
         },
       ),

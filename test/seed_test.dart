@@ -1411,18 +1411,21 @@ void main() {
       // 흔들림은 무한 반복이라 settle 대신 고정 펌프로만 진행한다.
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 전단(shear) 변형으로 흔들린다: 단일 Transform, 하단 고정 (#208).
+      // 맥박 확대/축소로 두근거린다: 단일 Transform, 전단 없음 (#208).
       expect(swayOf(), findsOneWidget);
-      final first =
-          tester.widget<Transform>(swayOf()).transform.clone();
-      expect(first.entry(0, 1), isNot(0));
       expect(tester.widget<Transform>(swayOf()).filterQuality,
           FilterQuality.none);
 
-      await tester.pump(const Duration(milliseconds: 600));
-      final second =
-          tester.widget<Transform>(swayOf()).transform.clone();
-      expect(second.entry(0, 1), isNot(first.entry(0, 1)));
+      // 한 주기(1.2초)를 샘플링하면 커졌다 작아졌다 한다.
+      final scales = <double>[];
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        final m = tester.widget<Transform>(swayOf()).transform;
+        expect(m.entry(0, 1), 0);
+        scales.add(m.entry(0, 0));
+      }
+      expect(scales.reduce((a, b) => a > b ? a : b), greaterThan(1.0));
+      expect(scales.toSet().length, greaterThan(1));
     });
   });
 
