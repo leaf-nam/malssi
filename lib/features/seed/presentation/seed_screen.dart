@@ -681,13 +681,12 @@ class _OpenedQuote extends StatefulWidget {
   State<_OpenedQuote> createState() => _OpenedQuoteState();
 }
 
-/// 완성 화면 상태 (#210). 수확 직후에는 열매 비 + 팝으로 축하하고,
-/// 시간이 지난 완성은 조용히 보여준다.
+/// 완성 화면 상태 (#210). 미후기 열매는 열매 비 + 팝으로 축하하고,
+/// 후기를 남긴 열매는 조용히 보여준다.
+/// 10분 같은 시간 기준 대신 후기 여부를 기준으로 삼는다:
+/// 못 본 이벤트(미후기)는 들어올 때마다 축하하고, 처리된(후기) 열매는 조용하다.
 class _OpenedQuoteState extends State<_OpenedQuote>
     with SingleTickerProviderStateMixin {
-  /// 축하 대상 수확 경과 상한. 탐지 시점에 수확하므로 여유 있게 잡는다.
-  static const freshWindow = Duration(minutes: 10);
-
   /// 열매 비 지속 시간 (짧은 버스트).
   static const rainDuration = Duration(seconds: 3);
 
@@ -696,12 +695,8 @@ class _OpenedQuoteState extends State<_OpenedQuote>
   Timer? _rainTimer;
   bool _raining = false;
 
-  /// 수확 직후면 `true` (축하 대상).
-  bool get _fresh {
-    final at = widget.fruit?.harvestedAt;
-    if (at == null) return false;
-    return DebugClock.now().difference(at) < freshWindow;
-  }
+  /// 축하 대상: 후기를 남기지 않은 열매 (#210).
+  bool get _celebrate => widget.fruit?.isReviewed == false;
 
   @override
   void initState() {
@@ -719,18 +714,19 @@ class _OpenedQuoteState extends State<_OpenedQuote>
   @override
   void didUpdateWidget(_OpenedQuote oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 다른 열매로 바뀌면 처음부터 축하한다.
-    if (widget.fruit?.id != oldWidget.fruit?.id) {
+    // 다른 열매로 바뀌면 처음부터 축하하고, 후기를 마치면 조용해진다.
+    if (widget.fruit?.id != oldWidget.fruit?.id ||
+        widget.fruit?.isReviewed == true) {
       _maybeCelebrate();
     }
   }
 
-  /// 수확 직후면 팝 + 비를 시작한다. 아니면 정적 표시.
+  /// 미후기면 팝 + 비를 시작한다. 후기 완료면 정적 표시.
   /// 비는 테스트 고정 시 띄우지 않는다 (`pumpAndSettle` 무한 틱 방지).
   void _maybeCelebrate() {
     _rainTimer?.cancel();
     _raining = false;
-    if (!_fresh) {
+    if (!_celebrate) {
       _pop.value = 1;
       return;
     }

@@ -1310,7 +1310,7 @@ void main() {
       expect(done.entry(0, 0), 1.0);
     });
 
-    testWidgets('stale harvest shows quietly (#210)', (tester) async {
+    testWidgets('reviewed harvest shows quietly (#210)', (tester) async {
       GrowthStageImage.debugStill = false;
       addTearDown(() => GrowthStageImage.debugStill = true);
       final provider =
@@ -1322,13 +1322,20 @@ void main() {
       await tester.tap(find.text('씨앗 심기'));
       await tester.pump();
       await provider.debugCompleteNow();
-      // 수확 1시간 후 진입: 축하 없이 조용히 보인다.
-      DebugClock.shift(const Duration(hours: 1));
+      await tester.pump();
+
+      // 미후기에는 축하한다.
+      expect(find.byType(FruitRain), findsOneWidget);
+
+      // 후기 저장 후 재진입: 조용히 보인다.
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
       await tester.pumpWidget(_wrap(provider));
       await tester.pump();
 
       expect(find.byType(FruitRain), findsNothing);
-      expect(find.byType(Image), findsWidgets);
+      Finder pop() => find.byKey(const ValueKey('harvest-pop'));
+      expect(pop(), findsOneWidget);
+      expect(tester.widget<Transform>(pop()).transform.entry(0, 0), 1.0);
     });
 
     testWidgets('growing seed shows its planted type (#191)',
