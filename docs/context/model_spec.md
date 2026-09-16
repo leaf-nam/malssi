@@ -69,10 +69,11 @@ class CollectionNames {
 | createdAt | `DateTime` | `createdAt` | `DateTime.now()` |
 | theme | `String` | `theme` | `''` (테마 미분류, `SeedTheme` 키 값 — §4.11) |
 | source | `String` | `source` | `''` (명언 출처 표시문, 비어 있으면 출처 버튼 숨김, #123) |
+| explanation | `String` | `explanation` | `''` (명언 해설문, 비어 있으면 해설 숨김, #216) |
 
 > 2026-09-05: 해시태그(`tags`) 필드 제거 — 해시태그 기능 미사용 확정 (#54 작업에서 함께 제외).
 
-- **직렬화**: `fromMap` 팩토리, `toMap()`, `copyWith({id, text, author, likes, createdAt})` 제공.
+- **직렬화**: `fromMap` 팩토리, `toMap()`, `copyWith({id, text, author, likes, createdAt, theme, source, explanation})` 제공.
   `Quote._internal` 클래스가 `implements Quote`로 실제 저장소 역할을 합니다.
 
 ### 4.2 `HomeQuote` — 제거됨 (#19)
@@ -180,8 +181,9 @@ class CollectionNames {
 | memo        | `String`   | `memo`       | `''` (그날의 후기, 미작성) |
 | fidelityScore | `int`    | `fidelityScore` | `0` (그날의 점수 0~5, `0` = 미평가) |
 | source      | `String`   | `source`     | `''` (수확 시점 `Quote.source` 스냅샷, #123) |
+| explanation | `String`   | `explanation` | `''` (수확 시점 `Quote.explanation` 스냅샷, #216) |
 
-- **스냅샷 규칙**: `text`/`author`/`theme`/`source`은 수확 시점의 `Quote` 복사본이다.
+- **스냅샷 규칙**: `text`/`author`/`theme`/`source`/`explanation`은 수확 시점의 `Quote` 복사본이다.
   원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
   `memo`/`fidelityScore`는 말씨 탭의 완성 열매 흐름에서 작성하고 (#41),
   보관 상세 카드에서는 읽기만 한다 (#48).
