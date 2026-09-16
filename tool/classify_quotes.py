@@ -227,6 +227,43 @@ OVERRIDES = {
     'dda4519385a6': 'wisdom',
     '986017b01e6c': 'vitality',
     'd8580fd511d5': 'wisdom',
+    # #152 위키 철학자 50선 (키워드 미매칭·동점 → 수동 확정).
+    # 안창호·정약용·프랭클린·장자·나폴레옹·나혜석·서경덕·러셀·이광수·박지원
+    '5f91508c3147': 'vitality',
+    '7bb1e0dc0d79': 'wisdom',
+    'a0aef4eaf136': 'wisdom',
+    '2073d0098d4a': 'peace',
+    '3aab7b141022': 'wisdom',
+    'fa18c7c92cee': 'wisdom',
+    '2f121a627746': 'growth',
+    '3b224853c457': 'vitality',
+    '436875b1f11d': 'relationship',
+    '6b5c05e0fe9d': 'relationship',
+    'a0ac12abfd8c': 'wisdom',
+    'c1b81758774e': 'growth',
+    'c7cb20057b65': 'wisdom',
+    '8e906bb25eca': 'wisdom',
+    '64ae92e4a2eb': 'wisdom',
+    'cd6713cfcbf9': 'wisdom',
+    'd40cefe608ee': 'vitality',
+    '9590cdbd7d1f': 'wisdom',
+    # 0013fab48217: 기존 항목과 동일(growth)이라 아래 기존 블록 유지.
+    'ad501d00c5ce': 'relationship',
+    'dda4519385a6': 'growth',
+    'ae194f20883f': 'growth',
+    '1763f2fb4205': 'wisdom',
+    '8d301fbc20dc': 'wisdom',
+    '9263d47e8fdb': 'peace',
+    'f5f863f5ebbb': 'peace',
+    '2be5b893ee49': 'growth',
+    '722dfcf1e8be': 'relationship',
+    'ead400915b39': 'happiness',
+    '40f8603a1156': 'wisdom',
+    '5ff03ef7adaf': 'vitality',
+    '6b8e37a531b7': 'vitality',
+    '904009d02bef': 'relationship',
+    '0b3f49a8c856': 'growth',
+    '00f0b0feaac4': 'peace',
     # 케플러·야마나카·파스퇴르·혼조·에디슨·강원택·세이건·곽재식·노요리
     'a28412105d36': 'wisdom',
     '24886fe42c01': 'wisdom',
@@ -242,7 +279,7 @@ OVERRIDES = {
     '0013fab48217': 'growth',
     'e1b0dd7569be': 'growth',
     'c6fedd59bde3': 'wisdom',
-    '9263d47e8fdb': 'wisdom',
+    # 9263d47e8fdb: #152에서 peace로 재지정 (위 #152 블록이 우선).
     'c1144c1d1957': 'wisdom',
     '70bdea7ce4c6': 'happiness',
     '25b58fca3f13': 'wisdom',
@@ -284,6 +321,9 @@ KEEP_KEYS = {
         '986017b01e6c', 'bcfcce53aa97', 'd13c14f23356',
         'dde25728358f', 'e67a318018cc',
         'f74b0a85f0a6',
+        # #152 위키 철학자 50선: 안창호 2·정약용 1·노자 1·나혜석 2.
+        '5f91508c3147', '3b224853c457', 'd40cefe608ee',
+        '5ff03ef7adaf', '6b8e37a531b7',
     ],
     'health': [
         '11b18ae6a102', '44038ae771af', '4a95b30e8a52', '503e7dce66e6',
@@ -299,7 +339,18 @@ KEEP_KEYS = {
         'b68cf33cb1be', 'be0aba265541', 'c0a83a901c7c', 'c17663c67870',
         'cc12bb7ee9d0', 'd7f08d3104f7', 'da752bd0bcb5', 'edb5b261cb40',
         'f870629bbbf8',
-    ],
+            # #152 위키 철학자 50선.
+        '0013fab48217',
+        '2f121a627746',
+        'c1b81758774e',
+        '171b2afccaa7',
+        'dda4519385a6',
+        'ae194f20883f',
+        '2be5b893ee49',
+        '7ed94629cb05',
+        '0b3f49a8c856',
+        '500f2249f3ce',
+],
     'relationship': [
         '1be2cb665ef3', '22993d1c47ff', '25ec696c15ba',
         '520fdd1b1c9d', '5225916bf66e', '5c68382f69a0',
@@ -308,7 +359,14 @@ KEEP_KEYS = {
         '903cfedfdf52', 'ce7fb9f5651a',
         'd45765f42f4d', 'f08e91a48a55',
         'f3b799826b6f',
-    ],
+            # #152 위키 철학자 50선.
+        '436875b1f11d',
+        '6b5c05e0fe9d',
+        'ee6d80b31d2c',
+        'ad501d00c5ce',
+        '722dfcf1e8be',
+        '904009d02bef',
+],
     'wisdom': [
         '03197e069ddc', '042fa16dfe2c', '0922bfcf6568', '0b3f49a8c856',
         '0b698e77e337', '1763f2fb4205', '2f874e8fc550',
@@ -318,16 +376,47 @@ KEEP_KEYS = {
         'a286ff0a84cc', 'aa84de9f5e3b', 'c7b470d1bf29', 'ca30e8f9f554',
         'cc36247cbd94', 'cc4de8d4f6cd', 'e455be678eb6', 'ebf3e2f30d0f',
         'fb887bbad15b', 'fc54062ef87f',
-    ],
+            # #152 위키 철학자 50선.
+        '7bb1e0dc0d79',
+        'df8abdf11962',
+        '83db86b728b2',
+        'a0aef4eaf136',
+        'c20e886140a1',
+        '3aab7b141022',
+        'fa18c7c92cee',
+        'c7cb20057b65',
+        '8e906bb25eca',
+        'ebf3e2f30d0f',
+        '64ae92e4a2eb',
+        'cd6713cfcbf9',
+        '9590cdbd7d1f',
+        '1763f2fb4205',
+        '8d301fbc20dc',
+        '7ff9c65c18f7',
+        'de71b1a16bbb',
+        '40f8603a1156',
+        'f149313bd800',
+        'de89d65406e7',
+        '139889b81160',
+        'a0ac12abfd8c',
+        'e43849df542d',
+],
     'peace': [
         '0e8e9292ada4', '89b78a3709b9',
         'b222f67feb95', 'be6162d49588', 'f32e22b616dc',
-    ],
+            # #152 위키 철학자 50선.
+        '2073d0098d4a',
+        '9263d47e8fdb',
+        'f5f863f5ebbb',
+        '00f0b0feaac4',
+],
     'happiness': [
         '0068ddd3a229', '3c1fa24f3824',
         '904009d02bef', '9243ddc04a90', 'a41e59e6a86f', 'c1d12bcae6aa',
         'cb562786c413', 'ead400915b39',
-    ],
+            # #152 위키 철학자 50선.
+        'ead400915b39',
+],
 }
 # 단축: 핵심 문장만 남긴 표시용 문구 (원문은 full에 보존).
 # 선정된 키에만 적용된다.
@@ -369,9 +458,18 @@ SHORTEN = {
         '우리가 서로 친절하게 대하고, 우리가 아는 유일한 보금자리인 '
         '창백한 푸른 점을 소중히 보존하는 것이 우리의 의무임을 '
         '강조하고 있는 것입니다.',
-    'ead400915b39':
+    # #152: 아인슈타인 핵심문 (키 정정 — 종전 ead400915b39(나폴레옹) 오기재).
+    # ead400915b39(나폴레옹 실패/성공)는 단축 없이 그대로 쓴다.
+    '904009d02bef':
         '사람은 다른 사람들을 위해 여기에 있다는 것이다. 무엇보다도 '
         '우리 자신에게 행복을 주는 사람들의 웃음과 안녕을 위해서.',
+    # #152 단축 5건 (원문 부분문자열 발췌).
+    'fa18c7c92cee': '그릇이 작은 사람은 큰 일은 할 수가 없는 것이다.',
+    '0b3f49a8c856': '모르는 것이 있으면 길을 가는 사람이라도 잡고 묻는 것이 옳다.',
+    '8e906bb25eca': '분노와 어리석은 행동은 나란히 길을 걷는다.',
+    '8d301fbc20dc': '사실 증거가 나올 때까지 판단을 유보하는 게 좋지요.',
+    # #152: 에디슨 오타 직접 수정 (원문 '99퍼센트의 영감이다' → '땀이다', #180 선례).
+    '0013fab48217': '천재는 1퍼센트의 영감과 99퍼센트의 땀이다.',
 }
 # 제외 규칙 (2026-09-06 #123 후속).
 # - 인용부호 포함: 발췌·전재 표식이라 명언 단독으로 부적합.
