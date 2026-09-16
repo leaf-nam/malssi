@@ -658,9 +658,11 @@ class _GrowingSeed extends StatelessWidget {
         Expanded(
           flex: 1,
           child: Center(
-            // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
+            // #160: 170px 소스의 정수배로 표시해 픽셀을 균일하게.
+            // #217: 2x = 340이 너무 크다는 피드백이라 1x = 170으로 원복
+            // (4x 고해상도 에셋 그대로, 표시만 축소).
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
+              constraints: const BoxConstraints(maxWidth: 170, maxHeight: 170),
               // #154: 단계 전환 크로스페이드 + 흔들림.
               // #207: 날짜 변경 플래시 방지용 씨앗 키 전달.
               child: GrowthStageImage(
@@ -843,10 +845,12 @@ class _OpenedQuoteState extends State<_OpenedQuote>
                   Expanded(
                     flex: 1,
                     child: Center(
-                      // #160: 150px 소스의 정수배(2x = 300)까지만 키운다.
+                      // #160: 150px 소스의 정수배로 표시한다.
+                      // #217: 2x = 300이 너무 크다는 피드백이라 1x = 150으로 원복
+                      // (4x 고해상도 에셋 그대로, 표시만 축소).
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
-                            maxWidth: 300, maxHeight: 300),
+                            maxWidth: 150, maxHeight: 150),
                           child: AnimatedBuilder(
                           animation: _popScale,
                           builder: (_, child) {
