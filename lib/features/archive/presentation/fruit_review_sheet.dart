@@ -20,6 +20,8 @@ class FruitReviewSheet extends StatefulWidget {
     this.onSave,
     // #123: 명언별 출처. 비어 있으면 출처 버튼을 숨긴다.
     this.source = '',
+    // #216: 명언 해설. 비어 있으면 숨긴다.
+    this.explanation = '',
   }) : assert(readOnly || onSave != null,
             '작성 모드에서는 onSave가 필요합니다.');
 
@@ -30,6 +32,7 @@ class FruitReviewSheet extends StatefulWidget {
   final String initialMemo;
   final int initialScore;
   final String source;
+  final String explanation;
 
   /// `true`면 별점·후기를 표시만 하고 입력 UI를 숨긴다.
   final bool readOnly;
@@ -113,6 +116,21 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            // #216: 명언 해설. 비어 있으면 숨긴다.
+            if (widget.explanation.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  // #177: 단어 중간 줄바꿈 방지.
+                  keepWordsTogether(widget.explanation),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.6,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
             if (widget.source.isNotEmpty)
               QuoteSourceButton(
                 source: widget.source,

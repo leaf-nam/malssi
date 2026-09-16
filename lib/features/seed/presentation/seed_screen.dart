@@ -65,6 +65,8 @@ class _SeedScreenState extends State<SeedScreen> {
         readOnly: readOnly,
         // #123: 명언별 출처를 후기 카드에서도 볼 수 있다.
         source: fruit.source,
+        // #216: 명언 해설을 후기 카드에서도 볼 수 있다.
+        explanation: fruit.explanation,
         onSave: readOnly
             ? null
             : ({required memo, required fidelityScore}) =>
@@ -335,6 +337,21 @@ class _QuoteBlock extends StatelessWidget {
             color: AppTheme.paper,
           ),
         ),
+        // #216: 명언 해설. 비어 있으면 숨긴다.
+        if (quote.explanation.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              // #177: 단어 중간 줄바꿈 방지 (원문은 저장소에서 그대로 둔다).
+              keepWordsTogether(quote.explanation),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.6,
+                color: AppTheme.paperDim,
+              ),
+            ),
+          ),
         if (quote.source.isNotEmpty)
           QuoteSourceButton(
             source: quote.source,

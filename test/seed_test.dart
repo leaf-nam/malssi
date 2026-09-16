@@ -886,6 +886,36 @@ void main() {
       );
     });
 
+    testWidgets('growing quote shows the explanation when present (#216)',
+        (tester) async {
+      final provider = SeedProvider(
+        seedRepository: InMemorySeedRepository(
+            themePicker: () => SeedTheme.growth),
+        quoteRepository: InMemoryQuoteRepository(seed: [
+          Quote(
+            id: 'q-expl',
+            text: '천 리 길도 한 걸음부터.',
+            author: '노자',
+            likes: 0,
+            createdAt: DateTime(2026, 9, 4),
+            theme: SeedTheme.growth,
+            source: '국립국어원 우리말샘',
+            explanation: '일단 시작하라는 말이에요.',
+          ),
+        ]),
+        fruitRepository: InMemoryFruitRepository(),
+      );
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // #177: 해설도 단어 중간 줄바꿈 방지 처리가 되어 있다.
+      expect(find.text(keepWordsTogether('일단 시작하라는 말이에요.')),
+          findsOneWidget);
+    });
+
     testWidgets('growth timer sits centered above the asset (#163)',
         (tester) async {
       final provider = _buildProvider();

@@ -60,6 +60,57 @@ void main() {
       );
     });
 
+    test('parses optional explanation (#216)', () {
+      // 미기재 허용 (구 데이터 호환) + 잘못된 타입 거부.
+      final without = QuoteAssets.parseQuotes(jsonEncode([
+        {
+          'id': 'a',
+          'text': 't',
+          'author': 'a',
+          'theme': 'growth',
+          'source': 's'
+        },
+      ]));
+      expect(without.single.explanation, '');
+
+      final withExplanation = QuoteAssets.parseQuotes(jsonEncode([
+        {
+          'id': 'a',
+          'text': 't',
+          'author': 'a',
+          'theme': 'growth',
+          'source': 's',
+          'explanation': '쉬운 풀이'
+        },
+      ]));
+      expect(withExplanation.single.explanation, '쉬운 풀이');
+
+      expect(
+        () => QuoteAssets.parseQuotes(jsonEncode([
+              {
+                'id': 'a',
+                'text': 't',
+                'author': 'a',
+                'theme': 'growth',
+                'source': 's',
+                'explanation': 7
+              }
+            ])),
+        throwsFormatException,
+      );
+    });
+
+    test('every bundled quote has an explanation (#216)', () {
+      final quotes = QuoteAssets.parseQuotes(
+        File('assets/docs/quotes.json').readAsStringSync(),
+      );
+
+      expect(quotes.length, 159);
+      for (final quote in quotes) {
+        expect(quote.explanation.isNotEmpty, isTrue);
+      }
+    });
+
     test('harvested quotes keep their source (#123)', () {
       final quotes = QuoteAssets.parseQuotes(
         File('assets/docs/quotes.json').readAsStringSync(),
