@@ -863,11 +863,11 @@ class _OpenedQuoteState extends State<_OpenedQuote>
                     flex: 1,
                     child: Center(
                       // #160: 150px 소스의 정수배로 표시한다.
-                      // #217: 2x = 300이 너무 크다는 피드백이라 1x = 150으로 원복
-                      // (4x 고해상도 에셋 그대로, 표시만 축소).
+                      // #217: 완성 열매는 큰 사이즈(2x = 300)도 괜찮다는
+                      // 판단이라 유지 (4x 고해상도 에셋 그대로).
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
-                            maxWidth: 150, maxHeight: 150),
+                            maxWidth: 300, maxHeight: 300),
                           child: AnimatedBuilder(
                           animation: _popScale,
                           builder: (_, child) {
