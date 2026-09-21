@@ -1585,22 +1585,34 @@ void main() {
       );
     });
 
-    test('isCoolingDown within 12 hours of harvest', () {
-      final now = DateTime(2026, 9, 4, 8, 30);
-      expect(Seed.isCoolingDown(now, null), isFalse);
-      expect(
-        Seed.isCoolingDown(now, DateTime(2026, 9, 3, 22)),
-        isTrue,
+    test('provider opens seed after seedTime even within 12h of harvest', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 3, 13).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
       );
-      expect(
-        Seed.isCoolingDown(now, DateTime(2026, 9, 3, 20, 29)),
-        isFalse,
-      );
-      // #212: 시계를 되돌려 수확이 미래에 있어도 차단하지 않는다.
-      expect(
-        Seed.isCoolingDown(now, DateTime(2026, 11, 1, 12)),
-        isFalse,
-      );
+      // 9/3 13:00 심기 → 10시간 경과(23:00) 후 수확 + 후기까지 마친다.
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      DebugClock.shift(const Duration(hours: 10));
+      await provider.refreshGrowth();
+      await provider.ensureTodaySeed();
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+
+      // 다음날 배달 시각(08:00)이 되면 수확 9.5시간이라도 무조건 열린다.
+      // (수확 12시간 쿨다운 폐지 — 배달 시각이 이긴다.)
+      DebugClock.shift(const Duration(hours: 9, minutes: 30));
+      await provider.ensureTodaySeed();
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.deliveryPending, isFalse);
+      expect(provider.deliveryGateReason, isEmpty);
+
+      // 바로 심을 수 있다.
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
     });
 
     test('provider pends locked seed before seedTime', () async {
@@ -1640,37 +1652,6 @@ void main() {
       expect(provider.todaySeed!.isGrowing, isTrue);
     });
 
-    test('provider pends seed within 12 hours of harvest', () async {
-      DebugClock.reset();
-      DebugClock.shift(
-          DateTime(2026, 9, 3, 13).difference(DateTime.now()));
-      final provider = _buildProvider(
-        clock: DebugClock.now,
-        themePicker: () => SeedTheme.growth,
-        seedTimeLoader: () async => '08:00',
-      );
-      // 9/3 13:00 심기 → 10시간 경과(23:00) 후 수확 + 후기까지 마친다.
-      await provider.ensureTodaySeed();
-      await provider.plantSeed();
-      DebugClock.shift(const Duration(hours: 10));
-      await provider.refreshGrowth();
-      await provider.ensureTodaySeed();
-      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
-
-      // 다음날 배달 시각은 지났지만 수확 9.5시간 → 대기.
-      DebugClock.shift(const Duration(hours: 9, minutes: 30));
-      await provider.ensureTodaySeed();
-      expect(provider.todaySeed!.isLocked, isTrue);
-      expect(provider.deliveryPending, isTrue);
-      expect(provider.deliveryGateReason, 'cooldown');
-
-      // 수확 12시간이 지나면 받을 수 있다.
-      DebugClock.shift(const Duration(hours: 3));
-      await provider.refreshGrowth();
-      expect(provider.deliveryPending, isFalse);
-      expect(provider.deliveryGateReason, isEmpty);
-    });
-
     testWidgets('shows coming-soon instead of plant button',        (tester) async {      DebugClock.reset();
       DebugClock.shift(
           DateTime(2026, 9, 4, 7).difference(DateTime.now()));
@@ -1708,7 +1689,7 @@ void main() {
       expect(provider.todaySeed!.isLocked, isTrue);
     });
 
-    test('debug reset clears harvests and cooldown (#212)', () async {
+    test('debug reset clears harvests (#212)', () async {
       DebugClock.reset();
       DebugClock.shift(
           DateTime(2026, 9, 4, 9).difference(DateTime.now()));

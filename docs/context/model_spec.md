@@ -155,8 +155,8 @@ class CollectionNames {
   받을 수 없고 `씨앗이 오는 중이에요`를 보여준다
   (`Seed.isAwaitingDelivery`, `SeedProvider.deliveryPending`,
   `seedTimeLoader` 미지정 시 자정 = 게이트 없음).
-  수확 후 12시간 이내에도 새 씨앗을 받을 수 없다
-  (`Seed.cooldown`, `Seed.isCoolingDown`, 최근 수확 시각 기준).
+  배달 시각이 되면 수확 후 경과 시간과 무관하게 무조건 열린다
+  (수확 12시간 쿨다운 `Seed.cooldown`·`Seed.isCoolingDown` 폐지).
   저장소 행 생성 시점은 관찰할 수 없으므로 생성 차단이 아닌 수령 차단으로 구현한다
   (심기 버튼 숨김 + `plantSeed()` 거부).
 - **컬렉션**: `seeds` (`CollectionNames.seeds`).
