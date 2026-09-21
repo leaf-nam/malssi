@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
+import 'package:malssi/core/widgets/explanation_toggle.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 
 /// 열매 리뷰 카드 (별점 + 한줄 후기).
@@ -117,18 +118,18 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
               ),
             ),
             // #216: 명언 해설. 비어 있으면 숨긴다.
+            // #216 후속: 해설은 버튼으로 펼친다. 비어 있으면 버튼도 숨긴다.
             if (widget.explanation.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  // #177: 단어 중간 줄바꿈 방지.
-                  keepWordsTogether(widget.explanation),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
+                child: ExplanationToggle(
+                  explanation: widget.explanation,
+                  textStyle: TextStyle(
                     fontSize: 13,
                     height: 1.6,
                     color: colors.onSurfaceVariant,
                   ),
+                  buttonColor: colors.onSurfaceVariant,
                 ),
               ),
             if (widget.source.isNotEmpty)

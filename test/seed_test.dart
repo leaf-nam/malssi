@@ -887,7 +887,7 @@ void main() {
       );
     });
 
-    testWidgets('growing quote shows the explanation when present (#216)',
+    testWidgets('growing quote hides the explanation behind a button (#216)',
         (tester) async {
       final provider = SeedProvider(
         seedRepository: InMemorySeedRepository(
@@ -912,9 +912,17 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      // #177: 해설도 단어 중간 줄바꿈 방지 처리가 되어 있다.
+      // 해설은 버튼 뒤에 숨어 있다.
+      expect(find.text('해설 보기'), findsOneWidget);
+      expect(find.text(keepWordsTogether('일단 시작하라는 말이에요.')),
+          findsNothing);
+
+      // 버튼을 누르면 해설이 보인다 (#177 줄바꿈 방지 포함).
+      await tester.tap(find.text('해설 보기'));
+      await tester.pumpAndSettle();
       expect(find.text(keepWordsTogether('일단 시작하라는 말이에요.')),
           findsOneWidget);
+      expect(find.text('해설 닫기'), findsOneWidget);
     });
 
     testWidgets('growth timer sits centered above the asset (#163)',

@@ -1252,7 +1252,7 @@ void main() {
       expect(find.text('출처'), findsNothing);
     });
 
-    testWidgets('review sheet shows the explanation when present (#216)',
+    testWidgets('review sheet hides the explanation behind a button (#216)',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -1272,7 +1272,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // #177: 해설도 단어 중간 줄바꿈 방지 처리가 되어 있다.
+      // 해설은 버튼 뒤에 숨어 있다.
+      expect(find.text('해설 보기'), findsOneWidget);
+      expect(find.text(keepWordsTogether('배우는 게 자신을 강하게 만들어요.')),
+          findsNothing);
+
+      // 버튼을 누르면 해설이 보인다 (#177 줄바꿈 방지 포함).
+      await tester.tap(find.text('해설 보기'));
+      await tester.pumpAndSettle();
       expect(find.text(keepWordsTogether('배우는 게 자신을 강하게 만들어요.')),
           findsOneWidget);
     });
