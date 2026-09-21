@@ -159,7 +159,7 @@ class _LockedSeed extends StatelessWidget {
   /// 배달 대기 여부 (#196). `true`면 오는 중 문구만 보여주고 심기 버튼을 숨긴다.
   final bool deliveryPending;
 
-  /// 대기 사유 (#203, 디버그 표시용): `'delivery'` · `'cooldown'` · `''`.
+  /// 대기 사유 (#203, 디버그 표시용): `'delivery'` · `''`.
   final String gateReason;
 
   @override
@@ -231,12 +231,10 @@ class _LockedSeed extends StatelessWidget {
             if (deliveryPending && showDebug && gateReason.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  gateReason == 'cooldown'
-                      ? '수확 후 12시간이 지나지 않았어요!'
-                      : '아직 배달시간이 되지 않았어요!',
+                child: const Text(
+                  '아직 배달시간이 되지 않았어요!',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11, color: AppTheme.muted),
                 ),
               ),
