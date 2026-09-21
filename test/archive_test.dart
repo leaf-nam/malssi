@@ -1301,6 +1301,62 @@ void main() {
       expect(find.byType(FruitReviewSheet), findsOneWidget);
     });
 
+    testWidgets('write-mode sheet shows review hints (#223)',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              onSave: ({required memo, required fidelityScore}) async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 별점 도움말이 흐리게 보인다.
+      expect(find.text('오늘 말씨를 얼마나 품고 살았나요?'),
+          findsOneWidget);
+      final helper = tester
+          .widget<Text>(find.text('오늘 말씨를 얼마나 품고 살았나요?'));
+      expect(helper.textAlign, TextAlign.center);
+      expect(helper.style!.fontSize, 12);
+      // 한줄평 힌트가 새 문구다.
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.decoration!.hintText, '말씨와 함께 오늘을 돌아보세요.');
+    });
+
+    testWidgets('read-only sheet hides review hints (#223)',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              readOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 보관 상세(읽기 전용)에는 도움말이 없다.
+      expect(
+          find.text('오늘 말씨를 얼마나 품고 살았나요?'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+    });
+
     testWidgets('read-only memo is a distinct left-aligned card (#150)',
         (tester) async {
       await tester.pumpWidget(
