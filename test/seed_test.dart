@@ -868,8 +868,7 @@ void main() {
         FilterQuality.none,
       );
       // #160: 75px 소스의 정수배(1x)로 표시한다.
-      // #217 후속: 처음 씨앗 75 → 60으로 축소.
-      expect(tester.widget<Image>(find.byType(Image)).width, 60);
+      expect(tester.widget<Image>(find.byType(Image)).width, 75);
 
       // 성장 중 에셋 이미지.
       await provider.plantSeed();
@@ -1408,6 +1407,12 @@ void main() {
   });
 
   group('growth stage animation (#154)', () {
+    test('pulse period is relaxed (#217 후속)', () {
+      // 두근거림이 빠르다는 피드백이라 1200 → 1500ms로 연장.
+      expect(GrowthStageImage.swayPeriod,
+          const Duration(milliseconds: 1500));
+    });
+
     List<String> shownPaths(WidgetTester tester) => tester
         .widgetList<Image>(find.byType(Image))
         .map((w) => (w.image as AssetImage).assetName)
