@@ -62,6 +62,32 @@ void main() {
       expect(quote.theme, isEmpty);
     });
 
+    test('Quote keeps explanation through fromMap/toMap (#216)', () {
+      final quote = Quote(
+        id: 'q1',
+        text: 't',
+        author: 'a',
+        likes: 0,
+        createdAt: DateTime(2026, 9, 4),
+        explanation: '쉬운 풀이',
+      );
+      final restored = Quote.fromMap(
+          quote.toMap()..['createdAt'] = _FakeTimestamp(quote.createdAt));
+
+      expect(restored.explanation, '쉬운 풀이');
+      expect(restored.copyWith(explanation: '바뀐 풀이').explanation,
+          '바뀐 풀이');
+    });
+
+    test('Quote defaults missing explanation to empty (#216)', () {
+      final quote = Quote.fromMap({
+        'id': 'q1',
+        'createdAt': _FakeTimestamp(DateTime(2026, 9, 4)),
+      });
+
+      expect(quote.explanation, isEmpty);
+    });
+
     test('Seed keeps theme through fromMap/toMap', () {
       final seed = Seed(
         id: '2026-09-04',
@@ -94,6 +120,24 @@ void main() {
           fruit.toMap()..['harvestedAt'] = _FakeTimestamp(fruit.harvestedAt));
 
       expect(restored.theme, SeedTheme.wisdom);
+    });
+
+    test('Fruit keeps explanation through fromMap/toMap (#216)', () {
+      final fruit = Fruit(
+        id: 'fruit-2026-09-04',
+        seedId: '2026-09-04',
+        quoteId: 'q1',
+        text: 't',
+        author: 'a',
+        harvestedAt: DateTime(2026, 9, 4, 12),
+        explanation: '쉬운 풀이',
+      );
+      final restored = Fruit.fromMap(
+          fruit.toMap()..['harvestedAt'] = _FakeTimestamp(fruit.harvestedAt));
+
+      expect(restored.explanation, '쉬운 풀이');
+      expect(restored.copyWith(explanation: '바뀐 풀이').explanation,
+          '바뀐 풀이');
     });
 
     test('harvestFromSeed snapshots the quote theme', () async {
