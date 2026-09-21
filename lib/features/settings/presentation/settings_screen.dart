@@ -48,8 +48,19 @@ class SettingsScreen extends StatelessWidget {
         _Row(
           label: '화면 모드',
           trailingWidget: SegmentedButton<String>(
+            // #218: 라이트/다크에서 버튼 크기가 달라진다는 피드백.
+            // 테마 기본값에 맡기면 모드별 텍스트 스타일로 크기가 흔들릴 수 있어
+            // 크기 요소(textStyle·minimumSize·padding)를 명시적으로 고정한다
+            // (색상은 각 모드 테마를 따른다).
             style: SegmentedButton.styleFrom(
               visualDensity: VisualDensity.compact,
+              textStyle: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              minimumSize: const Size(64, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
             segments: const [
               ButtonSegment(value: 'light', label: Text('라이트')),

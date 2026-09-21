@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:malssi/core/services/debug_ui.dart';
+import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 import 'package:malssi/features/settings/presentation/settings_screen.dart';
@@ -273,6 +274,34 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(provider.settings!.notifyEnabled, isFalse);
+    });
+
+    testWidgets('mode buttons keep the same size in light and dark (#218)',
+        (tester) async {
+      Future<Size> sizeFor(ThemeData theme) async {
+        final provider = SettingsProvider(
+          settingsRepository: InMemorySettingsRepository(),
+        );
+        await provider.load();
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: provider),
+              ChangeNotifierProvider.value(value: DebugUiProvider()),
+            ],
+            child: MaterialApp(
+                theme: theme, home: const SettingsScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return tester
+            .getSize(find.byType(SegmentedButton<String>));
+      }
+
+      final lightSize = await sizeFor(AppTheme.light());
+      final darkSize = await sizeFor(AppTheme.dark());
+
+      expect(darkSize, lightSize);
     });
 
     testWidgets('toggling the rain switch hides the rain (#108)',
