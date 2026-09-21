@@ -7,6 +7,7 @@ import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
+import 'package:malssi/core/widgets/explanation_toggle.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
@@ -337,19 +338,19 @@ class _QuoteBlock extends StatelessWidget {
             color: AppTheme.paper,
           ),
         ),
-        // #216: 명언 해설. 비어 있으면 숨긴다.
+        // #216: 명언 해설. 무조건 보여주지 않고 버튼으로 펼친다.
+        // 비어 있으면 버튼도 숨긴다.
         if (quote.explanation.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              // #177: 단어 중간 줄바꿈 방지 (원문은 저장소에서 그대로 둔다).
-              keepWordsTogether(quote.explanation),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
+            padding: const EdgeInsets.only(top: 6),
+            child: ExplanationToggle(
+              explanation: quote.explanation,
+              textStyle: const TextStyle(
                 fontSize: 13,
                 height: 1.6,
                 color: AppTheme.paperDim,
               ),
+              buttonColor: AppTheme.muted,
             ),
           ),
         if (quote.source.isNotEmpty)
