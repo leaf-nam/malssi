@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
+import 'package:malssi/core/services/home_widget_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/update_gate.dart';
@@ -74,12 +75,13 @@ class AppShell extends StatelessWidget {
           )..load(),
         ),
         ChangeNotifierProvider(
-          create: (_) => SeedProvider(
-            seedRepository: seedRepository,
-            quoteRepository: quoteRepository,
-            fruitRepository: fruitRepository,
-            // #62: 앱 사용 중에도 15분마다 성장을 갱신한다.
-            enableAutoRefresh: true,
+          create: (_) {
+            final seedProvider = SeedProvider(
+              seedRepository: seedRepository,
+              quoteRepository: quoteRepository,
+              fruitRepository: fruitRepository,
+              // #62: 앱 사용 중에도 15분마다 성장을 갱신한다.
+              enableAutoRefresh: true,
             // #196: 배달 시각을 설정 저장소에서 읽는다.
             seedTimeLoader: () async =>
                 (await (settingsRepository ??
@@ -123,7 +125,23 @@ class AppShell extends StatelessWidget {
                 completeAt: reminderAt,
               );
             },
-          )..ensureTodaySeed(),
+            )..ensureTodaySeed();
+            // #139: 공개된 명언을 홈 위젯에 반영한다.
+            // 중복 갱신은 서비스가 제거하고, 실패해도 앱에 영향없다.
+            seedProvider.addListener(() {
+              final quote = seedProvider.revealedQuote;
+              if (quote == null) {
+                HomeWidgetService.instance.updatePlaceholder();
+              } else {
+                HomeWidgetService.instance.updateQuote(
+                  quoteId: quote.id,
+                  text: quote.text,
+                  author: quote.author,
+                );
+              }
+            });
+            return seedProvider;
+          },
         ),
         ChangeNotifierProvider(
           create: (_) => ArchiveProvider(fruitRepository: fruitRepository)

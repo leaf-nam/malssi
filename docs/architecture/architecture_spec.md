@@ -46,6 +46,7 @@
   인증은 백엔드 없이 `DummyAuthService`로 확정했다 (Firebase 미사용).
 - **공용 서비스 (싱글톤)**: `AdService` (보상형 광고 로드/표시 스텁),
   `NotificationService` (`flutter_local_notifications` 기반 초기화/예약/표시),
+  `HomeWidgetService` (홈 위젯 명언 동기화, `home_widget` 기반, #139),
   `DebugClock` (디버그 시간 이동용 앱 공용 시계, #115).
 - **테마**: `AppTheme.light()` (indigo primary, grey[50] 배경, ElevatedButton/InputDecoration 테마),
   `AppTheme.dark()` (dark 복사 + grey[900] 배경).
@@ -126,6 +127,7 @@ lib/
 | `flutter_timezone` | `^5.1.0` | 기기 타임존 조회 | `init()`의 `tz.local` 설정 (#164) |
 | `share_plus` | `^10.1.2` | 공유 | `lib/`에서 미사용 중. 보관 상세 편입 여부는 후속 이슈에서 결정 (`feature_spec.md` §6 #6) |
 | `shared_preferences` | `^2.5.5` | 로컬 지속화 | `LocalStore` (씨앗·열매·설정·온보딩, #122·#130) |
+| `home_widget` | `^0.10.0` | 홈 위젯 | `HomeWidgetService` (오늘 명언 + 저자, #139) |
 | `riverpod` (`dev`, 미사용) | `^2.4.9` | — | `lib/`에서 import 없음. 승격·제거 여부 이슈 분리 |
 | `build_runner` (`dev`) | `^2.4.6` | 코드 생성 | — |
 | `flutter_test` (`dev`) | SDK | 테스트 | `flutter test` |
@@ -176,6 +178,22 @@ lib/
 
 - 씨앗 개봉 플로우에 광고 게이트가 없으므로 `lib/core/services/ad_service.dart`를
   #19에서 삭제했다. 광고를 다시 도입하려면 신규 이슈 + 본 스펙 개정부터 시작한다.
+
+### 2.5 홈 위젯 (`HomeWidgetService`, #139)
+
+- 표시: 오늘의 명언 + 저자 (성장 단계·남은시간 제외, 범위 확정).
+  미공개(심기 전)는 플레이스홀더 (`씨앗을 심으면 오늘의 명언이 보여요`).
+- 동기화: `app.dart`가 `SeedProvider.revealedQuote` 리스너로 전달.
+  같은 id 중복 갱신 방지 + 실패 무시 (앱에 영향없음).
+- 데이터 공유: `home_widget` 저장소 (Android SharedPreferences,
+  iOS App Group `group.com.leaf.malssi`). 키 `quote_text`/`quote_author`.
+- 탭 → 말씨 탭(`/`): 딥링크 `malssi://widget?target=seed`
+  (Android `HomeWidgetLaunchIntent` + iOS 위젯 `Link`,
+  `main()`의 초기 URI·클릭 스트림 → `appRouter.go('/')`).
+- 네이티브: Android `MalssiWidgetProvider` + `res/layout/malssi_widget.xml`
+  (+ `xml/malssi_widget_info.xml`, manifest receiver),
+  iOS `MalssiWidget` 익스텐션 타깃 (SwiftUI + Timeline, 6시간 갱신 예약).
+  iOS 실기기 서명은 `DEVELOPMENT_TEAM` 값으로 Xcode에서 처리한다.
 
 ## 3. 확장 계획
 
