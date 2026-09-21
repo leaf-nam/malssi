@@ -7,6 +7,7 @@ import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
+import 'package:malssi/core/widgets/explanation_toggle.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
@@ -65,6 +66,8 @@ class _SeedScreenState extends State<SeedScreen> {
         readOnly: readOnly,
         // #123: 명언별 출처를 후기 카드에서도 볼 수 있다.
         source: fruit.source,
+        // #216: 명언 해설을 후기 카드에서도 볼 수 있다.
+        explanation: fruit.explanation,
         onSave: readOnly
             ? null
             : ({required memo, required fidelityScore}) =>
@@ -157,7 +160,7 @@ class _LockedSeed extends StatelessWidget {
   /// 배달 대기 여부 (#196). `true`면 오는 중 문구만 보여주고 심기 버튼을 숨긴다.
   final bool deliveryPending;
 
-  /// 대기 사유 (#203, 디버그 표시용): `'delivery'` · `'cooldown'` · `''`.
+  /// 대기 사유 (#203, 디버그 표시용): `'delivery'` · `''`.
   final String gateReason;
 
   @override
@@ -229,12 +232,10 @@ class _LockedSeed extends StatelessWidget {
             if (deliveryPending && showDebug && gateReason.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  gateReason == 'cooldown'
-                      ? '수확 후 12시간이 지나지 않았어요!'
-                      : '아직 배달시간이 되지 않았어요!',
+                child: const Text(
+                  '아직 배달시간이 되지 않았어요!',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11, color: AppTheme.muted),
                 ),
               ),
@@ -335,6 +336,21 @@ class _QuoteBlock extends StatelessWidget {
             color: AppTheme.paper,
           ),
         ),
+        // #216: 명언 해설. 무조건 보여주지 않고 버튼으로 펼친다.
+        // 비어 있으면 버튼도 숨긴다.
+        if (quote.explanation.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: ExplanationToggle(
+              explanation: quote.explanation,
+              textStyle: const TextStyle(
+                fontSize: 13,
+                height: 1.6,
+                color: AppTheme.paperDim,
+              ),
+              buttonColor: AppTheme.muted,
+            ),
+          ),
         if (quote.source.isNotEmpty)
           QuoteSourceButton(
             source: quote.source,
@@ -468,7 +484,8 @@ class GrowthStageImage extends StatefulWidget {
   }
 
   /// 흔들림 주기 (#208). 심장 맥박처럼 두 번 쿵쾅이고 쉰다.
-  static const swayPeriod = Duration(milliseconds: 1200);
+  /// #217 후속: 두근거림이 빠르다는 피드백이라 1200 → 1500ms로 연장.
+  static const swayPeriod = Duration(milliseconds: 1500);
 
   /// 맥박 파형: 1.0 → 1.045 → 1.0 → 1.028 → 1.0 (두근두근 + 휴지기).
   static final TweenSequence<double> pulseTween = TweenSequence<double>([
@@ -554,7 +571,7 @@ class _GrowthStageImageState extends State<GrowthStageImage>
   @override
   Widget build(BuildContext context) {
     // 정사각 박스로 고정한다 (#208).
-    // 기존 `_ContainImage` 단독 배치와 같은 크기(최대 340)로 맞춰진다.
+    // 성장 이미지 크기에 맞춰진다 (최대 150).
     return AspectRatio(
       aspectRatio: 1,
       child: AnimatedBuilder(
@@ -658,9 +675,11 @@ class _GrowingSeed extends StatelessWidget {
         Expanded(
           flex: 1,
           child: Center(
-            // #160: 170px 소스의 정수배(2x = 340)까지만 키워 픽셀을 균일하게.
+            // #160: 170px 소스의 정수배로 표시해 픽셀을 균일하게.
+            // #217 후속: 성장 에셋이 크다는 피드백이라 170 → 150으로 축소
+            // (4x 고해상도 에셋 그대로, 표시만 축소).
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
+              constraints: const BoxConstraints(maxWidth: 150, maxHeight: 150),
               // #154: 단계 전환 크로스페이드 + 흔들림.
               // #207: 날짜 변경 플래시 방지용 씨앗 키 전달.
               child: GrowthStageImage(
@@ -843,7 +862,9 @@ class _OpenedQuoteState extends State<_OpenedQuote>
                   Expanded(
                     flex: 1,
                     child: Center(
-                      // #160: 150px 소스의 정수배(2x = 300)까지만 키운다.
+                      // #160: 150px 소스의 정수배로 표시한다.
+                      // #217: 완성 열매는 큰 사이즈(2x = 300)도 괜찮다는
+                      // 판단이라 유지 (4x 고해상도 에셋 그대로).
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(
                             maxWidth: 300, maxHeight: 300),

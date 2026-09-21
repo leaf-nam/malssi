@@ -79,6 +79,7 @@ class InMemoryFruitRepository implements FruitRepository {
       harvestedAt: _clock(),
       theme: quote.theme,
       source: quote.source,
+      explanation: quote.explanation,
     );
     _fruits.add(fruit);
     await _persist();

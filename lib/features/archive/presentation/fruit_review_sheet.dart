@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
+import 'package:malssi/core/widgets/explanation_toggle.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 
 /// 열매 리뷰 카드 (별점 + 한줄 후기).
@@ -20,6 +21,8 @@ class FruitReviewSheet extends StatefulWidget {
     this.onSave,
     // #123: 명언별 출처. 비어 있으면 출처 버튼을 숨긴다.
     this.source = '',
+    // #216: 명언 해설. 비어 있으면 숨긴다.
+    this.explanation = '',
   }) : assert(readOnly || onSave != null,
             '작성 모드에서는 onSave가 필요합니다.');
 
@@ -30,6 +33,7 @@ class FruitReviewSheet extends StatefulWidget {
   final String initialMemo;
   final int initialScore;
   final String source;
+  final String explanation;
 
   /// `true`면 별점·후기를 표시만 하고 입력 UI를 숨긴다.
   final bool readOnly;
@@ -113,6 +117,21 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            // #216: 명언 해설. 비어 있으면 숨긴다.
+            // #216 후속: 해설은 버튼으로 펼친다. 비어 있으면 버튼도 숨긴다.
+            if (widget.explanation.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: ExplanationToggle(
+                  explanation: widget.explanation,
+                  textStyle: TextStyle(
+                    fontSize: 13,
+                    height: 1.6,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  buttonColor: colors.onSurfaceVariant,
+                ),
+              ),
             if (widget.source.isNotEmpty)
               QuoteSourceButton(
                 source: widget.source,
@@ -120,6 +139,19 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
               ),
             const SizedBox(height: 16),
             const Text('오늘의 점수', style: TextStyle(fontSize: 13)),
+            // #223: 무엇을 평가하는지 돕는 도움말 (작성 모드에서만, 흐리게).
+            if (!widget.readOnly)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '오늘 말씨를 얼마나 품고 살았나요?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
             if (widget.readOnly)
               Row(
@@ -184,7 +216,7 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                 controller: _memoController,
                 maxLines: 3,
                 decoration: const InputDecoration(
-                  hintText: '명언에 얼마나 충실히 살았는지 적어보세요',
+                  hintText: '말씨와 함께 오늘을 돌아보세요.',
                 ),
               ),
               const SizedBox(height: 16),

@@ -12,6 +12,10 @@ class Quote {
   /// 비어 있으면 출처 버튼을 노출하지 않는다 (#123).
   final String source;
 
+  /// 명언 해설문 (#216). 어려운 명언을 쉽게 풀어준다.
+  /// 비어 있으면 해설을 노출하지 않는다.
+  final String explanation;
+
   const Quote({
     required this.id,
     required this.text,
@@ -20,6 +24,7 @@ class Quote {
     required this.createdAt,
     this.theme = '',
     this.source = '',
+    this.explanation = '',
   });
 
   factory Quote.fromMap(Map<String, dynamic> map) {
@@ -31,6 +36,7 @@ class Quote {
       createdAt: (map['createdAt'] as dynamic).toDate() ?? DateTime.now(),
       theme: map['theme'] ?? '',
       source: map['source'] ?? '',
+      explanation: map['explanation'] ?? '',
     );
   }
 
@@ -43,6 +49,7 @@ class Quote {
       'createdAt': createdAt,
       'theme': theme,
       'source': source,
+      'explanation': explanation,
     };
   }
 
@@ -54,6 +61,7 @@ class Quote {
     DateTime? createdAt,
     String? theme,
     String? source,
+    String? explanation,
   }) {
     return Quote(
       id: id ?? this.id,
@@ -63,6 +71,7 @@ class Quote {
       createdAt: createdAt ?? this.createdAt,
       theme: theme ?? this.theme,
       source: source ?? this.source,
+      explanation: explanation ?? this.explanation,
     );
   }
 }

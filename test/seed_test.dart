@@ -878,12 +878,51 @@ void main() {
       for (final image in tester.widgetList<Image>(find.byType(Image))) {
         expect(image.filterQuality, FilterQuality.none);
       }
-      // #160: 170px 소스의 정수배(2x = 340)까지만 키운다.
+      // #160: 170px 소스의 정수배로 표시한다.
+      // #217 후속: 성장 에셋 170 → 150으로 축소 (해상도 유지).
       expect(
         find.byWidgetPredicate((w) =>
-            w is ConstrainedBox && w.constraints.maxWidth == 340),
+            w is ConstrainedBox && w.constraints.maxWidth == 150),
         findsOneWidget,
       );
+    });
+
+    testWidgets('growing quote hides the explanation behind a button (#216)',
+        (tester) async {
+      final provider = SeedProvider(
+        seedRepository: InMemorySeedRepository(
+            themePicker: () => SeedTheme.growth),
+        quoteRepository: InMemoryQuoteRepository(seed: [
+          Quote(
+            id: 'q-expl',
+            text: '천 리 길도 한 걸음부터.',
+            author: '노자',
+            likes: 0,
+            createdAt: DateTime(2026, 9, 4),
+            theme: SeedTheme.growth,
+            source: '국립국어원 우리말샘',
+            explanation: '일단 시작하라는 말이에요.',
+          ),
+        ]),
+        fruitRepository: InMemoryFruitRepository(),
+      );
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 해설은 버튼 뒤에 숨어 있다.
+      expect(find.text('해설 보기'), findsOneWidget);
+      expect(find.text(keepWordsTogether('일단 시작하라는 말이에요.')),
+          findsNothing);
+
+      // 버튼을 누르면 해설이 보인다 (#177 줄바꿈 방지 포함).
+      await tester.tap(find.text('해설 보기'));
+      await tester.pumpAndSettle();
+      expect(find.text(keepWordsTogether('일단 시작하라는 말이에요.')),
+          findsOneWidget);
+      expect(find.text('해설 닫기'), findsOneWidget);
     });
 
     testWidgets('growth timer sits centered above the asset (#163)',
@@ -1233,6 +1272,12 @@ void main() {
       expect(find.text('— 노자'), findsOneWidget);
       // #51: 완성 시 명언과 함께 열매 이미지가 나온다 (명언 2/3 : 열매 1/3).
       expect(find.byType(Image), findsOneWidget);
+      // #217: 완성 열매는 큰 사이즈(2x = 300) 유지.
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is ConstrainedBox && w.constraints.maxWidth == 300),
+        findsOneWidget,
+      );
       final completedFlexes = tester
           .widgetList<Expanded>(find.byType(Expanded))
           .map((e) => e.flex)
@@ -1370,6 +1415,12 @@ void main() {
   });
 
   group('growth stage animation (#154)', () {
+    test('pulse period is relaxed (#217 후속)', () {
+      // 두근거림이 빠르다는 피드백이라 1200 → 1500ms로 연장.
+      expect(GrowthStageImage.swayPeriod,
+          const Duration(milliseconds: 1500));
+    });
+
     List<String> shownPaths(WidgetTester tester) => tester
         .widgetList<Image>(find.byType(Image))
         .map((w) => (w.image as AssetImage).assetName)
@@ -1534,22 +1585,34 @@ void main() {
       );
     });
 
-    test('isCoolingDown within 12 hours of harvest', () {
-      final now = DateTime(2026, 9, 4, 8, 30);
-      expect(Seed.isCoolingDown(now, null), isFalse);
-      expect(
-        Seed.isCoolingDown(now, DateTime(2026, 9, 3, 22)),
-        isTrue,
+    test('provider opens seed after seedTime even within 12h of harvest', () async {
+      DebugClock.reset();
+      DebugClock.shift(
+          DateTime(2026, 9, 3, 13).difference(DateTime.now()));
+      final provider = _buildProvider(
+        clock: DebugClock.now,
+        themePicker: () => SeedTheme.growth,
+        seedTimeLoader: () async => '08:00',
       );
-      expect(
-        Seed.isCoolingDown(now, DateTime(2026, 9, 3, 20, 29)),
-        isFalse,
-      );
-      // #212: 시계를 되돌려 수확이 미래에 있어도 차단하지 않는다.
-      expect(
-        Seed.isCoolingDown(now, DateTime(2026, 11, 1, 12)),
-        isFalse,
-      );
+      // 9/3 13:00 심기 → 10시간 경과(23:00) 후 수확 + 후기까지 마친다.
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      DebugClock.shift(const Duration(hours: 10));
+      await provider.refreshGrowth();
+      await provider.ensureTodaySeed();
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+
+      // 다음날 배달 시각(08:00)이 되면 수확 9.5시간이라도 무조건 열린다.
+      // (수확 12시간 쿨다운 폐지 — 배달 시각이 이긴다.)
+      DebugClock.shift(const Duration(hours: 9, minutes: 30));
+      await provider.ensureTodaySeed();
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.deliveryPending, isFalse);
+      expect(provider.deliveryGateReason, isEmpty);
+
+      // 바로 심을 수 있다.
+      await provider.plantSeed();
+      expect(provider.todaySeed!.isGrowing, isTrue);
     });
 
     test('provider pends locked seed before seedTime', () async {
@@ -1589,37 +1652,6 @@ void main() {
       expect(provider.todaySeed!.isGrowing, isTrue);
     });
 
-    test('provider pends seed within 12 hours of harvest', () async {
-      DebugClock.reset();
-      DebugClock.shift(
-          DateTime(2026, 9, 3, 13).difference(DateTime.now()));
-      final provider = _buildProvider(
-        clock: DebugClock.now,
-        themePicker: () => SeedTheme.growth,
-        seedTimeLoader: () async => '08:00',
-      );
-      // 9/3 13:00 심기 → 10시간 경과(23:00) 후 수확 + 후기까지 마친다.
-      await provider.ensureTodaySeed();
-      await provider.plantSeed();
-      DebugClock.shift(const Duration(hours: 10));
-      await provider.refreshGrowth();
-      await provider.ensureTodaySeed();
-      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
-
-      // 다음날 배달 시각은 지났지만 수확 9.5시간 → 대기.
-      DebugClock.shift(const Duration(hours: 9, minutes: 30));
-      await provider.ensureTodaySeed();
-      expect(provider.todaySeed!.isLocked, isTrue);
-      expect(provider.deliveryPending, isTrue);
-      expect(provider.deliveryGateReason, 'cooldown');
-
-      // 수확 12시간이 지나면 받을 수 있다.
-      DebugClock.shift(const Duration(hours: 3));
-      await provider.refreshGrowth();
-      expect(provider.deliveryPending, isFalse);
-      expect(provider.deliveryGateReason, isEmpty);
-    });
-
     testWidgets('shows coming-soon instead of plant button',        (tester) async {      DebugClock.reset();
       DebugClock.shift(
           DateTime(2026, 9, 4, 7).difference(DateTime.now()));
@@ -1657,7 +1689,7 @@ void main() {
       expect(provider.todaySeed!.isLocked, isTrue);
     });
 
-    test('debug reset clears harvests and cooldown (#212)', () async {
+    test('debug reset clears harvests (#212)', () async {
       DebugClock.reset();
       DebugClock.shift(
           DateTime(2026, 9, 4, 9).difference(DateTime.now()));

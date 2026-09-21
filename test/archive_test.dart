@@ -127,6 +127,39 @@ void main() {
       expect(fruit.fidelityScore, 0);
     });
 
+    test('harvestFromSeed snapshots the explanation (#216)', () async {
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      final fruit = await repo.harvestFromSeed(
+        seed: Seed(
+          id: '2026-09-04',
+          dateKey: '2026-09-04',
+          quoteId: 'q',
+          status: SeedStatus.opened,
+          createdAt: at,
+          plantedAt: at,
+        ),
+        quote: Quote(
+          id: 'q',
+          text: '아는 것이 힘이다.',
+          author: '프랜시스 베이컨',
+          likes: 0,
+          createdAt: at,
+          theme: SeedTheme.wisdom,
+          source: '한국어 위키인용집 (CC BY-SA 4.0)',
+          explanation: '배우는 게 자신을 강하게 만들어요.',
+        ),
+      );
+
+      expect(fruit.explanation, '배우는 게 자신을 강하게 만들어요.');
+      // 스냅샷이라 원천이 바뀌어도 보관본은 유지된다.
+      final restored = Fruit.fromMap(
+          fruit.toMap()..['harvestedAt'] = _FakeTimestamp());
+      expect(restored.explanation, '배우는 게 자신을 강하게 만들어요.');
+      // 구 데이터 호환: 미기재 시 빈값.
+      expect(Fruit.fromMap({'id': 'x', 'harvestedAt': _FakeTimestamp()}).explanation, '');
+    });
+
     test('harvestDateKey formats YYYY-MM-DD', () {
       final fruit = Fruit(
         id: 'x',
@@ -1217,6 +1250,118 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('출처'), findsNothing);
+    });
+
+    testWidgets('review sheet hides the explanation behind a button (#216)',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: '아는 것이 힘이다.',
+              author: '프랜시스 베이컨',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              readOnly: true,
+              explanation: '배우는 게 자신을 강하게 만들어요.',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 해설은 버튼 뒤에 숨어 있다.
+      expect(find.text('해설 보기'), findsOneWidget);
+      expect(find.text(keepWordsTogether('배우는 게 자신을 강하게 만들어요.')),
+          findsNothing);
+
+      // 버튼을 누르면 해설이 보인다 (#177 줄바꿈 방지 포함).
+      await tester.tap(find.text('해설 보기'));
+      await tester.pumpAndSettle();
+      expect(find.text(keepWordsTogether('배우는 게 자신을 강하게 만들어요.')),
+          findsOneWidget);
+    });
+
+    testWidgets('review sheet hides the explanation when empty (#216)',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              readOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 해설 위젯 자체가 없다 (출처 버튼·후기 카드와 혼동 없음).
+      expect(find.text('출처'), findsNothing);
+      expect(find.byType(FruitReviewSheet), findsOneWidget);
+    });
+
+    testWidgets('write-mode sheet shows review hints (#223)',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              onSave: ({required memo, required fidelityScore}) async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 별점 도움말이 흐리게 보인다.
+      expect(find.text('오늘 말씨를 얼마나 품고 살았나요?'),
+          findsOneWidget);
+      final helper = tester
+          .widget<Text>(find.text('오늘 말씨를 얼마나 품고 살았나요?'));
+      expect(helper.textAlign, TextAlign.center);
+      expect(helper.style!.fontSize, 12);
+      // 한줄평 힌트가 새 문구다.
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.decoration!.hintText, '말씨와 함께 오늘을 돌아보세요.');
+    });
+
+    testWidgets('read-only sheet hides review hints (#223)',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              readOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 보관 상세(읽기 전용)에는 도움말이 없다.
+      expect(
+          find.text('오늘 말씨를 얼마나 품고 살았나요?'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
     });
 
     testWidgets('read-only memo is a distinct left-aligned card (#150)',

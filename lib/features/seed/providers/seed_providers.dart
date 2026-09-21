@@ -32,8 +32,10 @@ typedef ScheduleReminderNotification = Future<void> Function({
 /// `enableAutoRefresh`가 켜지면 15분마다 성장을 갱신한다 (앱 실사용).
 /// 테스트에서는 꺼둔다 (보류 타이머 방지).
 ///
-/// 배달 게이트 (#196): 00시에 도착해도 배달 시각 전·수확 12시간 이내에는
-/// 받을 수 없고 `deliveryPending`이 `true`가 된다.
+/// 배달 게이트 (#196): 00시에 도착해도 배달 시각 전에는 받을 수 없고
+/// `deliveryPending`이 `true`가 된다.
+/// 배달 시각이 되면 수확 후 경과 시간과 무관하게 무조건 열린다
+/// (수확 12시간 쿨다운 폐지).
 class SeedProvider extends ChangeNotifier {
   SeedProvider({
     required this._seedRepository,
@@ -89,13 +91,13 @@ class SeedProvider extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  /// 배달 대기 중 (#196). 당일 `locked` 씨앗이 배달 시각 전이거나
-  /// 수확 12시간 이내면 `true` — 심기 버튼 대신 오는 중 문구를 보여준다.
+  /// 배달 대기 중 (#196). 당일 `locked` 씨앗이 배달 시각 전이면 `true` —
+  /// 심기 버튼 대신 오는 중 문구를 보여준다.
   bool _deliveryPending = false;
   bool get deliveryPending => _deliveryPending;
 
-  /// 대기 사유 (#203): `'delivery'`(배달 시각 전) · `'cooldown'`(수확 12시간 이내) ·
-  /// `''`(대기 없음). 디버그 표시용이라 릴리즈 문구에는 쓰지 않는다.
+  /// 대기 사유 (#203): `'delivery'`(배달 시각 전) · `''`(대기 없음).
+  /// 디버그 표시용이라 릴리즈 문구에는 쓰지 않는다.
   String _deliveryGateReason = '';
   String get deliveryGateReason => _deliveryGateReason;
 
@@ -116,22 +118,8 @@ class SeedProvider extends ChangeNotifier {
     return DateTime(day.year, day.month, day.day, hour, minute);
   }
 
-  /// 가장 최근 수확 시각. 기록이 없으면 `null`.
-  Future<DateTime?> _lastHarvestAt() async {
-    try {
-      DateTime? latest;
-      for (final fruit in await _fruitRepository.getFruits()) {
-        if (latest == null || fruit.harvestedAt.isAfter(latest)) {
-          latest = fruit.harvestedAt;
-        }
-      }
-      return latest;
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// 배달 게이트를 갱신한다 (#196). `ensureTodaySeed`·`refreshGrowth` 말미 호출.
+  /// 배달 시각이 되면 수확 후 경과 시간과 무관하게 무조건 열린다.
   Future<void> _updateDeliveryGate() async {
     _deliveryPending = false;
     _deliveryGateReason = '';
@@ -142,11 +130,6 @@ class SeedProvider extends ChangeNotifier {
     if (seed.isAwaitingDelivery(now, await _deliveryAt(now))) {
       _deliveryPending = true;
       _deliveryGateReason = 'delivery';
-      return;
-    }
-    if (Seed.isCoolingDown(now, await _lastHarvestAt())) {
-      _deliveryPending = true;
-      _deliveryGateReason = 'cooldown';
     }
   }
 

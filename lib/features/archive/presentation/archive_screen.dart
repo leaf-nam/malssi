@@ -204,6 +204,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         readOnly: true,
         // #123: 날짜별 명언 조회에서도 출처를 볼 수 있다.
         source: fruit.source,
+        // #216: 날짜별 명언 조회에서도 해설을 볼 수 있다.
+        explanation: fruit.explanation,
       ),
     );
   }
