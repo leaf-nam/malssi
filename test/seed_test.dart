@@ -878,10 +878,11 @@ void main() {
       for (final image in tester.widgetList<Image>(find.byType(Image))) {
         expect(image.filterQuality, FilterQuality.none);
       }
-      // #160: 170px 소스의 정수배(2x = 340)까지만 키운다.
+      // #160: 170px 소스의 정수배로 표시한다.
+      // #217: 2x = 340 원복 → 1x = 170 (해상도 유지, 표시만 축소).
       expect(
         find.byWidgetPredicate((w) =>
-            w is ConstrainedBox && w.constraints.maxWidth == 340),
+            w is ConstrainedBox && w.constraints.maxWidth == 170),
         findsOneWidget,
       );
     });
@@ -1263,6 +1264,12 @@ void main() {
       expect(find.text('— 노자'), findsOneWidget);
       // #51: 완성 시 명언과 함께 열매 이미지가 나온다 (명언 2/3 : 열매 1/3).
       expect(find.byType(Image), findsOneWidget);
+      // #217: 완성 열매는 큰 사이즈(2x = 300) 유지.
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is ConstrainedBox && w.constraints.maxWidth == 300),
+        findsOneWidget,
+      );
       final completedFlexes = tester
           .widgetList<Expanded>(find.byType(Expanded))
           .map((e) => e.flex)
