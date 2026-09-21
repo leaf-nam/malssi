@@ -173,19 +173,19 @@ class _LockedSeed extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 96,
-              height: 96,
+              width: 112,
+              height: 112,
               decoration: BoxDecoration(
                 color: AppTheme.ink800,
                 border: Border.all(color: AppTheme.line),
-                borderRadius: BorderRadius.circular(48),
+                borderRadius: BorderRadius.circular(56),
               ),
               child: Center(
                 child: _ThemeImage(
                   path: ThemeAssets.seedImage(theme),
-                  // #217 후속: 처음 씨앗이 크다는 피드백이라 75 → 60으로 축소.
-                  size: 60,
-                  fallbackFontSize: 40,
+                  // #160: 75px 소스의 정수배(1x)로 표시해 픽셀을 균일하게.
+                  size: 75,
+                  fallbackFontSize: 48,
                 ),
               ),
             ),
@@ -485,7 +485,8 @@ class GrowthStageImage extends StatefulWidget {
   }
 
   /// 흔들림 주기 (#208). 심장 맥박처럼 두 번 쿵쾅이고 쉰다.
-  static const swayPeriod = Duration(milliseconds: 1200);
+  /// #217 후속: 두근거림이 빠르다는 피드백이라 1200 → 1500ms로 연장.
+  static const swayPeriod = Duration(milliseconds: 1500);
 
   /// 맥박 파형: 1.0 → 1.045 → 1.0 → 1.028 → 1.0 (두근두근 + 휴지기).
   static final TweenSequence<double> pulseTween = TweenSequence<double>([
@@ -571,7 +572,7 @@ class _GrowthStageImageState extends State<GrowthStageImage>
   @override
   Widget build(BuildContext context) {
     // 정사각 박스로 고정한다 (#208).
-    // 기존 `_ContainImage` 단독 배치와 같은 크기(최대 340)로 맞춰진다.
+    // 성장 이미지 크기에 맞춰진다 (최대 150).
     return AspectRatio(
       aspectRatio: 1,
       child: AnimatedBuilder(
