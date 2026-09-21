@@ -69,10 +69,11 @@ class CollectionNames {
 | createdAt | `DateTime` | `createdAt` | `DateTime.now()` |
 | theme | `String` | `theme` | `''` (테마 미분류, `SeedTheme` 키 값 — §4.11) |
 | source | `String` | `source` | `''` (명언 출처 표시문, 비어 있으면 출처 버튼 숨김, #123) |
+| explanation | `String` | `explanation` | `''` (명언 해설문, 비어 있으면 해설 숨김, #216) |
 
 > 2026-09-05: 해시태그(`tags`) 필드 제거 — 해시태그 기능 미사용 확정 (#54 작업에서 함께 제외).
 
-- **직렬화**: `fromMap` 팩토리, `toMap()`, `copyWith({id, text, author, likes, createdAt})` 제공.
+- **직렬화**: `fromMap` 팩토리, `toMap()`, `copyWith({id, text, author, likes, createdAt, theme, source, explanation})` 제공.
   `Quote._internal` 클래스가 `implements Quote`로 실제 저장소 역할을 합니다.
 
 ### 4.2 `HomeQuote` — 제거됨 (#19)
@@ -180,8 +181,9 @@ class CollectionNames {
 | memo        | `String`   | `memo`       | `''` (그날의 후기, 미작성) |
 | fidelityScore | `int`    | `fidelityScore` | `0` (그날의 점수 0~5, `0` = 미평가) |
 | source      | `String`   | `source`     | `''` (수확 시점 `Quote.source` 스냅샷, #123) |
+| explanation | `String`   | `explanation` | `''` (수확 시점 `Quote.explanation` 스냅샷, #216) |
 
-- **스냅샷 규칙**: `text`/`author`/`theme`/`source`은 수확 시점의 `Quote` 복사본이다.
+- **스냅샷 규칙**: `text`/`author`/`theme`/`source`/`explanation`은 수확 시점의 `Quote` 복사본이다.
   원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
   `memo`/`fidelityScore`는 말씨 탭의 완성 열매 흐름에서 작성하고 (#41),
   보관 상세 카드에서는 읽기만 한다 (#48).
@@ -218,15 +220,19 @@ class CollectionNames {
   **명언은 심는 즉시 공개되며, 명언 아래에 성장 에셋이 2시간 간격으로 그려진다**
   (#46, 2026-09-05 개정 — 종전 "성장 완성 시 공개" 폐기).
   해당 테마 명언이 없으면 전체에서 랜덤 선택한다 (폴백).
-- **명언 원천** (#123, #176에서 속담 88件 추가, #180에서 37件 정리):
-  `assets/docs/quotes.json` 159件
+- **명언 원천** (#123, #176에서 속담 88件 추가, #180에서 37件 정리,
+  #152에서 위키 철학자 51件 추가, #216에서 210件 전수 해설 추가):
+  `assets/docs/quotes.json` 210件
   (위키 94件 — 원본 `wikiquote.json` 719件에서 엄선. 페미니즘 사상·인용부호 포함·
   생존 인물 등 제외, 카테고리 불일치·단편·정보성·극단 제외, 250자 초과는
   핵심문장으로 단축, 한국어 위키인용집, CC BY-SA 4.0.
   #180에서 82자(기준 문구: 나폴레옹 `가라, 달려라 … 시간만은 안된다`) 초과 12件·
   한자 포함 4件(겹침 2件) 제거 → 위키 94件.
-  리뷰(`docs/quotes/wiki_review.md`)에서 애매 판정 23件 추가 제거 → 위키 71件,
-  번들 총 159件.
+  리뷰(`docs/quotes/wiki_review.md`)에서 애매 판정 23件 추가 제거 → 위키 71件.
+  #152에서 미사용 648건 중 철학자·유명인 공감 명언 49件 특선
+  (니체·러셀 등 부적합 제외, 김진왕 등 무명 제외 — 대중 친숙도 기준) +
+  한국어 위키인용집 쇼펜하우어 페이지 2件 (번역 없이 직접 발췌, 동일 라이선스) →
+  위키 122件, 번들 총 210件.
   속담 88件 — 국립국어원 우리말샘 9,999건에서 7테마 1차 선정 100건 후
   리뷰 제외 12건 반영. 성적·폭력·차별 표현 및 무귀속 항목 제외,
   동의 속담은 대표 1개. 선정 과정·이유는 `docs/quotes/proverbs_review.md`,

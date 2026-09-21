@@ -39,6 +39,7 @@ abstract class QuoteAssets {
     final author = entry['author'];
     final theme = entry['theme'];
     final source = entry['source'];
+    final explanation = entry['explanation'];
     if (id is! String || id.isEmpty) {
       throw FormatException('invalid id: $entry');
     }
@@ -54,6 +55,10 @@ abstract class QuoteAssets {
     if (source is! String) {
       throw FormatException('invalid source: $entry');
     }
+    // #216: 해설은 선택 사항. 없거나 비어 있으면 숨김 처리한다.
+    if (explanation != null && explanation is! String) {
+      throw FormatException('invalid explanation: $entry');
+    }
     return Quote(
       id: id,
       text: text,
@@ -63,6 +68,7 @@ abstract class QuoteAssets {
       createdAt: DateTime(2026, 9, 6),
       theme: theme,
       source: source,
+      explanation: (explanation as String?) ?? '',
     );
   }
 }
