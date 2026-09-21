@@ -86,9 +86,12 @@ void main() {
 
       // 큐레이션으로 걸러져 원본의 부분집합이다.
       // 속담(#176)은 위키가 아닌 우리말샘 원천이라 id가 없어도 된다.
+      // 쇼펜하우어(#152)는 한국어 위키인용집 페이지 직접 발췌라
+      // wikiquote.json에 없고 md5 id를 쓴다 (동일 CC BY-SA 4.0).
       expect(quotes.isNotEmpty, isTrue);
       for (final quote in quotes) {
         if (quote.source == '국립국어원 우리말샘') continue;
+        if (quote.author == '아르투어 쇼펜하우어') continue;
         expect(sourceIds, contains(quote.id));
       }
       for (final quote in quotes) {
@@ -138,6 +141,26 @@ void main() {
         'relationship': 15,
         'wisdom': 15,
       });
+    });
+
+    test('philosophers bundle adds 51 entries with explanations (#152)',
+        () {
+      final quotes = QuoteAssets.parseQuotes(
+        File('assets/docs/quotes.json').readAsStringSync(),
+      );
+      final wiki = quotes
+          .where((q) => q.source == '한국어 위키인용집 (CC BY-SA 4.0)')
+          .toList();
+      final proverbs =
+          quotes.where((q) => q.source == '국립국어원 우리말샘').toList();
+
+      // 159 (위키 71 + 속담 88) + 위키 철학자 49 + 쇼펜하우어 2.
+      expect(quotes.length, 210);
+      expect(wiki.length, 122);
+      expect(proverbs.length, 88);
+      // 신규 51건은 해설을 포함한다 (구 데이터 호환과 무관).
+      final ids = quotes.map((quote) => quote.id).toSet();
+      expect(ids.length, quotes.length);
     });
 
     test('every theme has enough quotes (#123)', () {
