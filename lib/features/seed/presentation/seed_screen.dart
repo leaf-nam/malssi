@@ -173,19 +173,19 @@ class _LockedSeed extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 112,
-              height: 112,
+              width: 96,
+              height: 96,
               decoration: BoxDecoration(
                 color: AppTheme.ink800,
                 border: Border.all(color: AppTheme.line),
-                borderRadius: BorderRadius.circular(56),
+                borderRadius: BorderRadius.circular(48),
               ),
               child: Center(
                 child: _ThemeImage(
                   path: ThemeAssets.seedImage(theme),
-                  // #160: 75px 소스의 정수배(1x)로 표시해 픽셀을 균일하게.
-                  size: 75,
-                  fallbackFontSize: 48,
+                  // #217 후속: 처음 씨앗이 크다는 피드백이라 75 → 60으로 축소.
+                  size: 60,
+                  fallbackFontSize: 40,
                 ),
               ),
             ),
@@ -676,10 +676,10 @@ class _GrowingSeed extends StatelessWidget {
           flex: 1,
           child: Center(
             // #160: 170px 소스의 정수배로 표시해 픽셀을 균일하게.
-            // #217: 2x = 340이 너무 크다는 피드백이라 1x = 170으로 원복
+            // #217 후속: 성장 에셋이 크다는 피드백이라 170 → 150으로 축소
             // (4x 고해상도 에셋 그대로, 표시만 축소).
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 170, maxHeight: 170),
+              constraints: const BoxConstraints(maxWidth: 150, maxHeight: 150),
               // #154: 단계 전환 크로스페이드 + 흔들림.
               // #207: 날짜 변경 플래시 방지용 씨앗 키 전달.
               child: GrowthStageImage(

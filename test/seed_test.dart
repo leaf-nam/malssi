@@ -868,7 +868,8 @@ void main() {
         FilterQuality.none,
       );
       // #160: 75px 소스의 정수배(1x)로 표시한다.
-      expect(tester.widget<Image>(find.byType(Image)).width, 75);
+      // #217 후속: 처음 씨앗 75 → 60으로 축소.
+      expect(tester.widget<Image>(find.byType(Image)).width, 60);
 
       // 성장 중 에셋 이미지.
       await provider.plantSeed();
@@ -879,10 +880,10 @@ void main() {
         expect(image.filterQuality, FilterQuality.none);
       }
       // #160: 170px 소스의 정수배로 표시한다.
-      // #217: 2x = 340 원복 → 1x = 170 (해상도 유지, 표시만 축소).
+      // #217 후속: 성장 에셋 170 → 150으로 축소 (해상도 유지).
       expect(
         find.byWidgetPredicate((w) =>
-            w is ConstrainedBox && w.constraints.maxWidth == 170),
+            w is ConstrainedBox && w.constraints.maxWidth == 150),
         findsOneWidget,
       );
     });
