@@ -1686,5 +1686,405 @@
   "source": "한국어 위키인용집 (CC BY-SA 4.0)",
   "full": "사람들은 자기의 올바른 이성과 양심을 닦기 위하여 애쓰는 것보다 몇 천 배나 재물을 얻고자 하는 일에 머리를 짠다. 그러나 우리의 참된 행복은 우리 자신 속에 있는 것이지 곁에 있는 재물이 아니다.",
   "explanation": "행복은 물건이 아니라 마음속에 있다는 뜻이에요. 안에서 찾으라는 말이에요."
+ },
+ {
+  "id": "22694757b99a3486bd1232266335f019",
+  "text": "끝을 조심하기를 처음과 같이 하면 실패하는 일이 없다.",
+  "author": "노자",
+  "theme": "growth",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "처음 마음가짐을 끝까지 지키면 실패하지 않는다는 뜻이에요. 마무리가 중요해요."
+ },
+ {
+  "id": "00d89cd420b04dee6cbb1487f138e777",
+  "text": "사람을 아는 자는 지혜요, 스스로 아는 자는 밝음이니라.",
+  "author": "노자",
+  "theme": "wisdom",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "남을 아는 것도 지혜지만 자신을 아는 게 더 밝다는 뜻이에요. 자신을 먼저 돌아봐요."
+ },
+ {
+  "id": "fd02d5a5babd9dce6c2867e8b940df2f",
+  "text": "가장 으뜸가는 처세술은 물의 모양을 본받는 것이다.",
+  "author": "노자",
+  "theme": "wisdom",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "물처럼 낮게 흐르고 유연하게 사는 게 가장 지혜로운 처세라는 뜻이에요."
+ },
+ {
+  "id": "4352d5096a6378ff4ce95bc7139affe8",
+  "text": "9층의 높은 누각도 한 줌의 흙에서 시작된다.",
+  "author": "노자",
+  "theme": "growth",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "아무리 큰 일도 작은 시작에서 비롯된다는 뜻이에요. 오늘 한 걸음을 내디뎌요."
+ },
+ {
+  "id": "15ceee69ac562e3ef471c99e7eb0336b",
+  "text": "자기 자신을 이겨내는 사람은 그 이상으로 강한 사람이다.",
+  "author": "노자",
+  "theme": "vitality",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "남을 이기는 것보다 자신을 이기는 게 더 강하다는 뜻이에요. 오늘의 나를 넘어서요."
+ },
+ {
+  "id": "1d40504243ba45c75e5d5ce8225aebcb",
+  "text": "10리 길도 발밑에서부터 시작한다.",
+  "author": "노자",
+  "theme": "growth",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "아무리 먼 길도 첫발을 떼는 데서 시작한다는 뜻이에요. 시작이 반이에요."
+ },
+ {
+  "id": "8aba5e9c33c1fd133e6be6617a7c49c1",
+  "text": "일생의 계획은 근면에 있다.",
+  "author": "관자",
+  "theme": "growth",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "평생의 밑천은 부지런함이라는 뜻이에요. 오늘도 성실하게 움직여요."
+ },
+ {
+  "id": "40f52eeb60cf8ffded2f5859caaf60fe",
+  "text": "하루 세 번 자기를 돌아보아라.",
+  "author": "공자",
+  "theme": "wisdom",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "매일 자신을 세 번씩 살피라는 뜻이에요. 돌아보는 만큼 단단해져요."
+ },
+ {
+  "id": "3ace5364420ed5dc88d58018950e299d",
+  "text": "세 사람이 같이 있을 때, 그중 두 사람은 나의 스승으로 삼을 수 있다.",
+  "author": "공자",
+  "theme": "growth",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "누구에게서든 배울 점이 있다는 뜻이에요. 곁의 사람을 스승처럼 여겨요."
+ },
+ {
+  "id": "1b3a2ed065827f60af133404dd1bf199",
+  "text": "덕은 홀로 있어도 외롭지 않으니, 반드시 이웃이 있다.",
+  "author": "공자",
+  "theme": "relationship",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "착하게 살면 곁에 사람이 모인다는 뜻이에요. 덕이 인연을 불러요."
+ },
+ {
+  "id": "99f14fdcc0456023d26bde9381ea421c",
+  "text": "군자는 말을 느리게 해도 행동은 기민해야 한다.",
+  "author": "공자",
+  "theme": "wisdom",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "말은 신중하게, 행동은 발 빠르게 하라는 뜻이에요. 행동이 말을 증명해요."
+ },
+ {
+  "id": "e693aa1b2c027b53bffd4313a47a6d8c",
+  "text": "과실을 범하고도 바로잡지 않음을 곧 과실이라 한다.",
+  "author": "공자",
+  "theme": "wisdom",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "실수보다 바로잡지 않는 게 진짜 잘못이라는 뜻이에요. 바로잡으면 돼요."
+ },
+ {
+  "id": "ea7b72732c37a4d22a32394e3f69ff0f",
+  "text": "아는 자는 좋아하는 자만 못하고, 좋아하는 자는 즐기는 자만 못하다.",
+  "author": "공자",
+  "theme": "happiness",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "즐기면서 하는 일을 이길 순 없다는 뜻이에요. 좋아하는 마음이 실력이에요."
+ },
+ {
+  "id": "e59dbbd555abbf1a2fb9a960ac050ff2",
+  "text": "일년의 계획은 봄에 있고 하루의 계획은 아침에 있다.",
+  "author": "관자",
+  "theme": "growth",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "하루는 아침에 달렸다는 뜻이에요. 오늘 아침을 잘 여는 게 중요해요."
+ },
+ {
+  "id": "9acf9faa09f7398c9ba5a7b9a9901746",
+  "text": "자기 자신을 존중하는 것처럼 남을 존중하라.",
+  "author": "공자",
+  "theme": "relationship",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "나를 대하듯 남을 대하라는 뜻이에요. 존중은 돌고 돌아요."
+ },
+ {
+  "id": "9a7c5192bd474345916ee1258a647b90",
+  "text": "인간의 본성은 착한 것이다.",
+  "author": "맹자",
+  "theme": "wisdom",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "사람의 마음은 근본적으로 착하다는 뜻이에요. 그 착함을 믿고 살아요."
+ },
+ {
+  "id": "075eec1aa3fa44ff0c8c4fafeebf80de",
+  "text": "학문은 옆으로 벌릴 것이 아니라, 안으로 깊이 파 들어가야 한다.",
+  "author": "맹자",
+  "theme": "growth",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "넓게 아는 것보다 깊이 파는 게 공부라는 뜻이에요. 하나를 깊게 파요."
+ },
+ {
+  "id": "a284b34a2abadff645504771792580c8",
+  "text": "부모 모두 살아계시고 형제 모두 아무 탈 없음이 첫째 즐거움이다.",
+  "author": "맹자",
+  "theme": "happiness",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "당연해 보이는 오늘이 가장 큰 행복이라는 뜻이에요. 가족의 무탈에 감사해요."
+ },
+ {
+  "id": "9d91ec6a2aa8fd0a065b1c2908c8f730",
+  "text": "군자의 사귐은 담담함이 물과 같다.",
+  "author": "장자",
+  "theme": "relationship",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "진한 사이일수록 담백하다는 뜻이에요. 물처럼 맑은 인연을 이어요."
+ },
+ {
+  "id": "99f2acc2ed818156f92f471e77838d28",
+  "text": "마음이 하나로 정해지면 만물은 그것에 따른다.",
+  "author": "장자",
+  "theme": "vitality",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "마음을 하나로 모으면 세상도 따라온다는 뜻이에요. 흔들려도 중심을 잡아요."
+ },
+ {
+  "id": "fb9501bafce4d2515dd4788d26f8b77c",
+  "text": "형제는 수족이다.",
+  "author": "장자",
+  "theme": "relationship",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "형제는 손과 발처럼 한몸이라는 뜻이에요. 곁의 가족을 챙겨요."
+ },
+ {
+  "id": "acb903723f97e2a9ed56bf2d93e65bde",
+  "text": "세상을 살아가는 데는 항상 한 걸음 물러설 줄 알아야 한다.",
+  "author": "홍응명",
+  "theme": "wisdom",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "한 걸음 물러서면 보이는 게 있다는 뜻이에요. 여유가 지혜예요."
+ },
+ {
+  "id": "2fce9bcc4d6685349ff923e11cc9e199",
+  "text": "남을 이롭게 하는 것은 자기를 이롭게 하는 것이다.",
+  "author": "홍응명",
+  "theme": "relationship",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "남을 도우면 결국 나에게 돌아온다는 뜻이에요. 베푸는 마음이 복이에요."
+ },
+ {
+  "id": "d13d93c3ed17a101a9e694d111ff204c",
+  "text": "남의 조그만 허물을 꾸짖지 않고, 남의 비밀을 드러내지 않으며 남의 지난날 잘못을 생각지 말라.",
+  "author": "홍응명",
+  "theme": "relationship",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "허물과 비밀과 지난 잘못을 들추지 않는 게 군자의 도리라는 뜻이에요."
+ },
+ {
+  "id": "defd1a0ffa5b6f3b5c509be456f43a4c",
+  "text": "마음이 항상 평화롭고 기상이 평온한 사람은 백 가지 복이 저절로 찾아든다.",
+  "author": "홍응명",
+  "theme": "happiness",
+  "source": "한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)",
+  "explanation": "마음이 평온하면 복이 따라온다는 뜻이에요. 평온이 복을 불러요."
+ },
+ {
+  "id": "7f6cbfa05b3b5e045d207cfad5441d29",
+  "text": "생각과 말과 행동이 조화로울 때가 행복이다.",
+  "author": "마하트마 간디",
+  "theme": "happiness",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "말과 행동과 마음이 하나일 때 행복하다는 뜻이에요. 오늘의 나를 일치시켜요."
+ },
+ {
+  "id": "c626a7fe0f750111066b96e2a0c8d3a8",
+  "text": "이 세상에서 행복한 아이만큼 아름다운 것은 없다.",
+  "author": "라이먼 프랭크 바움",
+  "theme": "happiness",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "아이의 웃음만큼 아름다운 게 없다는 뜻이에요. 오늘 웃음을 찾아요."
+ },
+ {
+  "id": "9280747ecce4dcd56962df687509c954",
+  "text": "지금 이 순간이 행복하다고 느끼는 데 필요한 건 소박한 마음뿐이다.",
+  "author": "니코스 카잔차키스",
+  "theme": "happiness",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "행복의 조건은 소박한 마음 하나라는 뜻이에요. 가진 것에 만족해요."
+ },
+ {
+  "id": "ce744652f0b23f4354267df08c919c6c",
+  "text": "행복한 삶은 고난이 없는 게 아니라 고난을 이겨내는 데 있다.",
+  "author": "헬렌 켈러",
+  "theme": "growth",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "고난을 이겨낼 때 삶이 행복해진다는 뜻이에요. 고난이 자양분이에요."
+ },
+ {
+  "id": "e6b5103bebb84e7b186e95cb8bba00d9",
+  "text": "낙관은 성취로 이끄는 믿음이다.",
+  "author": "헬렌 켈러",
+  "theme": "happiness",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "밝게 보는 마음이 성취를 부른다는 뜻이에요. 희망을 품고 시작해요."
+ },
+ {
+  "id": "64d574509333363489bea5335a6986f4",
+  "text": "건강과 밝은 마음은 서로를 낳는다.",
+  "author": "조지프 애디슨",
+  "theme": "health",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "몸이 건강하면 마음도 밝아지고 그 반대도 그렇다는 뜻이에요. 둘 다 챙겨요."
+ },
+ {
+  "id": "f7379842e382f5aed295a6702fec8ba8",
+  "text": "건강한 몸에 건전한 정신을 빌어야 한다.",
+  "author": "유베날리스",
+  "theme": "health",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "몸과 마음의 건강을 함께 기원하라는 뜻이에요. 오늘 몸을 먼저 돌봐요."
+ },
+ {
+  "id": "27a0385b66715a3fb01d76bfb3377510",
+  "text": "날마다 모든 면에서 나는 점점 나아지고 있다.",
+  "author": "에밀 쿠에",
+  "theme": "health",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "매일 조금씩 나아지고 있다고 되뇌라는 뜻이에요. 자기 암시가 힘이에요."
+ },
+ {
+  "id": "f9dce50a02b69887447a073d42d34128",
+  "text": "평화는 힘으로 지킬 수 없다. 이해로만 이룰 수 있다.",
+  "author": "알베르트 아인슈타인",
+  "theme": "peace",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "평화는 힘보다 이해에서 온다는 뜻이에요. 먼저 이해하려 해요."
+ },
+ {
+  "id": "c4d69a81ba0afd48f0e0e50df5a3813a",
+  "text": "천 마디 빈말보다 평화를 주는 한마디가 낫다.",
+  "author": "고타마 붓다",
+  "theme": "peace",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "많은 말보다 평화를 주는 한마디가 낫다는 뜻이에요. 말을 아껴요."
+ },
+ {
+  "id": "255fd694409ed9eea7a03bb87fef11d1",
+  "text": "평화는 자기 자신에게서만 온다.",
+  "author": "랠프 월도 에머슨",
+  "theme": "peace",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "평화는 밖이 아니라 내 안에서 온다는 뜻이에요. 마음을 가라앉혀요."
+ },
+ {
+  "id": "89124d0e943aa2c26149fb26298e3c05",
+  "text": "자기 마음을 살피지 않는 사람은 행복할 수 없다.",
+  "author": "마르쿠스 아우렐리우스",
+  "theme": "peace",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "자기 마음을 들여다보지 않으면 행복이 멀어진다는 뜻이에요. 마음을 살펴요."
+ },
+ {
+  "id": "dfa3471e2f3f4ddf0961c8f6eec56bed",
+  "text": "친구란 두 몸에 깃든 하나의 영혼이다.",
+  "author": "아리스토텔레스",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "진짜 친구는 한 영혼을 나눈 사이라는 뜻이에요. 그런 친구를 소중히 해요."
+ },
+ {
+  "id": "136bb997fb31efffdd5d6d52b11bd293",
+  "text": "모든 것을 가졌어도 친구 없이는 살고 싶지 않다.",
+  "author": "아리스토텔레스",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "아무리 가져도 친구 없이는 살 맛이 안 난다는 뜻이에요. 친구를 챙겨요."
+ },
+ {
+  "id": "0f826958b1533527eac408b740b1060a",
+  "text": "친구는 또 하나의 자신이다.",
+  "author": "키케로",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "친구는 또 다른 나라는 뜻이에요. 나를 아끼듯 친구를 아껴요."
+ },
+ {
+  "id": "72f3c07343bc3302a9ef05be797c26df",
+  "text": "친구를 얻는 유일한 길은 친구가 되어주는 것이다.",
+  "author": "랠프 월도 에머슨",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "먼저 친구가 되어주면 친구가 생긴다는 뜻이에요. 먼저 손을 내밀어요."
+ },
+ {
+  "id": "0a940459b88de6efc3c792c0cbc342b7",
+  "text": "인생의 더 좋은 부분은 우정으로 이루어진다.",
+  "author": "에이브러햄 링컨",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "인생의 좋은 부분은 우정이라는 뜻이에요. 우정에 시간을 써요."
+ },
+ {
+  "id": "368b961bc50d4ea8b55e556e9437a2e1",
+  "text": "우정은 몸을 가려주는 나무다.",
+  "author": "새뮤얼 테일러 콜리지",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "우정은 비바람을 막아주는 나무 같다는 뜻이에요. 서로의 그늘이 되어요."
+ },
+ {
+  "id": "b26a640424edda54696b4bf077c62417",
+  "text": "자기가 원하지 않는 것을 남에게 하지 말라.",
+  "author": "공자",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "내가 싫은 건 남에게도 하지 말라는 뜻이에요. 역지사지의 마음이에요."
+ },
+ {
+  "id": "6ad649bb6bbf073d24c47ffe0b52dc0c",
+  "text": "자신을 찾는 가장 좋은 길은 남을 위해 자신을 잊는 것이다.",
+  "author": "마하트마 간디",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "남을 위해 잊을 때 진짜 나를 찾는다는 뜻이에요. 봉사에서 나를 만나요."
+ },
+ {
+  "id": "3bc88e721ce96d10a41fca81dc638291",
+  "text": "혼자서는 작은 일만 할 수 있다. 함께면 큰일을 할 수 있다.",
+  "author": "헬렌 켈러",
+  "theme": "relationship",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "함께하면 더 큰일을 할 수 있다는 뜻이에요. 오늘은 함께해요."
+ },
+ {
+  "id": "bd78bff7275ffd54d76132beed5737e4",
+  "text": "항상 옳은 일을 하라. 그러면 어떤 사람은 기뻐하고 나머지는 놀랄 것이다.",
+  "author": "마크 트웨인",
+  "theme": "wisdom",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "옳은 일을 하면 누군가는 기뻐하고 누군가는 놀란다는 뜻이에요. 옳음을 택해요."
+ },
+ {
+  "id": "7ea5e80da42184e424e527fa7ee02038",
+  "text": "진실만 말하면 기억할 필요가 없다.",
+  "author": "마크 트웨인",
+  "theme": "wisdom",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "진실만 말하면 둘러댈 필요가 없다는 뜻이에요. 정직이 가장 편해요."
+ },
+ {
+  "id": "a3d7af22570c86e6e8de12ff023f3746",
+  "text": "배우기만 하고 생각하지 않으면 얻는 것이 없고, 생각만 하고 배우지 않으면 위태롭다.",
+  "author": "공자",
+  "theme": "wisdom",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "배움과 생각이 함께 가야 한다는 뜻이에요. 배우고, 생각해요."
+ },
+ {
+  "id": "64ebf28ec9e151045dacf24d4a257f50",
+  "text": "높이 날고 싶을 때 기어다닐 수는 없다.",
+  "author": "헬렌 켈러",
+  "theme": "growth",
+  "source": "영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)",
+  "explanation": "높은 꿈이 있으면 낮게 머물 수 없다는 뜻이에요. 꿈의 높이만큼 나아가요."
  }
 ]
