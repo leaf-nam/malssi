@@ -105,8 +105,8 @@ void main() {
         File('assets/docs/quotes.json').readAsStringSync(),
       );
 
-      // #222 병합 후 210건 (159 + 위키 철학자 51). 전수 해설 유지.
-      expect(quotes.length, 210);
+      // #222 병합 후 210건 + 배치3 50건 (고전 25 + 번역 25). 전수 해설 유지.
+      expect(quotes.length, 260);
       for (final quote in quotes) {
         expect(quote.explanation.isNotEmpty, isTrue);
       }
@@ -140,10 +140,18 @@ void main() {
       // 속담(#176)은 위키가 아닌 우리말샘 원천이라 id가 없어도 된다.
       // 쇼펜하우어(#152)는 한국어 위키인용집 페이지 직접 발췌라
       // wikiquote.json에 없고 md5 id를 쓴다 (동일 CC BY-SA 4.0).
+      // 배치3(#152 후속): 위키문헌 고전·영어 위키인용집 번역도 원천 외부라
+      // md5 id를 쓴다 (각 CC BY-SA 3.0, 항목별 source로 구분).
       expect(quotes.isNotEmpty, isTrue);
       for (final quote in quotes) {
         if (quote.source == '국립국어원 우리말샘') continue;
         if (quote.author == '아르투어 쇼펜하우어') continue;
+        if (quote.source == '한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)') {
+          continue;
+        }
+        if (quote.source == '영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)') {
+          continue;
+        }
         expect(sourceIds, contains(quote.id));
       }
       for (final quote in quotes) {
@@ -207,9 +215,22 @@ void main() {
           quotes.where((q) => q.source == '국립국어원 우리말샘').toList();
 
       // 159 (위키 71 + 속담 88) + 위키 철학자 49 + 쇼펜하우어 2.
-      expect(quotes.length, 210);
+      // 배치3(#152 후속): 위키문헌 고전 25 + 영어 위키인용집 번역 25.
+      expect(quotes.length, 260);
       expect(wiki.length, 122);
       expect(proverbs.length, 88);
+      final classics = quotes
+          .where((q) => q.source == '한국어 위키문헌 세계의 명언 (CC BY-SA 3.0)')
+          .toList();
+      final translated = quotes
+          .where(
+              (q) => q.source == '영어 위키인용집 (CC BY-SA 3.0, 한국어 번역)')
+          .toList();
+      expect(classics.length, 25);
+      expect(translated.length, 25);
+      for (final quote in [...classics, ...translated]) {
+        expect(quote.explanation.isNotEmpty, isTrue);
+      }
       // 신규 51건은 해설을 포함한다 (구 데이터 호환과 무관).
       final ids = quotes.map((quote) => quote.id).toSet();
       expect(ids.length, quotes.length);
