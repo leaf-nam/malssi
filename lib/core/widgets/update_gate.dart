@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:upgrader/upgrader.dart';
 
@@ -8,6 +9,9 @@ import 'package:upgrader/upgrader.dart';
 /// - 권장 모드(닫기 가능). 강제 전환은 `Upgrader(minAppVersion: ...)` 한 줄이면 된다.
 /// - 테스트에서는 [enabled]를 `false`로 둔다 (스토어 조회 네트워크 방지).
 ///   `AppShell(updateCheckEnabled: ...)`로 주입한다.
+/// - #233: 스토어 미게시·내부 트랙·조회 실패 시에는 안내 없이 통과한다
+///   (조용히 통과가 정상). 디버그 빌드에서는 `debugLogging`으로 조회 과정을
+///   로그에 남기니, 미동작 시 `upgrader:` 로그부터 확인한다.
 class UpdateGate extends StatelessWidget {
   const UpdateGate({
     super.key,
@@ -24,7 +28,11 @@ class UpdateGate extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!enabled) return child;
     return UpgradeAlert(
-      upgrader: Upgrader(messages: MalssiUpgraderMessages()),
+      upgrader: Upgrader(
+        messages: MalssiUpgraderMessages(),
+        // #233: 디버그에서만 조회 과정을 로그로 남긴다 (릴리즈 동작 불변).
+        debugLogging: kDebugMode,
+      ),
       child: child,
     );
   }
