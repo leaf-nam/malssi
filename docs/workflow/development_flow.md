@@ -75,11 +75,28 @@ LLM 에이전트는 이슈 목록을 조회하여 처리할 이슈를 제안하�
 ### 2.7 PR 생성 (LLM)
 
 - 푸시 후 PR을 생성하고, 본문에 관련 이슈 번호(예: `Closes #8`)를 참조합니다.
-- PR의 base는 **`main` 또는 해당 릴리스 브랜치(`release/*`) 중 하나**로 직접 지정합니다.
-  기능 브랜치끼리 머지하거나 base로 삼는 스택 방식은 금지합니다
+- PR의 base는 **기능 PR은 `release/*`만, 릴리스 PR(`release/*` → `main`)만 `main`**입니다.
+  기능 PR을 `main`에 직접 내는 것은 금지합니다
+  (2026-10-03 확정 — `main` 직행 PR 5건(#227·#235~#238)이
+  릴리스 흐름을 우회하고 불필요한 빌드를 유발한 전례).
+  기능 브랜치끼리 머지하거나 base로 삼는 스택 방식도 금지합니다
   (2026-09-10 확정 — 스택 PR이 엉뚱한 base로 머지되어 릴리스 누락이 발생한 전례, #145).
   기능 간 코드 의존이 생기면 base 브랜치가 머지된 뒤 새 브랜치에서 rebase·cherry-pick으로 해소합니다.
 - PR 생성 전 반드시 `flutter analyze`와 `flutter test`를 통과했는지 확인합니다.
+- PR 생성 전 아래 **base 게이트**를 순서대로 통과해야 합니다 (하나라도 막히면 PR 생성 금지):
+
+  ```
+  [1] 이슈 마일스톤 확인 (예: v1.1.0)
+       → [2] 대응 release/* 브랜치 존재 확인 (git branch -r / list_branches)
+       → [3] 없으면 release/X.Y.Z를 main에서 먼저 생성 (개발자 확인 후)
+       → [4] PR base = release/* 지정 후 생성
+       → [5] 생성 직후 base 재확인 (pull_request_read의 base.ref)
+  ```
+
+  - `main`에 기능 PR을 내는 것은 어떤 경우에도 금지합니다.
+    `main`을 base로 쓸 수 있는 PR은 릴리스 PR(`release/*` → `main`)뿐입니다.
+  - 이미 `main` 기준으로 낸 PR이 있으면 즉시 base를 `release/*`로 변경합니다
+    (`update_pull_request(base: ...)` 또는 `gh pr edit --base`).
 - PR 본문에는 변경 파일(`AGENTS.md`, `docs/context/model_spec.md`,
   `docs/workflow/development_flow.md`, `docs/architecture/architecture_spec.md`,
   `docs/conventions/convention.md` 등)과 검증 결과를 명시합니다.
