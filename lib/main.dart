@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:malssi/app.dart';
+import 'package:malssi/core/services/home_widget_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_assets.dart';
@@ -49,6 +50,8 @@ Future<void> main() async {
       debugPrint('Local restore failed: $e');
     }
   }
+  // 위젯 탭 → 말씨 탭(`/`)으로 이동한다 (#139).
+  _routeWidgetLaunch();
   runApp(AppShell(
     initialQuotes: quotes,
     seedRepository: seedRepository,
@@ -57,4 +60,31 @@ Future<void> main() async {
     onboardingRepository: PrefsOnboardingRepository(prefs: prefs),
     autoShowOnFirstLaunch: true,
   ));
+}
+
+/// 위젯 탭 실행이면 라우터 준비 후 말씨 탭으로 이동하고,
+/// 실행 중 탭은 스트림으로 받아 이동한다 (#139). 실패해도 무시한다.
+void _routeWidgetLaunch() {
+  try {
+    HomeWidgetService.instance
+        .init()
+        .then((_) => HomeWidgetService.initialLaunchUri())
+        .then((uri) {
+      if (uri == null) return;
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => appRouter.go('/'));
+    });
+  } catch (e) {
+    debugPrint('HomeWidget launch routing failed: $e');
+  }
+  try {
+    HomeWidgetService.clicks.listen(
+      (uri) {
+        if (uri != null) appRouter.go('/');
+      },
+      onError: (_) {},
+    );
+  } catch (e) {
+    debugPrint('HomeWidget click stream failed: $e');
+  }
 }
