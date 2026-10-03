@@ -1409,8 +1409,43 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('성장 열매'), findsOneWidget);
-      // 기존 후기 안내는 그대로 유지된다 (#71).
-      expect(find.text('눌러서 오늘의 리뷰 남기기'), findsOneWidget);
+      // #153: 미후기에는 유도 배너가 보인다 (기존 안내는 배너로 대체).
+      expect(find.byKey(const ValueKey('review-nudge')), findsOneWidget);
+      expect(find.text(keepWordsTogether('후기를 남기면 정원에 심어져요')),
+          findsOneWidget);
+    });
+
+    testWidgets('review nudge opens the review sheet (#153)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 배너 탭 → 후기 시트가 열린다 (바깥 탭 핸들러 경유).
+      await tester.tap(find.byKey(const ValueKey('review-nudge')));
+      await tester.pumpAndSettle();
+      expect(find.text('오늘의 점수'), findsOneWidget);
+    });
+
+    testWidgets('review nudge hides after review (#153)', (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 후기 완료 후에는 배너 없이 읽기 안내만 보인다.
+      expect(find.byKey(const ValueKey('review-nudge')), findsNothing);
+      expect(find.text('눌러서 오늘의 리뷰 보기'), findsOneWidget);
     });
   });
 

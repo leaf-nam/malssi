@@ -903,18 +903,52 @@ class _OpenedQuoteState extends State<_OpenedQuote>
               ),
             ),
           if (widget.onTapReview != null) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 20),
-              child: Text(
-                // #71: 저장 후에는 읽기 안내로 바뀐다.
-                fruit?.isReviewed == true
-                    ? '눌러서 오늘의 리뷰 보기'
-                    : '눌러서 오늘의 리뷰 남기기',
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 11, color: AppTheme.muted),
+            // #153: 미후기 열매 별점·후기 유도 배너.
+            // 후기를 남겨야 정원에 심어지므로(#65) 완성 화면에서 유도한다.
+            // 후기 완료 후에는 읽기 안내로 바뀐다 (#71).
+            // 탭 처리는 바깥 GestureDetector가 담당한다 (중복 시트 방지).
+            if (fruit?.isReviewed == true)
+              const Padding(
+                padding: EdgeInsets.only(top: 8, bottom: 20),
+                child: Text(
+                  '눌러서 오늘의 리뷰 보기',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                ),
+              )
+            else
+              Padding(
+                key: const ValueKey('review-nudge'),
+                padding: const EdgeInsets.only(
+                    left: 48, right: 48, top: 8, bottom: 20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    border:
+                        Border.all(color: AppTheme.goldDim, width: 1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.star,
+                          size: 14, color: AppTheme.gold),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          // #177: 단어 중간 줄바꿈 방지.
+                          keepWordsTogether('후기를 남기면 정원에 심어져요'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontSize: 12, color: AppTheme.gold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
           ],
           // #109: 완성 상태에서도 날짜를 옮길 수 있어야 다음 날 씨앗을 볼 수 있다.
           // #115: 공용 시계를 미뤄 전체 플로우를 검증한다.
