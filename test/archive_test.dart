@@ -1339,6 +1339,47 @@ void main() {
       expect(field.decoration!.hintText, '말씨와 함께 오늘을 돌아보세요.');
     });
 
+    testWidgets('tapping empty area dismisses the keyboard (#234)',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FruitReviewSheet(
+              quoteText: 't',
+              author: 'a',
+              dateLabel: '2026.09.04',
+              imagePath: '',
+              initialMemo: '',
+              initialScore: 0,
+              onSave: ({required memo, required fidelityScore}) async {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // TextField 탭 → 포커스된다 (입력 가능).
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      expect(
+        tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+        isTrue,
+      );
+
+      // 입력 후 빈 공간 탭 → 포커스가 풀리고 내용은 유지된다.
+      await tester.enterText(find.byType(TextField), '오늘 잘 살았다');
+      await tester.tap(find.text('2026.09.04'));
+      await tester.pump();
+      expect(
+        tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus,
+        isFalse,
+      );
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        '오늘 잘 살았다',
+      );
+    });
+
     testWidgets('read-only sheet hides review hints (#223)',
         (tester) async {
       await tester.pumpWidget(

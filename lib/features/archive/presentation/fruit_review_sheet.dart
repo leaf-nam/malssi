@@ -73,11 +73,16 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
         top: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      // #234: 빈 공간 터치 시 키보드를 내린다.
+      // 탭 제스처만 처리하므로 스크롤과 충돌하지 않는다.
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Center(
               child: widget.imagePath.isEmpty
                   ? const Text('🌱', style: TextStyle(fontSize: 64))
@@ -239,6 +244,7 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
               ),
             ],
           ],
+          ),
         ),
       ),
     );
