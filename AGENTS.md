@@ -88,6 +88,9 @@
 
 ## PR
 - 푸시 후 PR을 생성하고, 본문에 관련 이슈 번호(예: `Closes #8`)를 참조할 것
+- 기능 PR의 base는 `release/*`만 허용 (`main` 직행 금지 — 릴리스 PR 제외).
+  릴리스 브랜치가 없으면 PR 전에 `main`에서 먼저 생성할 것.
+  상세: `docs/workflow/development_flow.md` §2.7 base 게이트
 - PR 생성 전 반드시 `flutter analyze`와 `flutter test`를 통과했는지 확인할 것
 
 ## 승인
