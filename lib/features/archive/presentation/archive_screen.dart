@@ -105,7 +105,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                // #65: 후기를 남긴 열매만 잔디로 심어진다.
+                // #65: 리뷰를 남긴 열매만 잔디로 심어진다.
                 // #97: 선택 연도 기준 개수.
                 '$viewYear · $yearCount개의 열매',
                 style:
@@ -159,7 +159,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
           // 오늘 수확이 없으면 씨앗 성장 중 안내를 보여준다.
           // 열매 자체가 하나도 없을 때(#151)는 물론, 과거 열매만 있고
           // 오늘 열매가 아직 맺히지 않았을 때도 해당한다 (#174).
-          // 오늘 수확은 됐는데 후기 전이면 후기 안내를 보여준다 (#84).
+          // 오늘 수확은 됐는데 리뷰 전이면 리뷰 안내를 보여준다 (#84).
           if (!state.fruitsByDateKey
               .containsKey(ArchiveScreen.dateKeyOf(today)))
             Padding(
@@ -174,7 +174,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Text(
-                '완성된 열매에 후기를 남기면 잔디가 심어져요',
+                '완성된 열매에 리뷰를 남기면 잔디가 심어져요',
                 style: TextStyle(
                     fontSize: 12, color: colors.onSurfaceVariant),
               ),
@@ -188,8 +188,8 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     );
   }
 
-  /// 보관 상세는 읽기 전용: 저장된 별점·후기만 보여준다.
-  /// 후기 작성은 말씨 탭의 완성 열매 흐름에서만 가능하다 (#48).
+  /// 보관 상세는 읽기 전용: 저장된 별점·리뷰만 보여준다.
+  /// 리뷰 작성은 말씨 탭의 완성 열매 흐름에서만 가능하다 (#48).
   void _openDetail(BuildContext context, Fruit fruit) {
     showModalBottomSheet<void>(
       context: context,
@@ -211,7 +211,7 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   }
 }
 
-/// 모은 색깔·색깔별 개수 통계 (#88). 심어진(후기 완료) 기준, 보유 테마만 내림차순.
+/// 모은 색깔·색깔별 개수 통계 (#88). 심어진(리뷰 완료) 기준, 보유 테마만 내림차순.
 class _ThemeStats extends StatelessWidget {
   const _ThemeStats({required this.counts});
 
@@ -271,7 +271,7 @@ class _ThemeStats extends StatelessWidget {
   }
 }
 
-/// 갓 심긴 잔디 칸의 1회성 팝 (#195). 후기 저장으로 새로 심긴 칸이
+/// 갓 심긴 잔디 칸의 1회성 팝 (#195). 리뷰 저장으로 새로 심긴 칸이
 /// 처음 그려질 때 한 번만 커졌다가 자리잡는다.
 /// - 같은 날짜키는 세션 중 다시 재생하지 않는다.
 /// - 수확한 지 [recentWindow]을 넘긴 칸은 팝하지 않는다

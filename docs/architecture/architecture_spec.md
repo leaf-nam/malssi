@@ -128,6 +128,7 @@ lib/
 | `share_plus` | `^10.1.2` | 공유 | `lib/`에서 미사용 중. 보관 상세 편입 여부는 후속 이슈에서 결정 (`feature_spec.md` §6 #6) |
 | `shared_preferences` | `^2.5.5` | 로컬 지속화 | `LocalStore` (씨앗·열매·설정·온보딩, #122·#130) |
 | `home_widget` | `^0.10.0` | 홈 위젯 | `HomeWidgetService` (오늘 명언 + 저자, #139) |
+| `in_app_review` | `^2.0.12` | 스토어 리뷰 요청 | `StoreReviewService` (리뷰 저장 직후, 별점 4~5·통산 3회, #153) |
 | `riverpod` (`dev`, 미사용) | `^2.4.9` | — | `lib/`에서 import 없음. 승격·제거 여부 이슈 분리 |
 | `build_runner` (`dev`) | `^2.4.6` | 코드 생성 | — |
 | `flutter_test` (`dev`) | SDK | 테스트 | `flutter test` |

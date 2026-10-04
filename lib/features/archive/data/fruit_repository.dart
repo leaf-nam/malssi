@@ -13,16 +13,16 @@ abstract class FruitRepository {
   /// 수확일 내림차순 스트림.
   Stream<List<Fruit>> getFruitsStream();
 
-  /// 후기·점수를 저장한다. 점수는 0~5 (`0` = 미평가), 범위를 벗어나면 [ArgumentError].
+  /// 리뷰·점수를 저장한다. 점수는 0~5 (`0` = 미평가), 범위를 벗어나면 [ArgumentError].
   Future<Fruit> updateReview({
     required String fruitId,
     required String memo,
     required int fidelityScore,
   });
 
-  /// 이월 만료 (#113): 오늘 이전에 수확된 미후기 열매를 폐기한다.
-  /// 다음날 씨앗 도착까지 후기를 남기지 않으면 정원에 보관되지 않는다.
-  /// 후기를 남긴 열매는 유지된다.
+  /// 이월 만료 (#113): 오늘 이전에 수확된 미리뷰 열매를 폐기한다.
+  /// 다음날 씨앗 도착까지 리뷰를 남기지 않으면 정원에 보관되지 않는다.
+  /// 리뷰를 남긴 열매는 유지된다.
   Future<void> pruneUnreviewedBeforeToday();
 
   /// 디버그용: 저장소 시각을 [by]만큼 앞당긴다 (날짜 이동, #95).

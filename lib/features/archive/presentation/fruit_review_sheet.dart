@@ -4,10 +4,10 @@ import 'package:malssi/core/widgets/source_dialog.dart';
 import 'package:malssi/core/widgets/explanation_toggle.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 
-/// 열매 리뷰 카드 (별점 + 한줄 후기).
+/// 열매 리뷰 카드 (별점 + 한줄 리뷰).
 /// 메인(완성 열매 탭)에서는 작성용으로, 보관(잔디 상세)에서는 읽기 전용으로 쓴다.
 /// 저장은 호출 측이 [onSave]로 주입한다 (작성 모드에서 필수).
-/// 보관에서는 이미 저장된 후기만 보여주고 새로 쓸 수 없다 (#48).
+/// 보관에서는 이미 저장된 리뷰만 보여주고 새로 쓸 수 없다 (#48).
 class FruitReviewSheet extends StatefulWidget {
   const FruitReviewSheet({
     super.key,
@@ -35,7 +35,7 @@ class FruitReviewSheet extends StatefulWidget {
   final String source;
   final String explanation;
 
-  /// `true`면 별점·후기를 표시만 하고 입력 UI를 숨긴다.
+  /// `true`면 별점·리뷰를 표시만 하고 입력 UI를 숨긴다.
   final bool readOnly;
   final Future<void> Function(
       {required String memo, required int fidelityScore})? onSave;
@@ -187,10 +187,10 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                 ],
               ),
             const SizedBox(height: 8),
-            const Text('오늘의 후기', style: TextStyle(fontSize: 13)),
+            const Text('오늘의 리뷰', style: TextStyle(fontSize: 13)),
             const SizedBox(height: 8),
             if (widget.readOnly)
-              // #150: 내 후기가 명언과 구분되도록 카드로 감싼다.
+              // #150: 내 리뷰가 명언과 구분되도록 카드로 감싼다.
               // 명언(가운데 정렬·인용 스타일)과 달리 왼쪽 정렬·중간 두께로 보여준다.
               Container(
                 width: double.infinity,
@@ -203,7 +203,7 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                 ),
                 child: Text(
                   _memoController.text.isEmpty
-                      ? '작성된 후기가 없어요'
+                      ? '작성된 리뷰가 없어요'
                       : _memoController.text,
                   textAlign: TextAlign.left,
                   style: TextStyle(
@@ -240,7 +240,7 @@ class _FruitReviewSheetState extends State<FruitReviewSheet> {
                         }
                         if (context.mounted) Navigator.of(context).pop();
                       },
-                child: const Text('후기 저장하기'),
+                child: const Text('리뷰 저장하기'),
               ),
             ],
           ],

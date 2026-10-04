@@ -148,7 +148,7 @@ void main() {
       expect(find.text('말씨에 오신 것을 환영해요'), findsOneWidget);
       expect(find.byType(Image), findsNothing);
 
-      // 말씨 탭: 씨앗 잠금 → 성장 → 완성 열매 → 후기 5장.
+      // 말씨 탭: 씨앗 잠금 → 성장 → 완성 열매 → 리뷰 5장.
       await tester.tap(find.text('다음'));
       await tester.pumpAndSettle();
       expect(find.byType(Image), findsNWidgets(5));
