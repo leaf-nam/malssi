@@ -134,6 +134,19 @@ class NotificationService {
     await _plugin.cancel(id: id);
   }
 
+  /// 예약된 알림 ID 목록 (디버그 확인용, #244).
+  /// 심기 직후 1002·2001~2004 등이 들어있는지 로그로 확인한다.
+  /// 플랫폼 채널이라 테스트에서는 호출하지 않는다.
+  Future<List<int>> pendingIds() async {
+    try {
+      final list = await _plugin.pendingNotificationRequests();
+      return list.map((e) => e.id).toList();
+    } catch (e) {
+      debugPrint('pending lookup failed: $e');
+      return const [];
+    }
+  }
+
   /// OS 알림 권한을 요청한다 (#244 후속).
   /// 매일 알림 스위치를 켤 때 호출한다. 앱을 껐다 켜도 시스템 설정에서
   /// 거부된 상태면 알림이 오지 않으므로, 켜는 시점에 권한을 요청한다.

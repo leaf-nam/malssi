@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
@@ -120,6 +121,12 @@ class AppShell extends StatelessWidget {
               // 심었으므로 마감 리마인드는 취소한다 (#147).
               await NotificationService.instance.cancelSeedNotification(
                   NotificationService.seedReminderNotificationId);
+              // #244: 디버그에서 예약 목록을 로그로 확인한다 (ID 1002·2001~2004).
+              if (kDebugMode) {
+                final pending = await NotificationService.instance
+                    .pendingIds();
+                debugPrint('pending notifications: $pending');
+              }
             },
             onSeedCompleted: () async {
               await NotificationService.instance.cancelSeedNotification(

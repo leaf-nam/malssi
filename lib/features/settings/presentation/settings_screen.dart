@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
+import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
@@ -100,6 +101,23 @@ class SettingsScreen extends StatelessWidget {
               value: context.watch<DebugUiProvider>().hideButtons,
               onChanged: (value) =>
                   context.read<DebugUiProvider>().setHideButtons(value),
+            ),
+          ),
+        // #244: 디버그용 알림 테스트 (10초 후 1회). inexact 모드라
+        // 수분 지연될 수 있다. 릴리스 빌드에는 포함되지 않는다.
+        if (kDebugMode)
+          _Row(
+            label: '알림 테스트',
+            trailingWidget: TextButton(
+              onPressed: () => NotificationService.instance
+                  .scheduleSeedCompleteNotification(
+                id: 9999,
+                title: '테스트 알림이에요',
+                body: '예약 알림이 정상 동작해요',
+                completeAt:
+                    DateTime.now().add(const Duration(seconds: 10)),
+              ),
+              child: const Text('10초 후 울리기'),
             ),
           ),
         if (state.errorMessage != null)
