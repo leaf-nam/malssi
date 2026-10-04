@@ -95,33 +95,18 @@ class AppShell extends StatelessWidget {
               final settings = await (settingsRepository ??
                       InMemorySettingsRepository())
                   .getSettings();
-              if (!settings.notifyEnabled) return;
-              await NotificationService.instance
-                  .scheduleSeedCompleteNotification(
-                id: NotificationService.seedCompleteNotificationId,
-                title: '열매가 완성됐어요',
-                body: '눌러서 오늘의 리뷰를 남겨보세요',
-                completeAt: completeAt,
-              );
-              // #244: 성장 알림이 켜져 있으면 남은 단계(1~4) 도달 알림을 예약한다.
-              // 5단계는 완성 알림이 담당한다. 이미 지난 단계는 제외된다.
-              if (settings.growthNotifyEnabled) {
+              if (settings.notifyEnabled) {
                 final seed = await seedRepository.getActiveSeed();
-                final pending = seed.pendingGrowthStages(DateTime.now());
-                for (final item in pending) {
-                  await NotificationService.instance
-                      .scheduleSeedCompleteNotification(
-                    id: NotificationService.growthNotificationId(item.stage),
-                    title: '씨앗이 자랐어요',
-                    body: '${item.stage}단계가 됐어요',
-                    completeAt: item.at,
-                  );
-                }
+                await _scheduleGrowingSeedAlerts(
+                  seed,
+                  growthEnabled: settings.growthNotifyEnabled,
+                );
               }
               // 심었으므로 마감 리마인드는 취소한다 (#147).
               await NotificationService.instance.cancelSeedNotification(
                   NotificationService.seedReminderNotificationId);
               // #244: 디버그에서 예약 목록을 로그로 확인한다 (ID 1002·2001~2004).
+              // 스위치가 꺼져 있어도 찍는다 (예약 안 된 원인을 구분하기 위해).
               if (kDebugMode) {
                 final pending = await NotificationService.instance
                     .pendingIds();
@@ -216,6 +201,18 @@ class AppShell extends StatelessWidget {
                   hour: hour,
                   minute: minute,
                 );
+                // 꺼져 있을 때 심은 씨앗은 완성·성장 예약이 안 되어 있으므로,
+                // 켜는 시점에 성장 중 씨앗이 있으면 (재)예약한다.
+                final settings = await (settingsRepository ??
+                        InMemorySettingsRepository())
+                    .getSettings();
+                final seed = await seedRepository.getActiveSeed();
+                if (seed.isGrowing) {
+                  await _scheduleGrowingSeedAlerts(
+                    seed,
+                    growthEnabled: settings.growthNotifyEnabled,
+                  );
+                }
               } else {
                 // 매일 알림을 끄면 완성·리마인드·성장 알림도 함께 취소한다
                 // (#140, #147, #244).
@@ -250,16 +247,7 @@ class AppShell extends StatelessWidget {
                   .getSettings();
               if (!settings.notifyEnabled) return;
               final seed = await seedRepository.getActiveSeed();
-              final pending = seed.pendingGrowthStages(DateTime.now());
-              for (final item in pending) {
-                await NotificationService.instance
-                    .scheduleSeedCompleteNotification(
-                  id: NotificationService.growthNotificationId(item.stage),
-                  title: '씨앗이 자랐어요',
-                  body: '${item.stage}단계가 됐어요',
-                  completeAt: item.at,
-                );
-              }
+              await _scheduleGrowingSeedAlerts(seed, growthEnabled: true);
             },
           )..load(),
         ),
@@ -297,6 +285,36 @@ class AppShell extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// 성장 중 씨앗의 완성·성장 알림을 (재)예약한다 (#244 후속).
+/// 심기·매일 알림 on·성장 알림 on 시점에 호출한다.
+/// [growthEnabled]가 false면 완성 알림만 예약한다.
+/// 5단계 도달은 완성 알림이 담당하고, 이미 지난 시각은 건너뛴다
+/// (`scheduleSeedCompleteNotification`이 무시).
+/// 디버그 시간 이동으로 가짜 시각에 심은 씨앗은 실제 시각과 어긋나
+/// 예약이 건너뛰어질 수 있다 (OS는 실제 시각 기준이라 정상).
+Future<void> _scheduleGrowingSeedAlerts(
+  Seed seed, {
+  required bool growthEnabled,
+}) async {
+  final completeAt =
+      seed.plantedAt.add(Seed.stageInterval * Seed.maxGrowthStage);
+  await NotificationService.instance.scheduleSeedCompleteNotification(
+    id: NotificationService.seedCompleteNotificationId,
+    title: '열매가 완성됐어요',
+    body: '눌러서 오늘의 리뷰를 남겨보세요',
+    completeAt: completeAt,
+  );
+  if (!growthEnabled) return;
+  for (final item in seed.pendingGrowthStages(DateTime.now())) {
+    await NotificationService.instance.scheduleSeedCompleteNotification(
+      id: NotificationService.growthNotificationId(item.stage),
+      title: '씨앗이 자랐어요',
+      body: '${item.stage}단계가 됐어요',
+      completeAt: item.at,
     );
   }
 }
