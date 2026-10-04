@@ -300,6 +300,11 @@ Future<void> _scheduleGrowingSeedAlerts(
   Seed seed, {
   required bool growthEnabled,
 }) async {
+  if (kDebugMode) {
+    debugPrint('schedule growing alerts: seed=${seed.id} '
+        'status=${seed.status} plantedAt=${seed.plantedAt} '
+        'growth=$growthEnabled');
+  }
   final completeAt =
       seed.plantedAt.add(Seed.stageInterval * Seed.maxGrowthStage);
   await NotificationService.instance.scheduleSeedCompleteNotification(

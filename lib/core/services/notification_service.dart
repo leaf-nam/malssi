@@ -207,7 +207,16 @@ class NotificationService {
 
     final now = tz.TZDateTime.now(tz.local);
     final scheduled = tz.TZDateTime.from(completeAt, tz.local);
-    if (!scheduled.isAfter(now)) return;
+    if (kDebugMode) {
+      debugPrint('schedule check id=$id now=$now scheduled=$scheduled '
+          'tz=${tz.local.name}');
+    }
+    if (!scheduled.isAfter(now)) {
+      if (kDebugMode) {
+        debugPrint('schedule skipped id=$id (not after now)');
+      }
+      return;
+    }
 
     await _plugin.zonedSchedule(
       id: id,
