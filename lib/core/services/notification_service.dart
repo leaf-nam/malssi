@@ -19,6 +19,11 @@ class NotificationService {
   /// 마감 리마인드 1회 알림 ID (#147). 당일 13:00 고정.
   static const seedReminderNotificationId = 1003;
 
+  /// 성장 단계 도달 1회 알림 ID (#244). 1~4단계 → 2001~2004.
+  /// 5단계 도달은 완성 알림(#140)이 담당한다.
+  /// 예약·취소는 기존 1회 알림 API를 그대로 쓴다.
+  static int growthNotificationId(int stage) => 2000 + stage;
+
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
   Future<void> init(

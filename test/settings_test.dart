@@ -33,13 +33,15 @@ void main() {
           seedTime: '08:30',
           notifyEnabled: false,
           themeMode: 'dark',
-          fruitRainEnabled: false);
+          fruitRainEnabled: false,
+          growthNotifyEnabled: true);
       final restored = AppSettings.fromMap(settings.toMap());
 
       expect(restored.seedTime, '08:30');
       expect(restored.notifyEnabled, isFalse);
       expect(restored.themeMode, 'dark');
       expect(restored.fruitRainEnabled, isFalse);
+      expect(restored.growthNotifyEnabled, isTrue);
       expect(restored.seedHour, 8);
       expect(restored.seedMinute, 30);
       expect(restored.copyWith(notifyEnabled: true).notifyEnabled, isTrue);
@@ -47,6 +49,9 @@ void main() {
           restored.copyWith(themeMode: 'light').themeMode, 'light');
       expect(restored.copyWith(fruitRainEnabled: true).fruitRainEnabled,
           isTrue);
+      expect(
+          restored.copyWith(growthNotifyEnabled: false).growthNotifyEnabled,
+          isFalse);
     });
 
     test('fromMap defaults to 08:00 with notifications on and system theme',
@@ -58,6 +63,8 @@ void main() {
       expect(settings.notifyEnabled, isTrue);
       expect(settings.themeMode, 'system');
       expect(settings.fruitRainEnabled, isTrue);
+      // #244: 성장 알림은 opt-in (기본값 off).
+      expect(settings.growthNotifyEnabled, isFalse);
     });
 
     test('fromMap falls back to system theme on bad values', () {
@@ -129,6 +136,18 @@ void main() {
       expect(
           (await repo.setFruitRainEnabled(true)).fruitRainEnabled,
           isTrue);
+    });
+
+    test('setGrowthNotifyEnabled toggles growth alerts (#244)', () async {
+      final repo = InMemorySettingsRepository();
+      expect((await repo.getSettings()).growthNotifyEnabled, isFalse);
+
+      expect(
+          (await repo.setGrowthNotifyEnabled(true)).growthNotifyEnabled,
+          isTrue);
+      expect(
+          (await repo.setGrowthNotifyEnabled(false)).growthNotifyEnabled,
+          isFalse);
     });
   });
 
@@ -239,6 +258,28 @@ void main() {
       expect(calls, isEmpty);
       expect(provider.errorMessage, isNull);
     });
+
+    test('setGrowthNotifyEnabled notifies the callback (#244)', () async {
+      final growthCalls = <bool>[];
+      final provider = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+        onGrowthNotifyChanged: ({required enabled}) async {
+          growthCalls.add(enabled);
+        },
+      );
+      await provider.load();
+      expect(provider.settings!.growthNotifyEnabled, isFalse);
+
+      await provider.setGrowthNotifyEnabled(true);
+      expect(provider.settings!.growthNotifyEnabled, isTrue);
+      expect(growthCalls, [true]);
+      expect(provider.errorMessage, isNull);
+
+      await provider.setGrowthNotifyEnabled(false);
+      expect(provider.settings!.growthNotifyEnabled, isFalse);
+      expect(growthCalls, [true, false]);
+      expect(provider.errorMessage, isNull);
+    });
   });
 
   group('SettingsScreen', () {
@@ -257,9 +298,10 @@ void main() {
       expect(find.text('화면 모드'), findsOneWidget);
       expect(find.text('다크'), findsOneWidget);
       expect(find.text('열매 비 효과'), findsOneWidget);
+      expect(find.text('성장 알림'), findsOneWidget);
       // 디버그 모드에서는 '디버그 버튼 숨기기' 스위치가 하나 더 보인다.
       expect(find.text('디버그 버튼 숨기기'), findsOneWidget);
-      expect(find.byType(Switch), findsNWidgets(3));
+      expect(find.byType(Switch), findsNWidgets(4));
     });
 
     testWidgets('toggling the switch disables notifications', (tester) async {
@@ -319,6 +361,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(provider.settings!.fruitRainEnabled, isFalse);
+    });
+
+    testWidgets('toggling the growth switch enables growth alerts (#244)',
+        (tester) async {
+      final provider = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(provider.settings!.growthNotifyEnabled, isFalse);
+
+      await tester.tap(find.byType(Switch).at(2));
+      await tester.pumpAndSettle();
+
+      expect(provider.settings!.growthNotifyEnabled, isTrue);
     });
   });
 }

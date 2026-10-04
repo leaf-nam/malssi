@@ -8,11 +8,15 @@ class AppSettings {
   /// 열매 비 효과 표시 여부 (#108). 기본값 on.
   final bool fruitRainEnabled;
 
+  /// 성장 단계 도달 알림 여부 (#244). 기본값 off (하루 최대 4건이라 opt-in).
+  final bool growthNotifyEnabled;
+
   const AppSettings({
     required this.seedTime,
     required this.notifyEnabled,
     this.themeMode = defaultThemeMode,
     this.fruitRainEnabled = defaultFruitRainEnabled,
+    this.growthNotifyEnabled = defaultGrowthNotifyEnabled,
   });
 
   static const defaultSeedTime = '08:00';
@@ -24,6 +28,8 @@ class AppSettings {
   static const defaultThemeMode = 'system';
 
   static const defaultFruitRainEnabled = true;
+
+  static const defaultGrowthNotifyEnabled = false;
 
   static const validThemeModes = ['light', 'dark', 'system'];
 
@@ -61,6 +67,8 @@ class AppSettings {
           : defaultThemeMode,
       fruitRainEnabled:
           map['fruitRainEnabled'] ?? defaultFruitRainEnabled,
+      growthNotifyEnabled:
+          map['growthNotifyEnabled'] ?? defaultGrowthNotifyEnabled,
     );
   }
 
@@ -70,6 +78,7 @@ class AppSettings {
       'notifyEnabled': notifyEnabled,
       'themeMode': themeMode,
       'fruitRainEnabled': fruitRainEnabled,
+      'growthNotifyEnabled': growthNotifyEnabled,
     };
   }
 
@@ -77,12 +86,14 @@ class AppSettings {
       {String? seedTime,
       bool? notifyEnabled,
       String? themeMode,
-      bool? fruitRainEnabled}) {
+      bool? fruitRainEnabled,
+      bool? growthNotifyEnabled}) {
     return AppSettings(
       seedTime: seedTime ?? this.seedTime,
       notifyEnabled: notifyEnabled ?? this.notifyEnabled,
       themeMode: themeMode ?? this.themeMode,
       fruitRainEnabled: fruitRainEnabled ?? this.fruitRainEnabled,
+      growthNotifyEnabled: growthNotifyEnabled ?? this.growthNotifyEnabled,
     );
   }
 }

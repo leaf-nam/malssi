@@ -148,6 +148,50 @@ void main() {
       });
     });
 
+    group('pendingGrowthStages (#244)', () {
+      Seed growingAt(DateTime plantedAt) => Seed(
+            id: '2026-09-04',
+            dateKey: '2026-09-04',
+            quoteId: 'seed-1',
+            status: SeedStatus.growing,
+            createdAt: plantedAt,
+            plantedAt: plantedAt,
+          );
+
+      test('lists stages 1-4 after now', () {
+        final seed = growingAt(DateTime(2026, 9, 4, 8));
+
+        final pending = seed.pendingGrowthStages(DateTime(2026, 9, 4, 8, 30));
+
+        expect(pending.map((e) => e.stage).toList(), [1, 2, 3, 4]);
+        expect(pending.first.at, DateTime(2026, 9, 4, 10));
+        expect(pending.last.at, DateTime(2026, 9, 4, 16));
+      });
+
+      test('skips past stages', () {
+        final seed = growingAt(DateTime(2026, 9, 4, 8));
+
+        final pending = seed.pendingGrowthStages(DateTime(2026, 9, 4, 13));
+
+        expect(pending.map((e) => e.stage).toList(), [3, 4]);
+      });
+
+      test('returns empty when not growing', () {
+        final plantedAt = DateTime(2026, 9, 4, 8);
+        final locked = growingAt(plantedAt).copyWith(status: SeedStatus.locked);
+        final complete =
+            growingAt(plantedAt).copyWith(status: SeedStatus.complete);
+
+        expect(locked.pendingGrowthStages(plantedAt), isEmpty);
+        expect(complete.pendingGrowthStages(plantedAt), isEmpty);
+        // 5단계 도달(10시간 경과) 이후에는 남은 단계가 없다.
+        expect(
+            growingAt(plantedAt)
+                .pendingGrowthStages(DateTime(2026, 9, 4, 18)),
+            isEmpty);
+      });
+    });
+
     group('formatGrowthTimer (#138)', () {
       test('formats HH:MM with two digits', () {
         expect(formatGrowthTimer(const Duration(minutes: 83)), '01:23');

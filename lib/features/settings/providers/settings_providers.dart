@@ -11,15 +11,24 @@ typedef RescheduleSeedNotification = Future<void> Function({
   required bool enabled,
 });
 
+/// 성장 알림 스위치 변경 시 호출된다 (#244).
+/// `enabled`가 false면 예약 취소를, true면 남은 단계 예약을 요청한다.
+/// 실제 예약·취소는 `app.dart`에서 `NotificationService`로 연결한다.
+typedef GrowthNotifyChanged = Future<void> Function({
+  required bool enabled,
+});
+
 /// 설정 탭 상태. `provider` + [ChangeNotifier] 패턴 (컨벤션 §3).
 class SettingsProvider extends ChangeNotifier {
   SettingsProvider({
     required this._settingsRepository,
     this._onSettingsChanged,
+    this._onGrowthNotifyChanged,
   });
 
   final SettingsRepository _settingsRepository;
   final RescheduleSeedNotification? _onSettingsChanged;
+  final GrowthNotifyChanged? _onGrowthNotifyChanged;
 
   AppSettings? _settings;
   AppSettings? get settings => _settings;
@@ -90,6 +99,21 @@ class SettingsProvider extends ChangeNotifier {
     try {
       _settings =
           await _settingsRepository.setFruitRainEnabled(enabled);
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  /// 성장 단계 도달 알림 on/off (#244). 변경을 콜백으로 알린다.
+  Future<void> setGrowthNotifyEnabled(bool enabled) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _settings =
+          await _settingsRepository.setGrowthNotifyEnabled(enabled);
+      await _onGrowthNotifyChanged?.call(enabled: enabled);
     } catch (e) {
       _errorMessage = '$e';
     } finally {
