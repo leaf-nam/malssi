@@ -10,6 +10,7 @@ private let quoteKey = "quote_text"
 private let authorKey = "quote_author"
 private let statusKey = "seed_status"
 private let stageKey = "growth_stage"
+private let dateKey = "seed_date"
 private let nextStageAtKey = "next_stage_at"
 private let completeAtKey = "complete_at"
 private let placeholderText = "씨앗을 심으면 오늘의 명언이 보여요"
@@ -66,15 +67,34 @@ struct QuoteProvider: TimelineProvider {
         // 다음 단계 시각과 30분 중 빠른 쪽에 갱신해 남은시간을 تازه 유지한다.
         // Flutter도 단계·상태가 바뀔 때마다 갱신을 요청한다.
         var next = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
+        // 지난 시각은 제외한다 (오래된 데이터로 갱신 루프 방지).
         if let iso = UserDefaults(suiteName: appGroupId)?.string(forKey: nextStageAtKey),
-           !iso.isEmpty, let stageDate = isoFormatter.date(from: iso), stageDate < next {
+           !iso.isEmpty, let stageDate = isoFormatter.date(from: iso),
+           stageDate > Date(), stageDate < next {
             next = stageDate
+        }
+        // 자정에도 갱신해 날짜가 바뀌면 오래된 표시를 걷어낸다 (#242 후속).
+        // 앱이 안 열려 새 데이터가 없어도 플레이스홀더로 돌아간다.
+        if let midnight = Calendar.current.nextDate(after: Date(), matching: DateComponents(hour: 0, minute: 0),
+                                                    matchingPolicy: .nextTime),
+           midnight < next {
+            next = midnight
         }
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
     private func loadQuote() -> QuoteEntry {
         let store = UserDefaults(suiteName: appGroupId)
+        // 날짜가 바뀌고 앱이 아직 안 열렸으면 오래된 데이터로 보고
+        // 플레이스홀더를 보여준다 (#242 후속: 전날 명언·완료 고착 방지).
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: Date())
+        let seedDate = store?.string(forKey: dateKey) ?? ""
+        if seedDate.isEmpty || seedDate != today {
+            return QuoteEntry(date: Date(), text: placeholderText, author: placeholderAuthor,
+                              status: "locked", stage: 0, countdown: nil)
+        }
         let status = store?.string(forKey: statusKey) ?? "locked"
         let stage = store?.integer(forKey: stageKey) ?? 0
         var parts: [String] = []

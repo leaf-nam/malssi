@@ -197,7 +197,10 @@ lib/
 - 데이터 공유: `home_widget` 저장소 (Android SharedPreferences,
   iOS App Group `group.com.leaf.malssi`).
   키 `quote_text`/`quote_author` + `seed_status`/`growth_stage`/
-  `growth_total`/`next_stage_at`/`complete_at`.
+  `growth_total`/`seed_date`/`next_stage_at`/`complete_at`.
+- 날짜 가드 (#242 후속): 네이티브가 `seed_date`와 오늘을 비교해 다르면
+  플레이스홀더를 보여준다 (날짜가 바뀌고 앱이 아직 안 열린 경우
+  전날 명언·수확 완료 고착 방지). iOS 타임라인은 자정에도 갱신 예약한다.
 - 탭 → 말씨 탭(`/`): 딥링크 `malssi://widget?target=seed`
   (Android `HomeWidgetLaunchIntent` + iOS 위젯 `Link`,
   `main()`의 초기 URI·클릭 스트림 → `appRouter.go('/')`).

@@ -346,6 +346,39 @@ void main() {
       expect(darkSize, lightSize);
     });
 
+    testWidgets('mode buttons keep size across selections (#218 후속)',
+        (tester) async {
+      // 선택된 세그먼트에만 체크 아이콘이 붙으면 선택 변경 시
+      // 전체 너비가 흔들렸던 문제(270→234 실측) 회귀 방지.
+      Future<Size> sizeForSelection(String mode) async {
+        final provider = SettingsProvider(
+          settingsRepository: InMemorySettingsRepository(),
+        );
+        await provider.load();
+        await provider.setThemeMode(mode);
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: provider),
+              ChangeNotifierProvider.value(value: DebugUiProvider()),
+            ],
+            child: MaterialApp(
+                theme: AppTheme.light(), home: const SettingsScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return tester
+            .getSize(find.byType(SegmentedButton<String>));
+      }
+
+      final lightSelected = await sizeForSelection('light');
+      final darkSelected = await sizeForSelection('dark');
+      final systemSelected = await sizeForSelection('system');
+
+      expect(darkSelected, lightSelected);
+      expect(systemSelected, lightSelected);
+    });
+
     testWidgets('toggling the rain switch hides the rain (#108)',
         (tester) async {
       final provider = SettingsProvider(
@@ -357,7 +390,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(provider.settings!.fruitRainEnabled, isTrue);
 
-      await tester.tap(find.byType(Switch).at(1));
+      await tester.tap(find.byType(Switch).at(2));
       await tester.pumpAndSettle();
 
       expect(provider.settings!.fruitRainEnabled, isFalse);
@@ -374,7 +407,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(provider.settings!.growthNotifyEnabled, isTrue);
 
-      await tester.tap(find.byType(Switch).at(2));
+      await tester.tap(find.byType(Switch).at(1));
       await tester.pumpAndSettle();
 
       expect(provider.settings!.growthNotifyEnabled, isFalse);

@@ -70,11 +70,15 @@ class HomeWidgetService {
   /// 성장 상태 키 (#242). `seed_status`는 `Seed.status` 원문
   /// (`locked`/`growing`/`complete`/…), 단계는 0~5 (`Seed.maxGrowthStage`),
   /// 시각은 ISO8601 문자열 (`null` 대신 빈 문자열 저장).
+  /// `seed_date`는 씨앗 날짜키 (`YYYY-MM-DD`, #242 후속).
+  /// 네이티브가 오늘과 다르면 오래된 데이터로 보고 플레이스홀더를 보여준다
+  /// (날짜가 바뀌고 앱이 아직 안 열린 경우).
   static const statusKey = 'seed_status';
   static const stageKey = 'growth_stage';
   static const totalStagesKey = 'growth_total';
   static const nextStageAtKey = 'next_stage_at';
   static const completeAtKey = 'complete_at';
+  static const dateKey = 'seed_date';
 
   /// 미공개 상태(심기 전) 플레이스홀더 (#139).
   static const placeholderText = '씨앗을 심으면 오늘의 명언이 보여요';
@@ -98,7 +102,8 @@ class HomeWidgetService {
 
   /// 씨앗 스냅샷을 위젯에 반영한다 (#242).
   /// [status]는 `Seed.status` 원문, [stage]는 0~5, 시각 2종은 ISO8601
-  /// (`growing`이 아니면 빈 문자열). 같은 명언·상태·단계면 요청하지 않는다.
+  /// (`growing`이 아니면 빈 문자열), [seedDate]는 씨앗 날짜키.
+  /// 같은 명언·상태·단계·날짜면 요청하지 않는다.
   Future<void> updateSeed({
     required String quoteId,
     required String text,
@@ -106,10 +111,11 @@ class HomeWidgetService {
     required String status,
     required int stage,
     required int totalStages,
+    required String seedDate,
     String nextStageAtIso = '',
     String completeAtIso = '',
   }) async {
-    final key = '$quoteId|$status|$stage';
+    final key = '$quoteId|$status|$stage|$seedDate';
     if (key == _lastPushedKey) return;
     try {
       await _store.saveText(quoteKey, text);
@@ -117,6 +123,7 @@ class HomeWidgetService {
       await _store.saveText(statusKey, status);
       await _store.saveInt(stageKey, stage);
       await _store.saveInt(totalStagesKey, totalStages);
+      await _store.saveText(dateKey, seedDate);
       await _store.saveText(nextStageAtKey, nextStageAtIso);
       await _store.saveText(completeAtKey, completeAtIso);
       await _store.requestUpdate();
@@ -140,6 +147,7 @@ class HomeWidgetService {
         status: 'growing',
         stage: 0,
         totalStages: 0,
+        seedDate: '',
       );
 
   /// 미공개 상태 플레이스홀더를 보여준다 (성장 정보 초기화 포함, #242).
@@ -150,6 +158,7 @@ class HomeWidgetService {
         status: 'locked',
         stage: 0,
         totalStages: 0,
+        seedDate: '',
       );
 
   /// 위젯 탭으로 실행됐을 때의 URI (`null`이면 일반 실행).

@@ -19,6 +19,7 @@ dependencies:
   upgrader: ^13.7.0
   home_widget: ^0.10.0
   in_app_review: ^2.0.12
+  app_settings: ^9.0.0
 
 dev_dependencies:
   flutter_test:

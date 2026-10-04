@@ -9,6 +9,7 @@ import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetProvider
 import java.time.Duration
+import java.time.LocalDate
 import java.time.OffsetDateTime
 
 // 홈 위젯: 오늘의 명언 + 저자 + 성장 상태 (#139, #242).
@@ -23,16 +24,33 @@ class MalssiWidgetProvider : HomeWidgetProvider() {
     ) {
         for (widgetId in appWidgetIds) {
             val views = RemoteViews(context.packageName, R.layout.malssi_widget).apply {
+                // 날짜가 바뀌고 앱이 아직 안 열렸으면 오래된 데이터로 보고
+                // 플레이스홀더를 보여준다 (#242 후속: 전날 명언·완료 고착 방지).
+                val seedDate = widgetData.getString("seed_date", "") ?: ""
+                val stale = seedDate.isEmpty() || seedDate != LocalDate.now().toString()
                 setTextViewText(
                     R.id.widget_quote,
-                    widgetData.getString("quote_text", null)
-                        ?: "씨앗을 심으면 오늘의 명언이 보여요",
+                    if (stale) {
+                        "씨앗을 심으면 오늘의 명언이 보여요"
+                    } else {
+                        widgetData.getString("quote_text", null)
+                            ?: "씨앗을 심으면 오늘의 명언이 보여요"
+                    },
                 )
                 setTextViewText(
                     R.id.widget_author,
-                    widgetData.getString("quote_author", null) ?: "malssi",
+                    if (stale) {
+                        "malssi"
+                    } else {
+                        widgetData.getString("quote_author", null) ?: "malssi"
+                    },
                 )
-                bindGrowth(this, widgetData)
+                if (stale) {
+                    setViewVisibility(R.id.widget_stage, View.GONE)
+                    setViewVisibility(R.id.widget_countdown, View.GONE)
+                } else {
+                    bindGrowth(this, widgetData)
+                }
                 val pending = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java,

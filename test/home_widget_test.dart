@@ -93,6 +93,7 @@ void main() {
       String quoteId = 'q1',
       String status = 'growing',
       int stage = 2,
+      String seedDate = '2030-01-01',
     }) =>
         service.updateSeed(
           quoteId: quoteId,
@@ -101,6 +102,7 @@ void main() {
           status: status,
           stage: stage,
           totalStages: 6,
+          seedDate: seedDate,
           nextStageAtIso: '2030-01-01T00:00:00.000',
           completeAtIso: '2030-01-01T08:00:00.000',
         );
@@ -114,6 +116,7 @@ void main() {
       expect(store.saved[HomeWidgetService.statusKey], 'growing');
       expect(store.savedInts[HomeWidgetService.stageKey], 2);
       expect(store.savedInts[HomeWidgetService.totalStagesKey], 6);
+      expect(store.saved[HomeWidgetService.dateKey], '2030-01-01');
       expect(store.saved[HomeWidgetService.nextStageAtKey],
           '2030-01-01T00:00:00.000');
       expect(store.saved[HomeWidgetService.completeAtKey],
@@ -161,8 +164,20 @@ void main() {
 
       expect(store.saved[HomeWidgetService.statusKey], 'locked');
       expect(store.savedInts[HomeWidgetService.stageKey], 0);
+      expect(store.saved[HomeWidgetService.dateKey], '');
       expect(store.saved[HomeWidgetService.completeAtKey], '');
       expect(store.updateRequests, 2);
+    });
+
+    test('date change pushes again', () async {
+      final store = FakeHomeWidgetStore();
+      final service = HomeWidgetService(store: store);
+
+      await push(service, seedDate: '2030-01-01');
+      await push(service, seedDate: '2030-01-02');
+
+      expect(store.updateRequests, 2);
+      expect(store.saved[HomeWidgetService.dateKey], '2030-01-02');
     });
   });
 }
