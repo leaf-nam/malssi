@@ -346,8 +346,8 @@ class SeedProvider extends ChangeNotifier {
   }
 
   /// 완성된 씨앗의 열매가 없으면 수확하고 명언을 공개한다.
-  /// 이월 만료 (#113): 오늘 이전의 미후기 열매는 먼저 폐기한다.
-  /// 다음날 씨앗 도착까지 후기를 남기지 않으면 정원에 보관되지 않는다.
+  /// 이월 만료 (#113): 오늘 이전의 미리뷰 열매는 먼저 폐기한다.
+  /// 다음날 씨앗 도착까지 리뷰를 남기지 않으면 정원에 보관되지 않는다.
   Future<void> _maybeHarvest() async {
     await _fruitRepository.pruneUnreviewedBeforeToday();
     final seed = _todaySeed;
@@ -394,9 +394,9 @@ class SeedProvider extends ChangeNotifier {
     _revealedQuote = harvestQuote;
   }
 
-  /// 완성 열매의 후기를 저장한다 (그날의 리뷰, #41).
+  /// 완성 열매의 리뷰를 저장한다 (그날의 리뷰, #41).
   /// 첫 저장 이후에는 수정할 수 없고 읽기만 가능하다 (#71).
-  /// 빈 내용(후기 없음 + 별점 0)의 첫 저장은 무시한다 (빈 잠금 방지).
+  /// 빈 내용(리뷰 없음 + 별점 0)의 첫 저장은 무시한다 (빈 잠금 방지).
   Future<void> saveReview({
     required String memo,
     required int fidelityScore,

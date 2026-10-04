@@ -16,7 +16,7 @@ class ArchiveProvider extends ChangeNotifier {
         for (final fruit in _fruits) fruit.harvestDateKey: fruit,
       };
 
-  /// 잔디에 심어진 열매 = 후기를 남긴 열매만 (#65).
+  /// 잔디에 심어진 열매 = 리뷰를 남긴 열매만 (#65).
   List<Fruit> get plantedFruits =>
       List.unmodifiable(_fruits.where((f) => f.isReviewed));
 
@@ -79,7 +79,7 @@ class ArchiveProvider extends ChangeNotifier {
     }
   }
 
-  /// 후기·점수를 저장하고 목록을 갱신한다.
+  /// 리뷰·점수를 저장하고 목록을 갱신한다.
   Future<void> updateReview({
     required String fruitId,
     required String memo,

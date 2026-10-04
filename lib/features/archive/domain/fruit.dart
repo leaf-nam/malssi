@@ -9,7 +9,7 @@ class Fruit {
   /// 수확 시점의 테마 스냅샷 (`SeedTheme` 값 중 1개, 미분류는 `''`).
   final String theme;
 
-  /// 그날의 후기. 미작성은 `''`.
+  /// 그날의 리뷰. 미작성은 `''`.
   final String memo;
 
   /// 그날의 점수 (0~5, `0` = 미평가).
@@ -105,7 +105,7 @@ class Fruit {
     return '${harvestedAt.year}-$m-$d';
   }
 
-  /// 후기 작성 여부. 잔디는 후기를 남긴 열매만 심어진다 (#65).
-  /// 별점(1~5) 또는 한줄 후기 둘 중 하나라도 있으면 작성됨으로 본다.
+  /// 리뷰 작성 여부. 잔디는 리뷰를 남긴 열매만 심어진다 (#65).
+  /// 별점(1~5) 또는 한줄 리뷰 둘 중 하나라도 있으면 작성됨으로 본다.
   bool get isReviewed => memo.isNotEmpty || fidelityScore > 0;
 }

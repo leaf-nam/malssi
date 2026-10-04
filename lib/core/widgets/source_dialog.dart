@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// 명언 출처 보기 다이얼로그 (#123).
-/// 명언이 표시되는 위치(말씨 탭·후기 카드)에서 출처 버튼으로 연다.
+/// 명언이 표시되는 위치(말씨 탭·리뷰 카드)에서 출처 버튼으로 연다.
 /// 출처가 비어 있으면 호출하지 않는다 (호출 측에서 버튼을 숨긴다).
 Future<void> showQuoteSourceDialog(
     BuildContext context, String source) {
