@@ -12,6 +12,7 @@ import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/onboarding/data/onboarding_repository.dart';
 import 'package:malssi/features/onboarding/providers/onboarding_providers.dart';
 import 'package:malssi/features/quote.dart';
+import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
@@ -127,16 +128,36 @@ class AppShell extends StatelessWidget {
             },
             )..ensureTodaySeed();
             // #139: 공개된 명언을 홈 위젯에 반영한다.
+            // #242: 성장 상태(단계·다음 단계·완성 시각)도 함께 전달한다.
             // 중복 갱신은 서비스가 제거하고, 실패해도 앱에 영향없다.
             seedProvider.addListener(() {
               final quote = seedProvider.revealedQuote;
-              if (quote == null) {
+              final seed = seedProvider.todaySeed;
+              if (quote == null || seed == null) {
                 HomeWidgetService.instance.updatePlaceholder();
               } else {
-                HomeWidgetService.instance.updateQuote(
+                final now = DateTime.now();
+                final growing = seed.isGrowing;
+                HomeWidgetService.instance.updateSeed(
                   quoteId: quote.id,
                   text: quote.text,
                   author: quote.author,
+                  status: seed.status,
+                  stage: seed.growthStageAt(now),
+                  totalStages: Seed.totalStages,
+                  nextStageAtIso: growing
+                      ? now
+                          .add(seed.timeUntilNextStage(now))
+                          // 네이티브 공용 형식: UTC ISO8601 (#242).
+                          .toUtc()
+                          .toIso8601String()
+                      : '',
+                  completeAtIso: growing
+                      ? seed.plantedAt
+                          .add(Seed.stageInterval * Seed.maxGrowthStage)
+                          .toUtc()
+                          .toIso8601String()
+                      : '',
                 );
               }
             });

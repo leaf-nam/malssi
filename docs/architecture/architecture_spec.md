@@ -179,20 +179,27 @@ lib/
 - 씨앗 개봉 플로우에 광고 게이트가 없으므로 `lib/core/services/ad_service.dart`를
   #19에서 삭제했다. 광고를 다시 도입하려면 신규 이슈 + 본 스펙 개정부터 시작한다.
 
-### 2.5 홈 위젯 (`HomeWidgetService`, #139)
+### 2.5 홈 위젯 (`HomeWidgetService`, #139·#242)
 
-- 표시: 오늘의 명언 + 저자 (성장 단계·남은시간 제외, 범위 확정).
-  미공개(심기 전)는 플레이스홀더 (`씨앗을 심으면 오늘의 명언이 보여요`).
-- 동기화: `app.dart`가 `SeedProvider.revealedQuote` 리스너로 전달.
-  같은 id 중복 갱신 방지 + 실패 무시 (앱에 영향없음).
+- 표시: 오늘의 명언 + 저자 + 성장 상태 (단계·다음 단계까지 남은시간·
+  완성까지 남은시간, #242). 미공개(심기 전)는 플레이스홀더
+  (`씨앗을 심으면 오늘의 명언이 보여요`), 완성은 수확 완료 표시.
+- 동기화: `app.dart`가 `SeedProvider` 리스너로 명언 + 성장 스냅샷 전달
+  (`todaySeed`의 `growthStageAt`·`timeUntilNextStage`·완성 추정시각).
+  같은 명언·상태·단계 중복 갱신 방지 + 실패 무시 (앱에 영향없음).
+  남은시간은 네이티브가 저장 시각(UTC ISO8601) 기준으로 계산한다.
 - 데이터 공유: `home_widget` 저장소 (Android SharedPreferences,
-  iOS App Group `group.com.leaf.malssi`). 키 `quote_text`/`quote_author`.
+  iOS App Group `group.com.leaf.malssi`).
+  키 `quote_text`/`quote_author` + `seed_status`/`growth_stage`/
+  `growth_total`/`next_stage_at`/`complete_at`.
 - 탭 → 말씨 탭(`/`): 딥링크 `malssi://widget?target=seed`
   (Android `HomeWidgetLaunchIntent` + iOS 위젯 `Link`,
   `main()`의 초기 URI·클릭 스트림 → `appRouter.go('/')`).
 - 네이티브: Android `MalssiWidgetProvider` + `res/layout/malssi_widget.xml`
   (+ `xml/malssi_widget_info.xml`, manifest receiver),
-  iOS `MalssiWidget` 익스텐션 타깃 (SwiftUI + Timeline, 6시간 갱신 예약).
+  iOS `MalssiWidget` 익스텐션 타깃 (SwiftUI + Timeline,
+  다음 단계·30분 중 빠른 갱신 예약 + 잠금화면 `accessoryRectangular`).
+  Android 잠금화면 위젯은 OS 미지원이라 제외.
   iOS 실기기 서명은 `DEVELOPMENT_TEAM` 값으로 Xcode에서 처리한다.
 
 ## 3. 확장 계획
