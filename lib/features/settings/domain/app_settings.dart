@@ -29,7 +29,7 @@ class AppSettings {
 
   static const defaultFruitRainEnabled = true;
 
-  static const defaultGrowthNotifyEnabled = false;
+  static const defaultGrowthNotifyEnabled = true;
 
   static const validThemeModes = ['light', 'dark', 'system'];
 

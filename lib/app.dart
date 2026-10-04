@@ -177,6 +177,10 @@ class AppShell extends StatelessWidget {
             onSettingsChanged:
                 ({required hour, required minute, required enabled}) async {
               if (enabled) {
+                // #244 후속: OS 권한이 거부된 상태에서는 예약을 해도
+                // 알림이 오지 않으므로, 켜는 시점에 권한을 먼저 요청한다.
+                // 거부돼도 예약은 진행한다 (시스템 설정에서 허용하면 동작).
+                await NotificationService.instance.requestPermissions();
                 await NotificationService.instance
                     .scheduleDailySeedNotification(
                   id: NotificationService.seedNotificationId,

@@ -134,6 +134,31 @@ class NotificationService {
     await _plugin.cancel(id: id);
   }
 
+  /// OS 알림 권한을 요청한다 (#244 후속).
+  /// 매일 알림 스위치를 켤 때 호출한다. 앱을 껐다 켜도 시스템 설정에서
+  /// 거부된 상태면 알림이 오지 않으므로, 켜는 시점에 권한을 요청한다.
+  /// 하나라도 거부·실패하면 `false`를 돌려준다.
+  Future<bool> requestPermissions() async {
+    try {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      final androidGranted = await android?.requestNotificationsPermission();
+      final ios = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      final iosGranted = await ios?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      // 해당 플랫폼이 아니면 null이므로, null은 통과로 본다.
+      if (androidGranted == false || iosGranted == false) return false;
+      return true;
+    } catch (e) {
+      debugPrint('Notification permission request failed: $e');
+      return false;
+    }
+  }
+
   /// 기기 타임존을 `tz.local`에 반영한다 (#164).
   /// 조회 실패·미지원 이름이면 UTC 기본값을 유지하고 조용히 넘어간다.
   /// 앱 시작을 막지 않는 것이 우선이다 (`main()`의 try/catch와 동일 방침).

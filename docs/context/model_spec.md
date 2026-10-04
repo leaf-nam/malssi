@@ -203,7 +203,7 @@ class CollectionNames {
 | notifyEnabled  | `bool` | `notifyEnabled` | `true`                     |
 | themeMode      | `String` | `themeMode`   | `'system'` (`'light'`/`'dark'`/`'system'`, #47) |
 | fruitRainEnabled | `bool` | `fruitRainEnabled` | `true` (열매 비 효과 on/off, #108) |
-| growthNotifyEnabled | `bool` | `growthNotifyEnabled` | `false` (성장 단계 도달 알림 on/off, #244 — 하루 최대 4건이라 opt-in) |
+| growthNotifyEnabled | `bool` | `growthNotifyEnabled` | `true` (성장 단계 도달 알림 on/off, #244 — 하루 최대 4건) |
 
 - **동작 귀속**: `seedTime` 시각에 씨앗 생성 + 알림 발송이 동시에 동작한다
   (`feature_spec.md` §3 참조).

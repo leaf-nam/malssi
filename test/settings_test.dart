@@ -63,8 +63,8 @@ void main() {
       expect(settings.notifyEnabled, isTrue);
       expect(settings.themeMode, 'system');
       expect(settings.fruitRainEnabled, isTrue);
-      // #244: 성장 알림은 opt-in (기본값 off).
-      expect(settings.growthNotifyEnabled, isFalse);
+      // #244: 성장 알림은 기본값 on.
+      expect(settings.growthNotifyEnabled, isTrue);
     });
 
     test('fromMap falls back to system theme on bad values', () {
@@ -140,14 +140,14 @@ void main() {
 
     test('setGrowthNotifyEnabled toggles growth alerts (#244)', () async {
       final repo = InMemorySettingsRepository();
-      expect((await repo.getSettings()).growthNotifyEnabled, isFalse);
+      expect((await repo.getSettings()).growthNotifyEnabled, isTrue);
 
-      expect(
-          (await repo.setGrowthNotifyEnabled(true)).growthNotifyEnabled,
-          isTrue);
       expect(
           (await repo.setGrowthNotifyEnabled(false)).growthNotifyEnabled,
           isFalse);
+      expect(
+          (await repo.setGrowthNotifyEnabled(true)).growthNotifyEnabled,
+          isTrue);
     });
   });
 
@@ -268,16 +268,16 @@ void main() {
         },
       );
       await provider.load();
-      expect(provider.settings!.growthNotifyEnabled, isFalse);
-
-      await provider.setGrowthNotifyEnabled(true);
       expect(provider.settings!.growthNotifyEnabled, isTrue);
-      expect(growthCalls, [true]);
-      expect(provider.errorMessage, isNull);
 
       await provider.setGrowthNotifyEnabled(false);
       expect(provider.settings!.growthNotifyEnabled, isFalse);
-      expect(growthCalls, [true, false]);
+      expect(growthCalls, [false]);
+      expect(provider.errorMessage, isNull);
+
+      await provider.setGrowthNotifyEnabled(true);
+      expect(provider.settings!.growthNotifyEnabled, isTrue);
+      expect(growthCalls, [false, true]);
       expect(provider.errorMessage, isNull);
     });
   });
@@ -372,12 +372,12 @@ void main() {
 
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
-      expect(provider.settings!.growthNotifyEnabled, isFalse);
+      expect(provider.settings!.growthNotifyEnabled, isTrue);
 
       await tester.tap(find.byType(Switch).at(2));
       await tester.pumpAndSettle();
 
-      expect(provider.settings!.growthNotifyEnabled, isTrue);
+      expect(provider.settings!.growthNotifyEnabled, isFalse);
     });
   });
 }
