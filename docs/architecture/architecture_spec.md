@@ -170,10 +170,15 @@ lib/
   `showLocalNotification({id, title, body})`, `cancelSeedNotification(id)`.
   씨앗 도착 알림 ID는 `seedNotificationId` (1001),
   완성 알림 ID는 `seedCompleteNotificationId` (1002).
+  성장 단계 도달 알림 ID는 `growthNotificationId(stage)` (2001~2004, #244 —
+  심기 시점에 남은 1~4단계 시각을 1회 예약, 5단계는 완성 알림이 담당).
   알림 탭 → `/` 이동은 `init(onTap:)` 주입으로 연결한다 (`main()` → `appRouter`).
 - 스케줄 모드: `inexactAllowWhileIdle` 고정 (#137).
   `SCHEDULE_EXACT_ALARM` 권한이 필요 없고 수분 오차가 날 수 있다
   (일일 씨앗 알림 용도로 허용).
+- 매일 알림 스위치를 켤 때 OS 알림 권한을 먼저 요청한다
+  (`requestPermissions`, #244 후속 — 시스템에서 거부된 상태면
+  예약해도 도착하지 않기 때문). 거부돼도 예약은 진행한다.
 
 ### 2.4 광고 (`AdService` — #19에서 삭제됨)
 

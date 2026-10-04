@@ -19,6 +19,11 @@ class NotificationService {
   /// 마감 리마인드 1회 알림 ID (#147). 당일 13:00 고정.
   static const seedReminderNotificationId = 1003;
 
+  /// 성장 단계 도달 1회 알림 ID (#244). 1~4단계 → 2001~2004.
+  /// 5단계 도달은 완성 알림(#140)이 담당한다.
+  /// 예약·취소는 기존 1회 알림 API를 그대로 쓴다.
+  static int growthNotificationId(int stage) => 2000 + stage;
+
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
   Future<void> init(
@@ -127,6 +132,31 @@ class NotificationService {
 
   Future<void> cancelSeedNotification(int id) async {
     await _plugin.cancel(id: id);
+  }
+
+  /// OS 알림 권한을 요청한다 (#244 후속).
+  /// 매일 알림 스위치를 켤 때 호출한다. 앱을 껐다 켜도 시스템 설정에서
+  /// 거부된 상태면 알림이 오지 않으므로, 켜는 시점에 권한을 요청한다.
+  /// 하나라도 거부·실패하면 `false`를 돌려준다.
+  Future<bool> requestPermissions() async {
+    try {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      final androidGranted = await android?.requestNotificationsPermission();
+      final ios = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      final iosGranted = await ios?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      // 해당 플랫폼이 아니면 null이므로, null은 통과로 본다.
+      if (androidGranted == false || iosGranted == false) return false;
+      return true;
+    } catch (e) {
+      debugPrint('Notification permission request failed: $e');
+      return false;
+    }
   }
 
   /// 기기 타임존을 `tz.local`에 반영한다 (#164).

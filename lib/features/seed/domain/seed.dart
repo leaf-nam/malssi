@@ -155,6 +155,19 @@ class Seed {
         seconds: stageInterval.inSeconds -
             (elapsed.inSeconds % stageInterval.inSeconds));
   }
+
+  /// 성장 알림용: [now] 이후에 도달하는 1~4단계의 (단계, 시각) 목록 (#244).
+  /// 5단계 도달은 완성 알림(#140)이 담당하므로 제외한다.
+  /// `growing`이 아니면 빈 목록을 돌려준다.
+  List<({int stage, DateTime at})> pendingGrowthStages(DateTime now) {
+    if (!isGrowing) return const [];
+    final pending = <({int stage, DateTime at})>[];
+    for (var stage = 1; stage < maxGrowthStage; stage++) {
+      final at = plantedAt.add(stageInterval * stage);
+      if (at.isAfter(now)) pending.add((stage: stage, at: at));
+    }
+    return pending;
+  }
 }
 
 /// `Seed.status` 값. enum 대신 문자열 상수로 둔다 (Firestore 직렬화 단순화).

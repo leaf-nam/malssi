@@ -17,6 +17,9 @@ abstract class SettingsRepository {
 
   /// 열매 비 효과 on/off (#108).
   Future<AppSettings> setFruitRainEnabled(bool enabled);
+
+  /// 성장 단계 도달 알림 on/off (#244).
+  Future<AppSettings> setGrowthNotifyEnabled(bool enabled);
 }
 
 /// 로컬 저장(`LocalStore`) 기반 인메모리 구현. 서버 동기화는 미계획.
@@ -86,5 +89,10 @@ class InMemorySettingsRepository implements SettingsRepository {
   @override
   Future<AppSettings> setFruitRainEnabled(bool enabled) async {
     return _save(_settings.copyWith(fruitRainEnabled: enabled));
+  }
+
+  @override
+  Future<AppSettings> setGrowthNotifyEnabled(bool enabled) async {
+    return _save(_settings.copyWith(growthNotifyEnabled: enabled));
   }
 }

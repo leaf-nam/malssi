@@ -80,6 +80,13 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
         _Row(
+          label: '성장 알림',
+          trailingWidget: Switch(
+            value: settings.growthNotifyEnabled,
+            onChanged: state.setGrowthNotifyEnabled,
+          ),
+        ),
+        _Row(
           label: '도움말 다시 보기',
           trailing: '›',
           onTap: () => context.go('/onboarding'),
