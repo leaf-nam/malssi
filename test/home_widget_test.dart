@@ -3,6 +3,7 @@ import 'package:malssi/core/services/home_widget_service.dart';
 
 class FakeHomeWidgetStore implements HomeWidgetStore {
   final saved = <String, String>{};
+  final savedInts = <String, int>{};
   var updateRequests = 0;
   var shouldThrow = false;
 
@@ -10,6 +11,12 @@ class FakeHomeWidgetStore implements HomeWidgetStore {
   Future<void> saveText(String key, String value) async {
     if (shouldThrow) throw StateError('store unavailable');
     saved[key] = value;
+  }
+
+  @override
+  Future<void> saveInt(String key, int value) async {
+    if (shouldThrow) throw StateError('store unavailable');
+    savedInts[key] = value;
   }
 
   @override
@@ -77,6 +84,100 @@ void main() {
       expect(store.saved[HomeWidgetService.authorKey],
           HomeWidgetService.placeholderAuthor);
       expect(store.updateRequests, 1);
+    });
+  });
+
+  group('HomeWidgetService growth snapshot (#242)', () {
+    Future<void> push(
+      HomeWidgetService service, {
+      String quoteId = 'q1',
+      String status = 'growing',
+      int stage = 2,
+      String seedDate = '2030-01-01',
+    }) =>
+        service.updateSeed(
+          quoteId: quoteId,
+          text: 't',
+          author: 'a',
+          status: status,
+          stage: stage,
+          totalStages: 6,
+          seedDate: seedDate,
+          nextStageAtIso: '2030-01-01T00:00:00.000',
+          completeAtIso: '2030-01-01T08:00:00.000',
+        );
+
+    test('updateSeed saves growth keys', () async {
+      final store = FakeHomeWidgetStore();
+      final service = HomeWidgetService(store: store);
+
+      await push(service);
+
+      expect(store.saved[HomeWidgetService.statusKey], 'growing');
+      expect(store.savedInts[HomeWidgetService.stageKey], 2);
+      expect(store.savedInts[HomeWidgetService.totalStagesKey], 6);
+      expect(store.saved[HomeWidgetService.dateKey], '2030-01-01');
+      expect(store.saved[HomeWidgetService.nextStageAtKey],
+          '2030-01-01T00:00:00.000');
+      expect(store.saved[HomeWidgetService.completeAtKey],
+          '2030-01-01T08:00:00.000');
+      expect(store.updateRequests, 1);
+    });
+
+    test('same snapshot is not pushed twice', () async {
+      final store = FakeHomeWidgetStore();
+      final service = HomeWidgetService(store: store);
+
+      await push(service);
+      await push(service);
+
+      expect(store.updateRequests, 1);
+    });
+
+    test('stage advance pushes again', () async {
+      final store = FakeHomeWidgetStore();
+      final service = HomeWidgetService(store: store);
+
+      await push(service, stage: 2);
+      await push(service, stage: 3);
+
+      expect(store.updateRequests, 2);
+      expect(store.savedInts[HomeWidgetService.stageKey], 3);
+    });
+
+    test('status change pushes again', () async {
+      final store = FakeHomeWidgetStore();
+      final service = HomeWidgetService(store: store);
+
+      await push(service, status: 'growing');
+      await push(service, status: 'complete');
+
+      expect(store.updateRequests, 2);
+    });
+
+    test('placeholder resets growth keys', () async {
+      final store = FakeHomeWidgetStore();
+      final service = HomeWidgetService(store: store);
+
+      await push(service);
+      await service.updatePlaceholder();
+
+      expect(store.saved[HomeWidgetService.statusKey], 'locked');
+      expect(store.savedInts[HomeWidgetService.stageKey], 0);
+      expect(store.saved[HomeWidgetService.dateKey], '');
+      expect(store.saved[HomeWidgetService.completeAtKey], '');
+      expect(store.updateRequests, 2);
+    });
+
+    test('date change pushes again', () async {
+      final store = FakeHomeWidgetStore();
+      final service = HomeWidgetService(store: store);
+
+      await push(service, seedDate: '2030-01-01');
+      await push(service, seedDate: '2030-01-02');
+
+      expect(store.updateRequests, 2);
+      expect(store.saved[HomeWidgetService.dateKey], '2030-01-02');
     });
   });
 }

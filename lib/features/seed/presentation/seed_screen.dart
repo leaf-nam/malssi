@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/services/debug_ui.dart';
+import 'package:malssi/core/services/store_review_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/source_dialog.dart';
@@ -51,7 +52,7 @@ class _SeedScreenState extends State<SeedScreen> {
 
   void _openReview(
       BuildContext context, SeedProvider state, Fruit fruit) {
-    // #71: 후기를 저장한 뒤에는 읽기만 가능하다.
+    // #71: 리뷰를 저장한 뒤에는 읽기만 가능하다.
     final readOnly = fruit.isReviewed;
     showModalBottomSheet<void>(
       context: context,
@@ -64,14 +65,20 @@ class _SeedScreenState extends State<SeedScreen> {
         initialMemo: fruit.memo,
         initialScore: fruit.fidelityScore,
         readOnly: readOnly,
-        // #123: 명언별 출처를 후기 카드에서도 볼 수 있다.
+        // #123: 명언별 출처를 리뷰 카드에서도 볼 수 있다.
         source: fruit.source,
-        // #216: 명언 해설을 후기 카드에서도 볼 수 있다.
+        // #216: 명언 해설을 리뷰 카드에서도 볼 수 있다.
         explanation: fruit.explanation,
         onSave: readOnly
             ? null
-            : ({required memo, required fidelityScore}) =>
-                state.saveReview(memo: memo, fidelityScore: fidelityScore),
+            : ({required memo, required fidelityScore}) async {
+                await state.saveReview(
+                    memo: memo, fidelityScore: fidelityScore);
+                // #153: 리뷰 저장 직후 스토어 별점을 유도한다
+                // (별점 4~5, 통산 3회, 실패 무시).
+                await StoreReviewService.instance
+                    .maybeRequestReview(score: fidelityScore);
+              },
       ),
     );
   }
@@ -769,10 +776,10 @@ class _OpenedQuote extends StatefulWidget {
   State<_OpenedQuote> createState() => _OpenedQuoteState();
 }
 
-/// 완성 화면 상태 (#210). 미후기 열매는 열매 비 + 팝으로 축하하고,
-/// 후기를 남긴 열매는 조용히 보여준다.
-/// 10분 같은 시간 기준 대신 후기 여부를 기준으로 삼는다:
-/// 못 본 이벤트(미후기)는 들어올 때마다 축하하고, 처리된(후기) 열매는 조용하다.
+/// 완성 화면 상태 (#210). 미리뷰 열매는 열매 비 + 팝으로 축하하고,
+/// 리뷰를 남긴 열매는 조용히 보여준다.
+/// 10분 같은 시간 기준 대신 리뷰 여부를 기준으로 삼는다:
+/// 못 본 이벤트(미리뷰)는 들어올 때마다 축하하고, 처리된(리뷰) 열매는 조용하다.
 class _OpenedQuoteState extends State<_OpenedQuote>
     with SingleTickerProviderStateMixin {
   /// 열매 비 지속 시간 (짧은 버스트).
@@ -783,7 +790,7 @@ class _OpenedQuoteState extends State<_OpenedQuote>
   Timer? _rainTimer;
   bool _raining = false;
 
-  /// 축하 대상: 후기를 남기지 않은 열매 (#210).
+  /// 축하 대상: 리뷰를 남기지 않은 열매 (#210).
   bool get _celebrate => widget.fruit?.isReviewed == false;
 
   @override
@@ -802,14 +809,14 @@ class _OpenedQuoteState extends State<_OpenedQuote>
   @override
   void didUpdateWidget(_OpenedQuote oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 다른 열매로 바뀌면 처음부터 축하하고, 후기를 마치면 조용해진다.
+    // 다른 열매로 바뀌면 처음부터 축하하고, 리뷰를 마치면 조용해진다.
     if (widget.fruit?.id != oldWidget.fruit?.id ||
         widget.fruit?.isReviewed == true) {
       _maybeCelebrate();
     }
   }
 
-  /// 미후기면 팝 + 비를 시작한다. 후기 완료면 정적 표시.
+  /// 미리뷰면 팝 + 비를 시작한다. 리뷰 완료면 정적 표시.
   /// 비는 테스트 고정 시 띄우지 않는다 (`pumpAndSettle` 무한 틱 방지).
   void _maybeCelebrate() {
     _rainTimer?.cancel();
@@ -903,18 +910,52 @@ class _OpenedQuoteState extends State<_OpenedQuote>
               ),
             ),
           if (widget.onTapReview != null) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 20),
-              child: Text(
-                // #71: 저장 후에는 읽기 안내로 바뀐다.
-                fruit?.isReviewed == true
-                    ? '눌러서 오늘의 리뷰 보기'
-                    : '눌러서 오늘의 리뷰 남기기',
-                textAlign: TextAlign.center,
-                style:
-                    const TextStyle(fontSize: 11, color: AppTheme.muted),
+            // #153: 미리뷰 열매 별점·리뷰 유도 배너.
+            // 리뷰를 남겨야 정원에 심어지므로(#65) 완성 화면에서 유도한다.
+            // 리뷰 완료 후에는 읽기 안내로 바뀐다 (#71).
+            // 탭 처리는 바깥 GestureDetector가 담당한다 (중복 시트 방지).
+            if (fruit?.isReviewed == true)
+              const Padding(
+                padding: EdgeInsets.only(top: 8, bottom: 20),
+                child: Text(
+                  '눌러서 오늘의 리뷰 보기',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                ),
+              )
+            else
+              Padding(
+                key: const ValueKey('review-nudge'),
+                padding: const EdgeInsets.only(
+                    left: 48, right: 48, top: 8, bottom: 20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    border:
+                        Border.all(color: AppTheme.goldDim, width: 1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.star,
+                          size: 14, color: AppTheme.gold),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          // #177: 단어 중간 줄바꿈 방지.
+                          keepWordsTogether('리뷰를 남기면 정원에 심어져요'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontSize: 12, color: AppTheme.gold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
           ],
           // #109: 완성 상태에서도 날짜를 옮길 수 있어야 다음 날 씨앗을 볼 수 있다.
           // #115: 공용 시계를 미뤄 전체 플로우를 검증한다.

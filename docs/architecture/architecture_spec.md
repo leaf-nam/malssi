@@ -128,6 +128,7 @@ lib/
 | `share_plus` | `^10.1.2` | 공유 | `lib/`에서 미사용 중. 보관 상세 편입 여부는 후속 이슈에서 결정 (`feature_spec.md` §6 #6) |
 | `shared_preferences` | `^2.5.5` | 로컬 지속화 | `LocalStore` (씨앗·열매·설정·온보딩, #122·#130) |
 | `home_widget` | `^0.10.0` | 홈 위젯 | `HomeWidgetService` (오늘 명언 + 저자, #139) |
+| `in_app_review` | `^2.0.12` | 스토어 리뷰 요청 | `StoreReviewService` (리뷰 저장 직후, 별점 4~5·통산 3회, #153) |
 | `riverpod` (`dev`, 미사용) | `^2.4.9` | — | `lib/`에서 import 없음. 승격·제거 여부 이슈 분리 |
 | `build_runner` (`dev`) | `^2.4.6` | 코드 생성 | — |
 | `flutter_test` (`dev`) | SDK | 테스트 | `flutter test` |
@@ -169,30 +170,45 @@ lib/
   `showLocalNotification({id, title, body})`, `cancelSeedNotification(id)`.
   씨앗 도착 알림 ID는 `seedNotificationId` (1001),
   완성 알림 ID는 `seedCompleteNotificationId` (1002).
+  성장 단계 도달 알림 ID는 `growthNotificationId(stage)` (2001~2004, #244 —
+  심기 시점에 남은 1~4단계 시각을 1회 예약, 5단계는 완성 알림이 담당).
   알림 탭 → `/` 이동은 `init(onTap:)` 주입으로 연결한다 (`main()` → `appRouter`).
 - 스케줄 모드: `inexactAllowWhileIdle` 고정 (#137).
   `SCHEDULE_EXACT_ALARM` 권한이 필요 없고 수분 오차가 날 수 있다
   (일일 씨앗 알림 용도로 허용).
+- 매일 알림 스위치를 켤 때 OS 알림 권한을 먼저 요청한다
+  (`requestPermissions`, #244 후속 — 시스템에서 거부된 상태면
+  예약해도 도착하지 않기 때문). 거부돼도 예약은 진행한다.
 
 ### 2.4 광고 (`AdService` — #19에서 삭제됨)
 
 - 씨앗 개봉 플로우에 광고 게이트가 없으므로 `lib/core/services/ad_service.dart`를
   #19에서 삭제했다. 광고를 다시 도입하려면 신규 이슈 + 본 스펙 개정부터 시작한다.
 
-### 2.5 홈 위젯 (`HomeWidgetService`, #139)
+### 2.5 홈 위젯 (`HomeWidgetService`, #139·#242)
 
-- 표시: 오늘의 명언 + 저자 (성장 단계·남은시간 제외, 범위 확정).
-  미공개(심기 전)는 플레이스홀더 (`씨앗을 심으면 오늘의 명언이 보여요`).
-- 동기화: `app.dart`가 `SeedProvider.revealedQuote` 리스너로 전달.
-  같은 id 중복 갱신 방지 + 실패 무시 (앱에 영향없음).
+- 표시: 오늘의 명언 + 저자 + 성장 상태 (단계·다음 단계까지 남은시간·
+  완성까지 남은시간, #242). 미공개(심기 전)는 플레이스홀더
+  (`씨앗을 심으면 오늘의 명언이 보여요`), 완성은 수확 완료 표시.
+- 동기화: `app.dart`가 `SeedProvider` 리스너로 명언 + 성장 스냅샷 전달
+  (`todaySeed`의 `growthStageAt`·`timeUntilNextStage`·완성 추정시각).
+  같은 명언·상태·단계 중복 갱신 방지 + 실패 무시 (앱에 영향없음).
+  남은시간은 네이티브가 저장 시각(UTC ISO8601) 기준으로 계산한다.
 - 데이터 공유: `home_widget` 저장소 (Android SharedPreferences,
-  iOS App Group `group.com.leaf.malssi`). 키 `quote_text`/`quote_author`.
+  iOS App Group `group.com.leaf.malssi`).
+  키 `quote_text`/`quote_author` + `seed_status`/`growth_stage`/
+  `growth_total`/`seed_date`/`next_stage_at`/`complete_at`.
+- 날짜 가드 (#242 후속): 네이티브가 `seed_date`와 오늘을 비교해 다르면
+  플레이스홀더를 보여준다 (날짜가 바뀌고 앱이 아직 안 열린 경우
+  전날 명언·수확 완료 고착 방지). iOS 타임라인은 자정에도 갱신 예약한다.
 - 탭 → 말씨 탭(`/`): 딥링크 `malssi://widget?target=seed`
   (Android `HomeWidgetLaunchIntent` + iOS 위젯 `Link`,
   `main()`의 초기 URI·클릭 스트림 → `appRouter.go('/')`).
 - 네이티브: Android `MalssiWidgetProvider` + `res/layout/malssi_widget.xml`
   (+ `xml/malssi_widget_info.xml`, manifest receiver),
-  iOS `MalssiWidget` 익스텐션 타깃 (SwiftUI + Timeline, 6시간 갱신 예약).
+  iOS `MalssiWidget` 익스텐션 타깃 (SwiftUI + Timeline,
+  다음 단계·30분 중 빠른 갱신 예약 + 잠금화면 `accessoryRectangular`).
+  Android 잠금화면 위젯은 OS 미지원이라 제외.
   iOS 실기기 서명은 `DEVELOPMENT_TEAM` 값으로 Xcode에서 처리한다.
 
 ## 3. 확장 계획

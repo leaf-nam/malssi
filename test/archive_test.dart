@@ -240,9 +240,9 @@ void main() {
       var now = DateTime(2026, 9, 4, 12);
       final repo = InMemoryFruitRepository(clock: () => now);
       await _harvest(repo,
-          seedId: '2026-09-04', text: '어제 미후기', at: now);
+          seedId: '2026-09-04', text: '어제 미리뷰', at: now);
       await _harvest(repo,
-          seedId: '2026-09-04-reviewed', text: '어제 후기', at: now);
+          seedId: '2026-09-04-reviewed', text: '어제 리뷰', at: now);
       await repo.updateReview(
         fruitId: 'fruit-2026-09-04-reviewed',
         memo: '좋았다',
@@ -251,7 +251,7 @@ void main() {
 
       now = DateTime(2026, 9, 5, 12);
       await _harvest(repo,
-          seedId: '2026-09-05', text: '오늘 미후기', at: now);
+          seedId: '2026-09-05', text: '오늘 미리뷰', at: now);
 
       await repo.pruneUnreviewedBeforeToday();
 
@@ -351,7 +351,7 @@ void main() {
           text: '오늘',
           at: at,
           theme: SeedTheme.growth);
-      // 미후기 1개는 집계에서 제외된다.
+      // 미리뷰 1개는 집계에서 제외된다.
       await _harvest(repo,
           seedId: '2026-09-05', text: '내일', at: at, theme: SeedTheme.peace);
       for (final id in ['2026-09-02', '2026-09-03', '2026-09-04']) {
@@ -393,7 +393,7 @@ void main() {
       now = DateTime(2026, 9, 4, 12);
       await _harvest(repo,
           seedId: '2026-09-04', text: '올해', at: now);
-      // 미후기는 제외된다.
+      // 미리뷰는 제외된다.
       await repo.updateReview(
         fruitId: 'fruit-2026-09-04',
         memo: '좋았다',
@@ -607,7 +607,7 @@ void main() {
       ArchiveScreen.debugToday = DateTime(2026, 9, 4);
       final at = DateTime(2026, 9, 4, 12);
       final repo = InMemoryFruitRepository(clock: () => at);
-      // 수확만 되고 후기는 없음 → 심어지지 않음 + 다른 안내.
+      // 수확만 되고 리뷰는 없음 → 심어지지 않음 + 다른 안내.
       await _harvest(repo,
           seedId: '2026-09-04', text: '오늘', at: at);
       final provider = ArchiveProvider(fruitRepository: repo);
@@ -617,7 +617,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('2026 · 0개의 열매'), findsOneWidget);
-      expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
+      expect(find.text('완성된 열매에 리뷰를 남기면 잔디가 심어져요'),
           findsOneWidget);
       expect(find.text('오늘의 씨앗이 자라는 중이에요'), findsNothing);
       ArchiveScreen.debugToday = null;
@@ -636,12 +636,12 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      // 후기 전에는 잔디가 심어지지 않는다.
+      // 리뷰 전에는 잔디가 심어지지 않는다.
       expect(find.text('2026 · 0개의 열매'), findsOneWidget);
       expect(find.byKey(const ValueKey('grass-2026-09-04')),
           findsNothing);
 
-      // 후기를 남기면 바로 심어진다.
+      // 리뷰를 남기면 바로 심어진다.
       await provider.updateReview(
         fruitId: 'fruit-2026-09-04',
         memo: '좋았다',
@@ -691,14 +691,14 @@ void main() {
 
       expect(find.text('2026 · 0개의 열매'), findsOneWidget);
       expect(find.text('오늘의 씨앗이 자라는 중이에요'), findsOneWidget);
-      expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
+      expect(find.text('완성된 열매에 리뷰를 남기면 잔디가 심어져요'),
           findsNothing);
       ArchiveScreen.debugToday = null;
     });
 
     testWidgets('past harvest without today shows the growing notice (#174)',
         (tester) async {
-      // 어제 수확(후기 대기)만 있고 오늘은 아직 없음 → 성장 중 안내.
+      // 어제 수확(리뷰 대기)만 있고 오늘은 아직 없음 → 성장 중 안내.
       ArchiveScreen.debugToday = DateTime(2026, 9, 5);
       final at = DateTime(2026, 9, 4, 12);
       final repo = InMemoryFruitRepository(clock: () => at);
@@ -711,14 +711,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('오늘의 씨앗이 자라는 중이에요'), findsOneWidget);
-      expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
+      expect(find.text('완성된 열매에 리뷰를 남기면 잔디가 심어져요'),
           findsNothing);
       ArchiveScreen.debugToday = null;
     });
 
     testWidgets('planted past harvest without today shows growing (#174)',
         (tester) async {
-      // 어제 수확+후기(잔디 있음)만 있고 오늘은 아직 없음 → 성장 중 안내.
+      // 어제 수확+리뷰(잔디 있음)만 있고 오늘은 아직 없음 → 성장 중 안내.
       ArchiveScreen.debugToday = DateTime(2026, 9, 5);
       final at = DateTime(2026, 9, 4, 12);
       final repo = InMemoryFruitRepository(clock: () => at);
@@ -736,7 +736,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('오늘의 씨앗이 자라는 중이에요'), findsOneWidget);
-      expect(find.text('완성된 열매에 후기를 남기면 잔디가 심어져요'),
+      expect(find.text('완성된 열매에 리뷰를 남기면 잔디가 심어져요'),
           findsNothing);
       ArchiveScreen.debugToday = null;
     });
@@ -757,7 +757,7 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      // 후기 전에는 통계가 없다.
+      // 리뷰 전에는 통계가 없다.
       expect(find.text('모은 색깔'), findsNothing);
 
       await provider.updateReview(
@@ -1303,7 +1303,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 해설 위젯 자체가 없다 (출처 버튼·후기 카드와 혼동 없음).
+      // 해설 위젯 자체가 없다 (출처 버튼·리뷰 카드와 혼동 없음).
       expect(find.text('출처'), findsNothing);
       expect(find.byType(FruitReviewSheet), findsOneWidget);
     });
@@ -1415,7 +1415,7 @@ void main() {
               author: '작자',
               dateLabel: '2026.09.04',
               imagePath: '',
-              initialMemo: '내 후기',
+              initialMemo: '내 리뷰',
               initialScore: 4,
               readOnly: true,
             ),
@@ -1424,16 +1424,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 명언은 가운데 정렬, 내 후기는 왼쪽 정렬 카드로 구분된다.
+      // 명언은 가운데 정렬, 내 리뷰는 왼쪽 정렬 카드로 구분된다.
       final quote = tester.widget<Text>(find.text('"${keepWordsTogether('명언本文')}"'));
       expect(quote.textAlign, TextAlign.center);
-      final memo = tester.widget<Text>(find.text('내 후기'));
+      final memo = tester.widget<Text>(find.text('내 리뷰'));
       expect(memo.textAlign, TextAlign.left);
       expect(memo.style!.fontSize, 14);
       // 카드 배경이 있다 (명언 영역과 시각적 분리).
       expect(
         find.ancestor(
-          of: find.text('내 후기'),
+          of: find.text('내 리뷰'),
           matching: find.byWidgetPredicate((w) =>
               w is Container && w.decoration is BoxDecoration),
         ),
@@ -1443,7 +1443,7 @@ void main() {
 
     testWidgets('dot images use nearest-neighbor filtering (#160)',
         (tester) async {
-      // 후기 카드 열매 이미지 (실에셋 로드).
+      // 리뷰 카드 열매 이미지 (실에셋 로드).
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -1541,9 +1541,9 @@ void main() {
 
       expect(find.textContaining(keepWordsTogether('성장 열매')), findsOneWidget);
       expect(find.text('오늘의 점수'), findsOneWidget);
-      expect(find.text('오늘의 후기'), findsOneWidget);
+      expect(find.text('오늘의 리뷰'), findsOneWidget);
       // #48: 보관에서는 저장 UI가 없다.
-      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.text('리뷰 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
       ArchiveScreen.debugToday = null;
     });
@@ -1574,7 +1574,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 날짜별 명언 조회에서 출처가 전달된다.
-      // (다이얼로그 동작은 후기 카드 단독 테스트에서 검증.)
+      // (다이얼로그 동작은 리뷰 카드 단독 테스트에서 검증.)
       expect(find.text('출처'), findsOneWidget);
       ArchiveScreen.debugToday = null;
     });
@@ -1600,9 +1600,9 @@ void main() {
           .tap(find.byKey(const ValueKey('grass-2026-09-04')));
       await tester.pumpAndSettle();
 
-      // 저장된 별점·후기만 표시된다.
+      // 저장된 별점·리뷰만 표시된다.
       expect(find.text('오늘 충실히 살았다'), findsOneWidget);
-      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.text('리뷰 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
       ArchiveScreen.debugToday = null;
     });
@@ -1626,8 +1626,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('작성된 후기가 없어요'), findsOneWidget);
-      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.text('작성된 리뷰가 없어요'), findsOneWidget);
+      expect(find.text('리뷰 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
     });
   });

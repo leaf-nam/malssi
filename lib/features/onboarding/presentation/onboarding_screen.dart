@@ -25,7 +25,7 @@ class OnboardingPageData {
 /// 탭별 순서와 일치하는 페이지 목록 (#130).
 ///
 /// 문구는 실제 동작과 일치해야 한다: 말씨(심는 즉시 공개 #46,
-/// 후기 마감 #113), 정원(후기 있는 열매만 #65, 읽기 전용 #48),
+/// 리뷰 마감 #113), 정원(리뷰 있는 열매만 #65, 읽기 전용 #48),
 /// 설정(씨앗 시간·알림 #47, 열매 비 #108).
 const List<OnboardingPageData> onboardingPages = [
   OnboardingPageData(
@@ -36,7 +36,7 @@ const List<OnboardingPageData> onboardingPages = [
   OnboardingPageData(
     icon: Icons.spa_outlined,
     title: '말씨 탭 — 씨앗을 심어보세요',
-    body: '매일 아침 씨앗이 한 개 도착해요.\n씨앗을 한 번 탭하면 오늘의 명언이 바로 공개되고,\n2시간마다 한 단계씩 자라 5단계에서 열매가 맺혀요.\n완성된 열매를 탭해 별점과 한 줄 후기를 남겨보세요.\n다음 씨앗이 오기 전까지 후기를 남기지 않으면\n열매는 사라지니 잊지 마세요.',
+    body: '매일 아침 씨앗이 한 개 도착해요.\n씨앗을 한 번 탭하면 오늘의 명언이 바로 공개되고,\n2시간마다 한 단계씩 자라 5단계에서 열매가 맺혀요.\n완성된 열매를 탭해 별점과 한 줄 리뷰를 남겨보세요.\n다음 씨앗이 오기 전까지 리뷰를 남기지 않으면\n열매는 사라지니 잊지 마세요.',
     images: [
       'assets/images/screenshots/seed_locked.png',
       'assets/images/screenshots/seed_growing.png',
@@ -48,7 +48,7 @@ const List<OnboardingPageData> onboardingPages = [
   OnboardingPageData(
     icon: Icons.grass_outlined,
     title: '정원 탭 — 모은 열매를 돌아보세요',
-    body: '후기를 남긴 열매만 정원의 잔디에 심어져요.\n1년치 기록이 색깔 칸으로 보이고,\n칸을 터치하면 열매와 저장된 후기를 볼 수 있어요.\n정원에서는 후기를 새로 쓰거나 고칠 수 없어요.',
+    body: '리뷰를 남긴 열매만 정원의 잔디에 심어져요.\n1년치 기록이 색깔 칸으로 보이고,\n칸을 터치하면 열매와 저장된 리뷰를 볼 수 있어요.\n정원에서는 리뷰를 새로 쓰거나 고칠 수 없어요.',
     images: [
       'assets/images/screenshots/archive_garden.png',
     ],

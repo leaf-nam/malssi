@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/services/debug_ui.dart';
+import 'package:malssi/core/services/store_review_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 import 'package:malssi/core/widgets/bottom_nav.dart';
@@ -55,9 +56,42 @@ class _FakeTimestamp {
   DateTime toDate() => _date;
 }
 
+/// #153: 스토어 리뷰 실호출 방지용 기록 fake.
+/// (`shared_preferences`·`in_app_review` 채널은 테스트에서 응답하지 않아
+/// 실인스턴스 호출 시 future가 끝나지 않는다.)
+class _RecordingReviewStore implements ReviewRequestStore {
+  var count = 0;
+
+  @override
+  Future<int> loadCount() async => count;
+
+  @override
+  Future<void> saveCount(int value) async {
+    count = value;
+  }
+}
+
+class _RecordingReviewGateway implements ReviewGateway {
+  var requests = 0;
+
+  @override
+  Future<bool> isAvailable() async => true;
+
+  @override
+  Future<void> request() async {
+    requests++;
+  }
+}
+
 void main() {
+  late _RecordingReviewStore reviewStore;
+  late _RecordingReviewGateway reviewGateway;
   // 공용 시계는 테스트 간에 새지 않게 매번 되돌린다 (#115).
   tearDown(DebugClock.reset);
+  // 스토어 리뷰는 기록 fake으로 격리한다 (#153).
+  tearDown(() {
+    StoreReviewService.instance = StoreReviewService();
+  });
   // 마감 규칙(#147) 탓에 실제 시각에 의존하면 오후에 깨지므로,
   // 공용 시계를 오전으로 고정한다. 개별 테스트의 shift는 누적된다.
   setUp(() {
@@ -65,6 +99,11 @@ void main() {
     // #154: 흔들림 정지 + 진입 캐시 초기화 (테스트 격리).
     GrowthStageImage.debugStill = true;
     GrowthStageImage.debugReset();
+    // #153: 스토어 리뷰 실호출 방지 (기록 fake 주입).
+    reviewStore = _RecordingReviewStore();
+    reviewGateway = _RecordingReviewGateway();
+    StoreReviewService.instance =
+        StoreReviewService(store: reviewStore, gateway: reviewGateway);
   });
 
   group('Seed model', () {
@@ -145,6 +184,50 @@ void main() {
         // 5단계 도달(10시간 경과) = 완성 임박.
         expect(growing.timeUntilNextStage(DateTime(2026, 9, 4, 18)),
             Duration.zero);
+      });
+    });
+
+    group('pendingGrowthStages (#244)', () {
+      Seed growingAt(DateTime plantedAt) => Seed(
+            id: '2026-09-04',
+            dateKey: '2026-09-04',
+            quoteId: 'seed-1',
+            status: SeedStatus.growing,
+            createdAt: plantedAt,
+            plantedAt: plantedAt,
+          );
+
+      test('lists stages 1-4 after now', () {
+        final seed = growingAt(DateTime(2026, 9, 4, 8));
+
+        final pending = seed.pendingGrowthStages(DateTime(2026, 9, 4, 8, 30));
+
+        expect(pending.map((e) => e.stage).toList(), [1, 2, 3, 4]);
+        expect(pending.first.at, DateTime(2026, 9, 4, 10));
+        expect(pending.last.at, DateTime(2026, 9, 4, 16));
+      });
+
+      test('skips past stages', () {
+        final seed = growingAt(DateTime(2026, 9, 4, 8));
+
+        final pending = seed.pendingGrowthStages(DateTime(2026, 9, 4, 13));
+
+        expect(pending.map((e) => e.stage).toList(), [3, 4]);
+      });
+
+      test('returns empty when not growing', () {
+        final plantedAt = DateTime(2026, 9, 4, 8);
+        final locked = growingAt(plantedAt).copyWith(status: SeedStatus.locked);
+        final complete =
+            growingAt(plantedAt).copyWith(status: SeedStatus.complete);
+
+        expect(locked.pendingGrowthStages(plantedAt), isEmpty);
+        expect(complete.pendingGrowthStages(plantedAt), isEmpty);
+        // 5단계 도달(10시간 경과) 이후에는 남은 단계가 없다.
+        expect(
+            growingAt(plantedAt)
+                .pendingGrowthStages(DateTime(2026, 9, 4, 18)),
+            isEmpty);
       });
     });
 
@@ -411,12 +494,12 @@ void main() {
       await provider.debugCompleteNow();
       expect(provider.completedFruit, isNotNull);
 
-      await provider.saveReview(memo: '첫 후기', fidelityScore: 4);
-      expect(provider.completedFruit!.memo, '첫 후기');
+      await provider.saveReview(memo: '첫 리뷰', fidelityScore: 4);
+      expect(provider.completedFruit!.memo, '첫 리뷰');
 
       // 두 번째 저장은 무시된다 (수정 잠금).
-      await provider.saveReview(memo: '바꾼 후기', fidelityScore: 1);
-      expect(provider.completedFruit!.memo, '첫 후기');
+      await provider.saveReview(memo: '바꾼 리뷰', fidelityScore: 1);
+      expect(provider.completedFruit!.memo, '첫 리뷰');
       expect(provider.completedFruit!.fidelityScore, 4);
       expect(provider.errorMessage, isNull);
     });
@@ -556,7 +639,7 @@ void main() {
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(provider.completedFruit, isNotNull);
 
-      // 후기 없이 날짜가 바뀌면 미후기 열매는 폐기된다.
+      // 리뷰 없이 날짜가 바뀌면 미리뷰 열매는 폐기된다.
       now = now.add(const Duration(days: 1));
       await provider.refreshGrowth();
 
@@ -586,7 +669,7 @@ void main() {
       now = now.add(const Duration(days: 1));
       await provider.refreshGrowth();
 
-      // 후기를 남긴 열매는 이월 후에도 보관에 남는다.
+      // 리뷰를 남긴 열매는 이월 후에도 보관에 남는다.
       expect(provider.todaySeed!.id, '2026-09-05');
       expect(provider.todaySeed!.isLocked, isTrue);
       final fruits = await fruitRepository.getFruits();
@@ -1307,12 +1390,14 @@ void main() {
       await tester.enterText(find.byType(TextField), '오늘 잘 지켰다');
       await tester.tap(find.byKey(const ValueKey('score-5')));
       await tester.pump();
-      await tester.tap(find.text('후기 저장하기'));
+      await tester.tap(find.text('리뷰 저장하기'));
       await tester.pumpAndSettle();
 
       expect(provider.completedFruit!.memo, '오늘 잘 지켰다');
       expect(provider.completedFruit!.fidelityScore, 5);
-      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.text('리뷰 저장하기'), findsNothing);
+      // #153: 별점 5 저장 직후 스토어 리뷰를 1회 요청한다.
+      expect(reviewGateway.requests, 1);
 
       // #71: 저장 후에는 읽기만 된다.
       expect(find.text('눌러서 오늘의 리뷰 보기'), findsOneWidget);
@@ -1320,7 +1405,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('오늘 잘 지켰다'), findsOneWidget);
-      expect(find.text('후기 저장하기'), findsNothing);
+      expect(find.text('리뷰 저장하기'), findsNothing);
       expect(find.byType(TextField), findsNothing);
     });
 
@@ -1369,10 +1454,10 @@ void main() {
       await provider.debugCompleteNow();
       await tester.pump();
 
-      // 미후기에는 축하한다.
+      // 미리뷰에는 축하한다.
       expect(find.byType(FruitRain), findsOneWidget);
 
-      // 후기 저장 후 재진입: 조용히 보인다.
+      // 리뷰 저장 후 재진입: 조용히 보인다.
       await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
       await tester.pumpWidget(_wrap(provider));
       await tester.pump();
@@ -1409,8 +1494,43 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('성장 열매'), findsOneWidget);
-      // 기존 후기 안내는 그대로 유지된다 (#71).
-      expect(find.text('눌러서 오늘의 리뷰 남기기'), findsOneWidget);
+      // #153: 미리뷰에는 유도 배너가 보인다 (기존 안내는 배너로 대체).
+      expect(find.byKey(const ValueKey('review-nudge')), findsOneWidget);
+      expect(find.text(keepWordsTogether('리뷰를 남기면 정원에 심어져요')),
+          findsOneWidget);
+    });
+
+    testWidgets('review nudge opens the review sheet (#153)',
+        (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 배너 탭 → 리뷰 시트가 열린다 (바깥 탭 핸들러 경유).
+      await tester.tap(find.byKey(const ValueKey('review-nudge')));
+      await tester.pumpAndSettle();
+      expect(find.text('오늘의 점수'), findsOneWidget);
+    });
+
+    testWidgets('review nudge hides after review (#153)', (tester) async {
+      final provider =
+          _buildProvider(themePicker: () => SeedTheme.growth);
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+      await provider.saveReview(memo: '잘 살았다', fidelityScore: 5);
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      // 리뷰 완료 후에는 배너 없이 읽기 안내만 보인다.
+      expect(find.byKey(const ValueKey('review-nudge')), findsNothing);
+      expect(find.text('눌러서 오늘의 리뷰 보기'), findsOneWidget);
     });
   });
 
@@ -1594,7 +1714,7 @@ void main() {
         themePicker: () => SeedTheme.growth,
         seedTimeLoader: () async => '08:00',
       );
-      // 9/3 13:00 심기 → 10시간 경과(23:00) 후 수확 + 후기까지 마친다.
+      // 9/3 13:00 심기 → 10시간 경과(23:00) 후 수확 + 리뷰까지 마친다.
       await provider.ensureTodaySeed();
       await provider.plantSeed();
       DebugClock.shift(const Duration(hours: 10));

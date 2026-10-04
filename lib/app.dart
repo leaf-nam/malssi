@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
@@ -12,6 +13,7 @@ import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/onboarding/data/onboarding_repository.dart';
 import 'package:malssi/features/onboarding/providers/onboarding_providers.dart';
 import 'package:malssi/features/quote.dart';
+import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
@@ -93,23 +95,36 @@ class AppShell extends StatelessWidget {
               final settings = await (settingsRepository ??
                       InMemorySettingsRepository())
                   .getSettings();
-              if (!settings.notifyEnabled) return;
-              await NotificationService.instance
-                  .scheduleSeedCompleteNotification(
-                id: NotificationService.seedCompleteNotificationId,
-                title: '열매가 완성됐어요',
-                body: '눌러서 오늘의 리뷰를 남겨보세요',
-                completeAt: completeAt,
-              );
+              if (settings.notifyEnabled) {
+                final seed = await seedRepository.getActiveSeed();
+                await _scheduleGrowingSeedAlerts(
+                  seed,
+                  growthEnabled: settings.growthNotifyEnabled,
+                );
+              }
               // 심었으므로 마감 리마인드는 취소한다 (#147).
               await NotificationService.instance.cancelSeedNotification(
                   NotificationService.seedReminderNotificationId);
+              // #244: 디버그에서 예약 목록을 로그로 확인한다 (ID 1002·2001~2004).
+              // 스위치가 꺼져 있어도 찍는다 (예약 안 된 원인을 구분하기 위해).
+              if (kDebugMode) {
+                final pending = await NotificationService.instance
+                    .pendingIds();
+                debugPrint('pending notifications: $pending');
+              }
             },
             onSeedCompleted: () async {
               await NotificationService.instance.cancelSeedNotification(
                   NotificationService.seedCompleteNotificationId);
               await NotificationService.instance.cancelSeedNotification(
                   NotificationService.seedReminderNotificationId);
+              // #244: 완성됐으므로 남은 성장 알림도 취소한다.
+              for (var stage = 1;
+                  stage < Seed.maxGrowthStage;
+                  stage++) {
+                await NotificationService.instance.cancelSeedNotification(
+                    NotificationService.growthNotificationId(stage));
+              }
             },
             // #147: 미심김 씨앗의 마감(14시) 1시간 전 리마인드. 당일 13:00 1회.
             onReminderDue: ({required reminderAt}) async {
@@ -127,16 +142,37 @@ class AppShell extends StatelessWidget {
             },
             )..ensureTodaySeed();
             // #139: 공개된 명언을 홈 위젯에 반영한다.
+            // #242: 성장 상태(단계·다음 단계·완성 시각)도 함께 전달한다.
             // 중복 갱신은 서비스가 제거하고, 실패해도 앱에 영향없다.
             seedProvider.addListener(() {
               final quote = seedProvider.revealedQuote;
-              if (quote == null) {
+              final seed = seedProvider.todaySeed;
+              if (quote == null || seed == null) {
                 HomeWidgetService.instance.updatePlaceholder();
               } else {
-                HomeWidgetService.instance.updateQuote(
+                final now = DateTime.now();
+                final growing = seed.isGrowing;
+                HomeWidgetService.instance.updateSeed(
                   quoteId: quote.id,
                   text: quote.text,
                   author: quote.author,
+                  status: seed.status,
+                  stage: seed.growthStageAt(now),
+                  totalStages: Seed.totalStages,
+                  seedDate: seed.dateKey,
+                  nextStageAtIso: growing
+                      ? now
+                          .add(seed.timeUntilNextStage(now))
+                          // 네이티브 공용 형식: UTC ISO8601 (#242).
+                          .toUtc()
+                          .toIso8601String()
+                      : '',
+                  completeAtIso: growing
+                      ? seed.plantedAt
+                          .add(Seed.stageInterval * Seed.maxGrowthStage)
+                          .toUtc()
+                          .toIso8601String()
+                      : '',
                 );
               }
             });
@@ -154,6 +190,10 @@ class AppShell extends StatelessWidget {
             onSettingsChanged:
                 ({required hour, required minute, required enabled}) async {
               if (enabled) {
+                // #244 후속: OS 권한이 거부된 상태에서는 예약을 해도
+                // 알림이 오지 않으므로, 켜는 시점에 권한을 먼저 요청한다.
+                // 거부돼도 예약은 진행한다 (시스템 설정에서 허용하면 동작).
+                await NotificationService.instance.requestPermissions();
                 await NotificationService.instance
                     .scheduleDailySeedNotification(
                   id: NotificationService.seedNotificationId,
@@ -162,15 +202,53 @@ class AppShell extends StatelessWidget {
                   hour: hour,
                   minute: minute,
                 );
+                // 꺼져 있을 때 심은 씨앗은 완성·성장 예약이 안 되어 있으므로,
+                // 켜는 시점에 성장 중 씨앗이 있으면 (재)예약한다.
+                final settings = await (settingsRepository ??
+                        InMemorySettingsRepository())
+                    .getSettings();
+                final seed = await seedRepository.getActiveSeed();
+                if (seed.isGrowing) {
+                  await _scheduleGrowingSeedAlerts(
+                    seed,
+                    growthEnabled: settings.growthNotifyEnabled,
+                  );
+                }
               } else {
-                // 매일 알림을 끄면 완성·리마인드 알림도 함께 취소한다 (#140, #147).
+                // 매일 알림을 끄면 완성·리마인드·성장 알림도 함께 취소한다
+                // (#140, #147, #244).
                 await NotificationService.instance.cancelSeedNotification(
                     NotificationService.seedNotificationId);
                 await NotificationService.instance.cancelSeedNotification(
                     NotificationService.seedCompleteNotificationId);
                 await NotificationService.instance.cancelSeedNotification(
                     NotificationService.seedReminderNotificationId);
+                for (var stage = 1;
+                    stage < Seed.maxGrowthStage;
+                    stage++) {
+                  await NotificationService.instance.cancelSeedNotification(
+                      NotificationService.growthNotificationId(stage));
+                }
               }
+            },
+            // #244: 성장 알림 스위치 변경. 끄면 예약을 취소하고,
+            // 켜면 성장 중 씨앗의 남은 단계 알림을 예약한다.
+            onGrowthNotifyChanged: ({required enabled}) async {
+              if (!enabled) {
+                for (var stage = 1;
+                    stage < Seed.maxGrowthStage;
+                    stage++) {
+                  await NotificationService.instance.cancelSeedNotification(
+                      NotificationService.growthNotificationId(stage));
+                }
+                return;
+              }
+              final settings = await (settingsRepository ??
+                      InMemorySettingsRepository())
+                  .getSettings();
+              if (!settings.notifyEnabled) return;
+              final seed = await seedRepository.getActiveSeed();
+              await _scheduleGrowingSeedAlerts(seed, growthEnabled: true);
             },
           )..load(),
         ),
@@ -208,6 +286,41 @@ class AppShell extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// 성장 중 씨앗의 완성·성장 알림을 (재)예약한다 (#244 후속).
+/// 심기·매일 알림 on·성장 알림 on 시점에 호출한다.
+/// [growthEnabled]가 false면 완성 알림만 예약한다.
+/// 5단계 도달은 완성 알림이 담당하고, 이미 지난 시각은 건너뛴다
+/// (`scheduleSeedCompleteNotification`이 무시).
+/// 디버그 시간 이동으로 가짜 시각에 심은 씨앗은 실제 시각과 어긋나
+/// 예약이 건너뛰어질 수 있다 (OS는 실제 시각 기준이라 정상).
+Future<void> _scheduleGrowingSeedAlerts(
+  Seed seed, {
+  required bool growthEnabled,
+}) async {
+  if (kDebugMode) {
+    debugPrint('schedule growing alerts: seed=${seed.id} '
+        'status=${seed.status} plantedAt=${seed.plantedAt} '
+        'growth=$growthEnabled');
+  }
+  final completeAt =
+      seed.plantedAt.add(Seed.stageInterval * Seed.maxGrowthStage);
+  await NotificationService.instance.scheduleSeedCompleteNotification(
+    id: NotificationService.seedCompleteNotificationId,
+    title: '열매가 완성됐어요',
+    body: '눌러서 오늘의 리뷰를 남겨보세요',
+    completeAt: completeAt,
+  );
+  if (!growthEnabled) return;
+  for (final item in seed.pendingGrowthStages(DateTime.now())) {
+    await NotificationService.instance.scheduleSeedCompleteNotification(
+      id: NotificationService.growthNotificationId(item.stage),
+      title: '씨앗이 자랐어요',
+      body: '${item.stage}단계가 됐어요',
+      completeAt: item.at,
     );
   }
 }

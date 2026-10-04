@@ -1,8 +1,10 @@
+import 'package:app_settings/app_settings.dart' as sys_settings;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
+import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
@@ -42,7 +44,14 @@ class SettingsScreen extends StatelessWidget {
           label: '매일 알림',
           trailingWidget: Switch(
             value: settings.notifyEnabled,
-            onChanged: state.setNotifyEnabled,
+            onChanged: (value) => _toggleDaily(context, state, value),
+          ),
+        ),
+        _Row(
+          label: '성장 알림',
+          trailingWidget: Switch(
+            value: settings.growthNotifyEnabled,
+            onChanged: state.setGrowthNotifyEnabled,
           ),
         ),
         _Row(
@@ -52,6 +61,10 @@ class SettingsScreen extends StatelessWidget {
             // 테마 기본값에 맡기면 모드별 텍스트 스타일로 크기가 흔들릴 수 있어
             // 크기 요소(textStyle·minimumSize·padding)를 명시적으로 고정한다
             // (색상은 각 모드 테마를 따른다).
+            // #218 후속: 선택된 세그먼트에만 체크 아이콘이 붙어
+            // 선택 변경 시 전체 너비가 흔들리므로(270→234 실측) 아이콘을 숨긴다.
+            // 선택 상태는 배경색으로 구분된다.
+            showSelectedIcon: false,
             style: SegmentedButton.styleFrom(
               visualDensity: VisualDensity.compact,
               textStyle: const TextStyle(
@@ -95,6 +108,23 @@ class SettingsScreen extends StatelessWidget {
                   context.read<DebugUiProvider>().setHideButtons(value),
             ),
           ),
+        // #244: 디버그용 알림 테스트 (10초 후 1회). inexact 모드라
+        // 수분 지연될 수 있다. 릴리스 빌드에는 포함되지 않는다.
+        if (kDebugMode)
+          _Row(
+            label: '알림 테스트',
+            trailingWidget: TextButton(
+              onPressed: () => NotificationService.instance
+                  .scheduleSeedCompleteNotification(
+                id: 9999,
+                title: '테스트 알림이에요',
+                body: '예약 알림이 정상 동작해요',
+                completeAt:
+                    DateTime.now().add(const Duration(seconds: 10)),
+              ),
+              child: const Text('10초 후 울리기'),
+            ),
+          ),
         if (state.errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -111,6 +141,28 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// 매일 알림 스위치. 켤 때 OS 권한을 확인하고 (#244 후속),
+  /// 거부 상태면 OS 팝업이 다시 뜨지 않으므로 설정 유도를 보여준다.
+  /// (처음 허용 여부를 묻는 팝업 자체는 `requestPermissions`가 띄운다.)
+  Future<void> _toggleDaily(
+      BuildContext context, SettingsProvider state, bool value) async {
+    await state.setNotifyEnabled(value);
+    if (!value || !context.mounted) return;
+    final granted = await NotificationService.instance.requestPermissions();
+    if (granted || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('알림이 거부되어 있어요. 설정에서 허용해주세요.'),
+        action: SnackBarAction(
+          label: '설정으로 이동',
+          onPressed: () => sys_settings.AppSettings.openAppSettings(
+            type: sys_settings.AppSettingsType.notification,
+          ),
+        ),
+      ),
     );
   }
 
