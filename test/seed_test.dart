@@ -460,6 +460,52 @@ void main() {
       expect(fruits.first.text, provider.revealedQuote!.text);
     });
 
+    test('plantSeedWithCustom plants the own quote (#129)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeedWithCustom(
+        text: '내가 쓴 한 줄',
+        author: '나',
+        theme: SeedTheme.peace,
+      );
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.revealedQuote!.text, '내가 쓴 한 줄');
+      expect(provider.revealedQuote!.author, '나');
+      expect(provider.revealedQuote!.theme, SeedTheme.peace);
+      expect(provider.revealedQuote!.source, '직접 작성');
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('plantSeedWithCustom rejects bad input (#129)', () async {
+      Future<String?> tryPlant(String text, String author, String theme) async {
+        final provider = _buildProvider();
+        await provider.ensureTodaySeed();
+        await provider.plantSeedWithCustom(
+          text: text,
+          author: author,
+          theme: theme,
+        );
+        return provider.errorMessage;
+      }
+
+      expect(await tryPlant('', '나', SeedTheme.peace), isNotNull);
+      expect(await tryPlant('한 줄', '', SeedTheme.peace), isNotNull);
+      expect(await tryPlant('한 줄', '나', 'nope'), isNotNull);
+      expect(
+          await tryPlant('가'.padRight(83, '나'), '나', SeedTheme.peace),
+          isNotNull);
+
+      // 실패해도 씨앗은 잠금 그대로다.
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      await provider.plantSeedWithCustom(
+          text: '', author: '나', theme: SeedTheme.peace);
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.revealedQuote, isNull);
+    });
+
     test('saveReview stores memo and score on the completed fruit',
         () async {
       final seedRepository = InMemorySeedRepository(
@@ -834,6 +880,51 @@ void main() {
       // 마감 후에는 심기 버튼을 보여주지 않는다.
       expect(find.text('씨앗 심기'), findsNothing);
       expect(find.byType(ElevatedButton), findsNothing);
+    });
+
+    testWidgets('custom quote sheet plants the own quote (#129)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(find.text('직접 쓰기'), findsOneWidget);
+
+      await tester.tap(find.text('직접 쓰기'));
+      await tester.pumpAndSettle();
+      expect(find.text('직접 쓰기', skipOffstage: false), findsWidgets);
+
+      // 본문·지은이를 적고 심으면 자작 명언이 바로 공개된다.
+      await tester.enterText(
+          find.byType(TextField).first, '내가 쓴 한 줄');
+      await tester.enterText(find.byType(TextField).last, '나');
+      await tester.pump();
+      await tester.tap(find.text('이 명언으로 심기'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.revealedQuote!.text, '내가 쓴 한 줄');
+      // #177: 표시 문구는 따옴표+단어 결합자가 들어가므로 같은 형태로 찾는다.
+      expect(find.text('"${keepWordsTogether('내가 쓴 한 줄')}"'),
+          findsOneWidget);
+    });
+
+    testWidgets('custom quote requires text and author (#129)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('직접 쓰기'));
+      await tester.pumpAndSettle();
+
+      // 비어 있으면 심기 버튼이 비활성화된다.
+      final plantButton = tester.widget<ElevatedButton>(
+          find.widgetWithText(ElevatedButton, '이 명언으로 심기'));
+      expect(plantButton.onPressed, isNull);
+      expect(provider.todaySeed!.isLocked, isTrue);
     });
 
     testWidgets('debug reset wipes seeds and restarts the morning',
