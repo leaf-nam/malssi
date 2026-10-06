@@ -15,7 +15,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.leaf.malssi"
-    compileSdk = flutter.compileSdkVersion
+    // `live_activities` → `permission_handler_android`가 API 37 이상을 요구 (#248).
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

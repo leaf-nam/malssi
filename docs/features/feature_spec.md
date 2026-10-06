@@ -181,6 +181,7 @@
 | 5 | 랜딩 (매 실행) | — | — | — | `LandingScreen` (`lib/features/landing/presentation/`) | 구현됨 (#162) |
 | 6 | 스토어 업데이트 유도 | — | — | — (스토어 직접 조회) | `UpdateGate` (`lib/core/widgets/update_gate.dart`, `upgrader` 패키지) | 구현됨 (#192) |
 | 7 | 홈 위젯 | — (App Group 공유) | — | — | `HomeWidgetService` + 네이티브 위젯 (Android `MalssiWidgetProvider`, iOS `MalssiWidget`) | 구현됨 (#139, 성장 상태·잠금화면 #242) |
+| 8 | 성장 Live Activity | — (App Group 공유) | — | — | `LiveActivityService` + `MalssiGrowthActivity` (iOS) + `MalssiLiveActivityManager` (Android) | 구현됨 (#248) |
 
 ## 6. 폐기된 기존 7기능과 사유 (2026-09-04 확정)
 

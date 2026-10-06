@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/services/home_widget_service.dart';
+import 'package:malssi/core/services/live_activity_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/update_gate.dart';
@@ -143,15 +144,28 @@ class AppShell extends StatelessWidget {
             )..ensureTodaySeed();
             // #139: 공개된 명언을 홈 위젯에 반영한다.
             // #242: 성장 상태(단계·다음 단계·완성 시각)도 함께 전달한다.
+            // #248: Live Activity(잠금화면 실시간 카운트다운)도 함께 동기화한다.
             // 중복 갱신은 서비스가 제거하고, 실패해도 앱에 영향없다.
             seedProvider.addListener(() {
               final quote = seedProvider.revealedQuote;
               final seed = seedProvider.todaySeed;
               if (quote == null || seed == null) {
                 HomeWidgetService.instance.updatePlaceholder();
+                LiveActivityService.instance.syncSeed(
+                  dateKey: '',
+                  quoteText: '',
+                  status: 'locked',
+                  stage: 0,
+                );
               } else {
                 final now = DateTime.now();
                 final growing = seed.isGrowing;
+                final completeAtIso = growing
+                    ? seed.plantedAt
+                        .add(Seed.stageInterval * Seed.maxGrowthStage)
+                        .toUtc()
+                        .toIso8601String()
+                    : '';
                 HomeWidgetService.instance.updateSeed(
                   quoteId: quote.id,
                   text: quote.text,
@@ -167,12 +181,14 @@ class AppShell extends StatelessWidget {
                           .toUtc()
                           .toIso8601String()
                       : '',
-                  completeAtIso: growing
-                      ? seed.plantedAt
-                          .add(Seed.stageInterval * Seed.maxGrowthStage)
-                          .toUtc()
-                          .toIso8601String()
-                      : '',
+                  completeAtIso: completeAtIso,
+                );
+                LiveActivityService.instance.syncSeed(
+                  dateKey: seed.dateKey,
+                  quoteText: quote.text,
+                  status: seed.status,
+                  stage: seed.growthStageAt(now),
+                  completeAtIso: completeAtIso,
                 );
               }
             });

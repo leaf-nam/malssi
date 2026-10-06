@@ -128,6 +128,7 @@ lib/
 | `share_plus` | `^10.1.2` | 공유 | `lib/`에서 미사용 중. 보관 상세 편입 여부는 후속 이슈에서 결정 (`feature_spec.md` §6 #6) |
 | `shared_preferences` | `^2.5.5` | 로컬 지속화 | `LocalStore` (씨앗·열매·설정·온보딩, #122·#130) |
 | `home_widget` | `^0.10.0` | 홈 위젯 | `HomeWidgetService` (오늘 명언 + 저자, #139) |
+| `live_activities` | `^2.6.0` | Live Activity | `LiveActivityService` (성장 실시간 카운트다운, #248) |
 | `in_app_review` | `^2.0.12` | 스토어 리뷰 요청 | `StoreReviewService` (리뷰 저장 직후, 별점 4~5·통산 3회, #153) |
 | `riverpod` (`dev`, 미사용) | `^2.4.9` | — | `lib/`에서 import 없음. 승격·제거 여부 이슈 분리 |
 | `build_runner` (`dev`) | `^2.4.6` | 코드 생성 | — |
@@ -210,6 +211,23 @@ lib/
   다음 단계·30분 중 빠른 갱신 예약 + 잠금화면 `accessoryRectangular`).
   Android 잠금화면 위젯은 OS 미지원이라 제외.
   iOS 실기기 서명은 `DEVELOPMENT_TEAM` 값으로 Xcode에서 처리한다.
+
+### 2.6 성장 Live Activity (`LiveActivityService`, #248)
+
+- 표시: 잠금화면 실시간 카운트다운 (명언 1줄 + `N단계` + 완성까지 남은시간,
+  네이티브 타이머라 초 단위로 틱톡). Dynamic Island(compact/expanded/minimal) 포함.
+- 수명: 1단계 도달 시 시작해 단계마다 갱신하고 수확·미심김 시 종료한다.
+  iOS 8시간 제한에 걸리지 않게 1단계(2시간 경과)부터 시작한다 (2+8=10시간 커버).
+  같은 명언·단계 중복 갱신 방지 + 실패 무시 (앱에 영향없음).
+- 동기화: `app.dart`의 `SeedProvider` 리스너가 위젯과 같은 스냅샷으로 전달.
+  `main()`에서 플러그인 초기화 (App Group 공유).
+  데이터 키 `quote_text`/`stage`/`complete_at`(UTC epoch millis) —
+  플러그인이 App Group UserDefaults(`<uuid>_<key>`)에 저장하고
+  네이티브가 읽는다. 원격 푸시 갱신 미사용.
+- 네이티브: iOS `MalssiGrowthActivity` (`ActivityConfiguration`,
+  위젯 타깃 배포 타깃 16.1+, 양쪽 `Info.plist`에 `NSSupportsLiveActivities`),
+  Android `MalssiLiveActivityManager` + `res/layout/live_activity.xml`
+  (진행 중 알림, `MainActivity`에 등록).
 
 ## 3. 확장 계획
 
