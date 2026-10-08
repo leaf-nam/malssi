@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:malssi/core/constants/seed_themes.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
@@ -196,6 +197,58 @@ class SeedProvider extends ChangeNotifier {
       await _notifyReminderDue(seed);
       // 배달 게이트를 갱신한다 (#196).
       await _updateDeliveryGate();
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// 자작 명언으로 씨앗을 심는다 (#129). 진입은 심기 전 1회,
+  /// 테마는 7종 중 직접 선택, 심은 뒤에는 수정 불가(번들과 동일)다.
+  /// 본문 1~82자(번들 표시 상한 #180)·지은이 필수·유효한 테마만 받는다.
+  Future<void> plantSeedWithCustom({
+    required String text,
+    required String author,
+    required String theme,
+  }) async {
+    final seed = _todaySeed;
+    if (seed == null || !seed.isLocked) return;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _updateDeliveryGate();
+      if (_deliveryPending) {
+        throw StateError('Seed not yet deliverable: ${seed.id}');
+      }
+      final trimmedText = text.trim();
+      final trimmedAuthor = author.trim();
+      if (trimmedText.isEmpty || trimmedAuthor.isEmpty) {
+        throw ArgumentError('Custom quote needs text and author');
+      }
+      if (trimmedText.length > 82) {
+        throw ArgumentError('Custom quote exceeds 82 chars');
+      }
+      if (!SeedTheme.isValid(theme)) {
+        throw ArgumentError('Invalid theme: $theme');
+      }
+      final quote = Quote(
+        id: 'custom-${seed.dateKey}',
+        text: trimmedText,
+        author: trimmedAuthor,
+        likes: 0,
+        createdAt: DateTime.now(),
+        theme: theme,
+        source: '직접 작성',
+      );
+      _todaySeed =
+          await _seedRepository.plantSeed(seedId: seed.id, quote: quote);
+      _plantedQuote = quote;
+      _revealedQuote = quote;
+      // 심었으므로 완성 알림을 예약한다 (#140).
+      await _notifyPlanted(_todaySeed!);
     } catch (e) {
       _errorMessage = '$e';
     } finally {

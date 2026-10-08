@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 성장 Live Activity 알림 레이아웃 (#248). 말씨 다크 톤과 맞춘다 (#59). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/live_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#2A2438"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/live_quote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="오늘의 말씨"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/live_stage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="🌱 자라는 중"
+        android:textColor="#D9A94F"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/live_countdown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text=""
+        android:textColor="#B0A8C8"
+        android:textSize="12sp" />
+</LinearLayout>

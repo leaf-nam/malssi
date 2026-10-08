@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:malssi/app.dart';
 import 'package:malssi/core/services/home_widget_service.dart';
+import 'package:malssi/core/services/live_activity_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_assets.dart';
@@ -52,6 +53,12 @@ Future<void> main() async {
   }
   // 위젯 탭 → 말씨 탭(`/`)으로 이동한다 (#139).
   _routeWidgetLaunch();
+  // Live Activity 플러그인 초기화 (#248). 실패해도 무시한다.
+  try {
+    await LiveActivityService.instance.init();
+  } catch (e) {
+    debugPrint('LiveActivity init failed: $e');
+  }
   runApp(AppShell(
     initialQuotes: quotes,
     seedRepository: seedRepository,
