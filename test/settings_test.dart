@@ -43,8 +43,12 @@ void main() {
       expect(restored.themeMode, 'dark');
       expect(restored.fruitRainEnabled, isFalse);
       expect(restored.growthNotifyEnabled, isTrue);
-      // #253: 잠금 먼저 보기는 기본 off.
-      expect(restored.lockscreenFirstEnabled, isFalse);
+      // #253: 상단바 진행 알림은 기본값 on (기존 동작 유지).
+      expect(restored.progressNotifyEnabled, isTrue);
+      expect(
+          restored.copyWith(progressNotifyEnabled: false)
+              .progressNotifyEnabled,
+          isFalse);
       expect(
           restored.copyWith(lockscreenFirstEnabled: true)
               .lockscreenFirstEnabled,
@@ -74,6 +78,8 @@ void main() {
       expect(settings.growthNotifyEnabled, isTrue);
       // #253: 잠금 먼저 보기는 기본값 off (opt-in).
       expect(settings.lockscreenFirstEnabled, isFalse);
+      // #253 후속: 상단바 진행 알림은 기본값 on (기존 동작 유지).
+      expect(settings.progressNotifyEnabled, isTrue);
     });
 
     test('fromMap falls back to system theme on bad values', () {
@@ -172,6 +178,21 @@ void main() {
           (await repo.setLockscreenFirstEnabled(false))
               .lockscreenFirstEnabled,
           isFalse);
+    });
+
+    test('setProgressNotifyEnabled toggles progress alerts (#253)', () async {
+      final repo = InMemorySettingsRepository();
+      expect(
+          (await repo.getSettings()).progressNotifyEnabled, isTrue);
+
+      expect(
+          (await repo.setProgressNotifyEnabled(false))
+              .progressNotifyEnabled,
+          isFalse);
+      expect(
+          (await repo.setProgressNotifyEnabled(true))
+              .progressNotifyEnabled,
+          isTrue);
     });
   });
 
@@ -381,6 +402,28 @@ void main() {
       expect(calls.single.lockscreenFirst, isTrue);
       expect(provider.errorMessage, isNull);
     });
+
+    test('setProgressNotifyEnabled notifies the callback (#253)', () async {
+      final progressCalls = <bool>[];
+      final provider = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+        onProgressNotifyChanged: ({required enabled}) async {
+          progressCalls.add(enabled);
+        },
+      );
+      await provider.load();
+      expect(provider.settings!.progressNotifyEnabled, isTrue);
+
+      await provider.setProgressNotifyEnabled(false);
+      expect(provider.settings!.progressNotifyEnabled, isFalse);
+      expect(progressCalls, [false]);
+      expect(provider.errorMessage, isNull);
+
+      await provider.setProgressNotifyEnabled(true);
+      expect(provider.settings!.progressNotifyEnabled, isTrue);
+      expect(progressCalls, [false, true]);
+      expect(provider.errorMessage, isNull);
+    });
   });
 
   group('SettingsScreen', () {
@@ -400,11 +443,12 @@ void main() {
       expect(find.text('다크'), findsOneWidget);
       expect(find.text('열매 비 효과'), findsOneWidget);
       expect(find.text('성장 알림'), findsOneWidget);
-      // #253: 테스트 플랫폼은 Android라 잠금화면 행이 보인다 (성장 알림 바로 아래).
+      // #253: 테스트 플랫폼은 Android라 잠금화면 행이 보인다 (진행 알림 아래).
+      expect(find.text('상단바 진행 알림'), findsOneWidget);
       expect(find.text('잠금화면'), findsOneWidget);
       // 디버그 모드에서는 '디버그 버튼 숨기기' 스위치가 하나 더 보인다.
       expect(find.text('디버그 버튼 숨기기'), findsOneWidget);
-      expect(find.byType(Switch), findsNWidgets(5));
+      expect(find.byType(Switch), findsNWidgets(6));
     });
 
     testWidgets('toggling the switch disables notifications', (tester) async {
@@ -493,7 +537,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(provider.settings!.fruitRainEnabled, isTrue);
 
-      await tester.tap(find.byType(Switch).at(3));
+      await tester.tap(find.byType(Switch).at(4));
       await tester.pumpAndSettle();
 
       expect(provider.settings!.fruitRainEnabled, isFalse);
@@ -527,10 +571,27 @@ void main() {
       await tester.pumpAndSettle();
       expect(provider.settings!.lockscreenFirstEnabled, isFalse);
 
-      await tester.tap(find.byType(Switch).at(2));
+      await tester.tap(find.byType(Switch).at(3));
       await tester.pumpAndSettle();
 
       expect(provider.settings!.lockscreenFirstEnabled, isTrue);
+    });
+
+    testWidgets('toggling the progress switch flips progress alerts (#253)',
+        (tester) async {
+      final provider = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(provider.settings!.progressNotifyEnabled, isTrue);
+
+      await tester.tap(find.byType(Switch).at(2));
+      await tester.pumpAndSettle();
+
+      expect(provider.settings!.progressNotifyEnabled, isFalse);
     });
   });
 }

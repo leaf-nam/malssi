@@ -89,6 +89,13 @@ class _SettingsScreenState extends State<SettingsScreen>
             onChanged: state.setGrowthNotifyEnabled,
           ),
         ),
+        _Row(
+          label: '상단바 진행 알림',
+          trailingWidget: Switch(
+            value: settings.progressNotifyEnabled,
+            onChanged: state.setProgressNotifyEnabled,
+          ),
+        ),
         // #253: 잠금화면 오버레이 (Android만, opt-in, 성장 알림 바로 아래).
         // 전역 알림이 꺼져 있으면 동작하지 않는다.
         // iOS는 잠금화면 위젯(#242)·Live Activity(#248)로 커버하므로 숨긴다.

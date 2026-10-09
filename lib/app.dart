@@ -246,6 +246,12 @@ class AppShell extends StatelessWidget {
               final seed = await seedRepository.getActiveSeed();
               await _scheduleGrowingSeedAlerts(seed, growthEnabled: true);
             },
+            // #253 후속: 상단바 진행 알림 스위치 변경. 끄면 진행 중 알림을
+            // 즉시 종료하고, 켜면 다음 스냅샷 갱신 때 다시 표시한다.
+            onProgressNotifyChanged: ({required enabled}) async {
+              if (enabled) return;
+              await LiveActivityService.instance.endAll();
+            },
           )..load(),
         ),
         Provider(create: (_) => DummyAuthService()),
