@@ -245,6 +245,23 @@ void main() {
       });
     });
 
+    group('quoteFontSizeFor (#252)', () {
+      test('short quotes keep the impact size', () {
+        expect(quoteFontSizeFor('시작이 반이다.'), 26);
+        expect(quoteFontSizeFor('가' * 40), 26);
+      });
+
+      test('mid quotes shrink one step', () {
+        expect(quoteFontSizeFor('가' * 41), 22);
+        expect(quoteFontSizeFor('가' * 60), 22);
+      });
+
+      test('long quotes shrink two steps', () {
+        expect(quoteFontSizeFor('가' * 61), 18);
+        expect(quoteFontSizeFor('가' * 82), 18);
+      });
+    });
+
     group('noon deadline (#147)', () {
       Seed lockedAt(DateTime createdAt) => Seed(
             id: '2026-09-04',
@@ -1257,6 +1274,57 @@ void main() {
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(keepWordsTogether(provider.revealedQuote!.text)),
           findsOneWidget);
+    });
+
+    testWidgets('long quotes render smaller, short quotes keep 26 (#252)',
+        (tester) async {
+      SeedProvider buildWithQuote(Quote quote) {
+        return SeedProvider(
+          seedRepository: InMemorySeedRepository(
+              themePicker: () => SeedTheme.peace),
+          quoteRepository: InMemoryQuoteRepository(seed: [quote]),
+          fruitRepository: InMemoryFruitRepository(),
+        );
+      }
+
+      TextStyle quoteStyleOf(Quote quote) {
+        final finder =
+            find.textContaining(keepWordsTogether(quote.text));
+        expect(finder, findsOneWidget);
+        return tester.widget<Text>(finder).style!;
+      }
+
+      final longQuote = Quote(
+        id: 'long-1',
+        text: '가' * 82,
+        author: '작자',
+        likes: 0,
+        createdAt: DateTime(2026, 9, 4),
+        theme: SeedTheme.peace,
+      );
+      final longProvider = buildWithQuote(longQuote);
+      await longProvider.ensureTodaySeed();
+      await tester.pumpWidget(_wrap(longProvider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(quoteStyleOf(longQuote).fontSize, 18);
+
+      final shortQuote = Quote(
+        id: 'short-1',
+        text: '시작이 반이다.',
+        author: '작자',
+        likes: 0,
+        createdAt: DateTime(2026, 9, 4),
+        theme: SeedTheme.peace,
+      );
+      final shortProvider = buildWithQuote(shortQuote);
+      await shortProvider.ensureTodaySeed();
+      await tester.pumpWidget(_wrap(shortProvider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(quoteStyleOf(shortQuote).fontSize, 26);
     });
 
     testWidgets('growing seed shows the timer below, completion hides it (#138)',
