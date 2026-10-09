@@ -178,7 +178,8 @@ class SettingsScreen extends StatelessWidget {
   }
 
   /// 잠금 오버레이 스위치 (#253). 켤 때 다른 앱 위에 표시 권한이 없으면
-  /// 시스템 설정으로 안내한다 (OS 팝업이 다시 뜨지 않으므로).
+  /// 시스템 설정으로 바로 안내한다 (매일 알림의 권한 요청과 같은 방침 —
+  /// 스낵바만 띄우면 놓치기 쉽다는 피드백).
   /// 설정값은 먼저 저장한다 — 권한 허용 후 앱 시작 시 동기화로 서비스가 돈다.
   Future<void> _toggleLockscreen(
       BuildContext context, SettingsProvider state, bool value) async {
@@ -186,14 +187,11 @@ class SettingsScreen extends StatelessWidget {
     if (!value || !context.mounted) return;
     final granted = await LockscreenService.instance.isGranted();
     if (granted || !context.mounted) return;
+    final opened = await LockscreenService.instance.openSettings();
+    if (opened || !context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('잠금화면에 보여주려면 다른 앱 위에 표시를 허용해주세요.'),
-        action: SnackBarAction(
-          label: '설정으로 이동',
-          onPressed: () => LockscreenService.instance.openSettings(),
-        ),
-      ),
+      const SnackBar(
+          content: Text('설정에서 다른 앱 위에 표시를 허용해주세요.')),
     );
   }
 
