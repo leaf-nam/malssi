@@ -97,7 +97,10 @@ class MalssiLockscreenService : Service() {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             overlayType(),
+            // 순수 표시 전용 (#253 후속). 터치를 전부 아래 잠금화면으로
+            // 넘겨 스와이프 잠금 해제가 막히지 않게 한다.
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT,
         ).apply { gravity = Gravity.TOP }
