@@ -92,6 +92,16 @@ class SettingsScreen extends StatelessWidget {
             onChanged: state.setFruitRainEnabled,
           ),
         ),
+        // #253: 잠금 해제 시 먼저 보기 (Android full-screen intent, opt-in).
+        // iOS는 잠금화면 위젯(#242)·Live Activity(#248)로 커버하므로 숨긴다.
+        if (defaultTargetPlatform == TargetPlatform.android)
+          _Row(
+            label: '잠금화면에서 먼저 보기',
+            trailingWidget: Switch(
+              value: settings.lockscreenFirstEnabled,
+              onChanged: state.setLockscreenFirstEnabled,
+            ),
+          ),
         _Row(
           label: '도움말 다시 보기',
           trailing: '›',
