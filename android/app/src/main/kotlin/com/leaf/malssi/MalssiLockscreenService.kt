@@ -90,23 +90,31 @@ class MalssiLockscreenService : Service() {
         val view = LayoutInflater.from(this)
             .inflate(R.layout.lockscreen_overlay, null)
         fillQuote(view)
-        // 탭 이동 없음 (#253 후속). 오버레이는 잠금 해제 시 사라질 뿐,
-        // 어디를 눌러도 앱이 켜지지 않는다.
+        // 탭 이동 없음 (#253 후속). 오버레이 위 터치는 즉시 숨기고
+        // 아래 잠금화면으로 흘려보낸다.
+        dismissOnTouch(view)
         applyFont(view)
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             overlayType(),
-            // 순수 표시 전용 (#253 후속). 터치를 전부 아래 잠금화면으로
-            // 넘겨 스와이프 잠금 해제가 막히지 않게 한다.
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT,
         ).apply { gravity = Gravity.TOP }
         getSystemService(WindowManager::class.java).addView(view, params)
         overlayView = view
         android.util.Log.d(TAG, "overlay shown")
+    }
+
+    // 오버레이 위 어떤 터치든 즉시 숨긴다 (#253 후속).
+    // `false`를 돌려 이벤트를 아래 잠금화면으로 흘려보내
+    // 스와이프 잠금 해제가 막히지 않게 한다.
+    private fun dismissOnTouch(view: View) {
+        view.setOnTouchListener { _, _ ->
+            hideOverlay()
+            false
+        }
     }
 
     private fun hideOverlay() {
