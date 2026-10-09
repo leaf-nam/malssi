@@ -245,6 +245,23 @@ void main() {
       });
     });
 
+    group('quoteFontSizeFor (#252)', () {
+      test('short quotes keep the impact size', () {
+        expect(quoteFontSizeFor('시작이 반이다.'), 26);
+        expect(quoteFontSizeFor('가' * 40), 26);
+      });
+
+      test('mid quotes shrink one step', () {
+        expect(quoteFontSizeFor('가' * 41), 22);
+        expect(quoteFontSizeFor('가' * 60), 22);
+      });
+
+      test('long quotes shrink two steps', () {
+        expect(quoteFontSizeFor('가' * 61), 18);
+        expect(quoteFontSizeFor('가' * 82), 18);
+      });
+    });
+
     group('noon deadline (#147)', () {
       Seed lockedAt(DateTime createdAt) => Seed(
             id: '2026-09-04',
@@ -458,6 +475,52 @@ void main() {
       final fruits = await fruitRepository.getFruits();
       expect(fruits.length, 1);
       expect(fruits.first.text, provider.revealedQuote!.text);
+    });
+
+    test('plantSeedWithCustom plants the own quote (#129)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeedWithCustom(
+        text: '내가 쓴 한 줄',
+        author: '나',
+        theme: SeedTheme.peace,
+      );
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.revealedQuote!.text, '내가 쓴 한 줄');
+      expect(provider.revealedQuote!.author, '나');
+      expect(provider.revealedQuote!.theme, SeedTheme.peace);
+      expect(provider.revealedQuote!.source, '직접 작성');
+      expect(provider.errorMessage, isNull);
+    });
+
+    test('plantSeedWithCustom rejects bad input (#129)', () async {
+      Future<String?> tryPlant(String text, String author, String theme) async {
+        final provider = _buildProvider();
+        await provider.ensureTodaySeed();
+        await provider.plantSeedWithCustom(
+          text: text,
+          author: author,
+          theme: theme,
+        );
+        return provider.errorMessage;
+      }
+
+      expect(await tryPlant('', '나', SeedTheme.peace), isNotNull);
+      expect(await tryPlant('한 줄', '', SeedTheme.peace), isNotNull);
+      expect(await tryPlant('한 줄', '나', 'nope'), isNotNull);
+      expect(
+          await tryPlant('가'.padRight(83, '나'), '나', SeedTheme.peace),
+          isNotNull);
+
+      // 실패해도 씨앗은 잠금 그대로다.
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+      await provider.plantSeedWithCustom(
+          text: '', author: '나', theme: SeedTheme.peace);
+      expect(provider.todaySeed!.isLocked, isTrue);
+      expect(provider.revealedQuote, isNull);
     });
 
     test('saveReview stores memo and score on the completed fruit',
@@ -836,6 +899,51 @@ void main() {
       expect(find.byType(ElevatedButton), findsNothing);
     });
 
+    testWidgets('custom quote sheet plants the own quote (#129)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(find.text('직접 쓰기'), findsOneWidget);
+
+      await tester.tap(find.text('직접 쓰기'));
+      await tester.pumpAndSettle();
+      expect(find.text('직접 쓰기', skipOffstage: false), findsWidgets);
+
+      // 본문·지은이를 적고 심으면 자작 명언이 바로 공개된다.
+      await tester.enterText(
+          find.byType(TextField).first, '내가 쓴 한 줄');
+      await tester.enterText(find.byType(TextField).last, '나');
+      await tester.pump();
+      await tester.tap(find.text('이 명언으로 심기'));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.isGrowing, isTrue);
+      expect(provider.revealedQuote!.text, '내가 쓴 한 줄');
+      // #177: 표시 문구는 따옴표+단어 결합자가 들어가므로 같은 형태로 찾는다.
+      expect(find.text('"${keepWordsTogether('내가 쓴 한 줄')}"'),
+          findsOneWidget);
+    });
+
+    testWidgets('custom quote requires text and author (#129)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('직접 쓰기'));
+      await tester.pumpAndSettle();
+
+      // 비어 있으면 심기 버튼이 비활성화된다.
+      final plantButton = tester.widget<ElevatedButton>(
+          find.widgetWithText(ElevatedButton, '이 명언으로 심기'));
+      expect(plantButton.onPressed, isNull);
+      expect(provider.todaySeed!.isLocked, isTrue);
+    });
+
     testWidgets('debug reset wipes seeds and restarts the morning',
         (tester) async {
       final provider = _buildProvider();
@@ -1166,6 +1274,57 @@ void main() {
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(keepWordsTogether(provider.revealedQuote!.text)),
           findsOneWidget);
+    });
+
+    testWidgets('long quotes render smaller, short quotes keep 26 (#252)',
+        (tester) async {
+      SeedProvider buildWithQuote(Quote quote) {
+        return SeedProvider(
+          seedRepository: InMemorySeedRepository(
+              themePicker: () => SeedTheme.peace),
+          quoteRepository: InMemoryQuoteRepository(seed: [quote]),
+          fruitRepository: InMemoryFruitRepository(),
+        );
+      }
+
+      TextStyle quoteStyleOf(Quote quote) {
+        final finder =
+            find.textContaining(keepWordsTogether(quote.text));
+        expect(finder, findsOneWidget);
+        return tester.widget<Text>(finder).style!;
+      }
+
+      final longQuote = Quote(
+        id: 'long-1',
+        text: '가' * 82,
+        author: '작자',
+        likes: 0,
+        createdAt: DateTime(2026, 9, 4),
+        theme: SeedTheme.peace,
+      );
+      final longProvider = buildWithQuote(longQuote);
+      await longProvider.ensureTodaySeed();
+      await tester.pumpWidget(_wrap(longProvider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(quoteStyleOf(longQuote).fontSize, 18);
+
+      final shortQuote = Quote(
+        id: 'short-1',
+        text: '시작이 반이다.',
+        author: '작자',
+        likes: 0,
+        createdAt: DateTime(2026, 9, 4),
+        theme: SeedTheme.peace,
+      );
+      final shortProvider = buildWithQuote(shortQuote);
+      await shortProvider.ensureTodaySeed();
+      await tester.pumpWidget(_wrap(shortProvider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      expect(quoteStyleOf(shortQuote).fontSize, 26);
     });
 
     testWidgets('growing seed shows the timer below, completion hides it (#138)',

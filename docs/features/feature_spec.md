@@ -40,6 +40,9 @@
      보여준다 (배달 게이트, #196).
   2. 사용자가 씨앗을 탭 1회 → `plantSeed()` → `status: locked → growing` →
      같은 테마의 명언 확정 + **명언 즉시 공개** (해당 테마가 없으면 전체 랜덤 폴백).
+     직접 쓰기(#129)로는 `plantSeedWithCustom()` → 자작 명언(본문 1~82자·
+     지은이 필수·테마 직접 선택, 출처 `직접 작성`)으로 심는다.
+     심은 뒤에는 수정 불가이며 이후 흐름(성장·수확·리뷰·잔디)은 번들과 동일하다.
      당일 14시를 넘긴 미심김 씨앗은 만료되어 심을 수 없다
      (`expired`, 14시 정각까지 심기 가능, #147).
      마감 1시간 전(13:00)에는 미심김 씨앗 리마인드 알림이 발송된다
@@ -120,6 +123,11 @@
   화면 모드(라이트/다크/시스템, #47)와 씨앗 기본 생성시간 08:00 (#47),
   열매 비 효과 on/off (기본값 on, #108),
   성장 알림 on/off (기본값 on, #244 — 켜면 1~4단계 도달마다 알림)를 제공한다.
+  잠금화면에서 먼저 보기 on/off (기본값 off, #253 — Android만 노출,
+  켜면 핸드폰을 켤 때마다(잠금 상태 화면 켜짐) 오늘 명언 오버레이를 먼저
+  보여준다. `SYSTEM_ALERT_WINDOW` + 포그라운드 서비스 방식이며
+  잠금 해제 시 자동 숨김·탭 시 말씨 탭 이동. 매일 알림과 무관.
+  iOS는 잠금화면 위젯 #242·Live Activity #248로 커버).
 - **구현 상태**: 구현됨. 구 `MyPageScreen`은 #19에서 제거됐다.
 - **관련 코드**:
   - 모델: `AppSettings` (`model_spec.md` §4.10 참조).
@@ -178,6 +186,7 @@
 | 5 | 랜딩 (매 실행) | — | — | — | `LandingScreen` (`lib/features/landing/presentation/`) | 구현됨 (#162) |
 | 6 | 스토어 업데이트 유도 | — | — | — (스토어 직접 조회) | `UpdateGate` (`lib/core/widgets/update_gate.dart`, `upgrader` 패키지) | 구현됨 (#192) |
 | 7 | 홈 위젯 | — (App Group 공유) | — | — | `HomeWidgetService` + 네이티브 위젯 (Android `MalssiWidgetProvider`, iOS `MalssiWidget`) | 구현됨 (#139, 성장 상태·잠금화면 #242) |
+| 8 | 성장 Live Activity | — (App Group 공유) | — | — | `LiveActivityService` + `MalssiGrowthActivity` (iOS) + `MalssiLiveActivityManager` (Android) | 구현됨 (#248) |
 
 ## 6. 폐기된 기존 7기능과 사유 (2026-09-04 확정)
 

@@ -1,7 +1,7 @@
 name: malssi
 description: A Flutter application for quote sharing
 publish_to: 'none'
-version: 1.1.0+7
+version: 1.1.1+8
 
 environment:
   sdk: ">=3.13.2 <4.0.0"
@@ -20,6 +20,7 @@ dependencies:
   home_widget: ^0.10.0
   in_app_review: ^2.0.12
   app_settings: ^9.0.0
+  live_activities: ^2.6.0
 
 dev_dependencies:
   flutter_test:

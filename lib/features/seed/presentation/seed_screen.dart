@@ -15,6 +15,7 @@ import 'package:malssi/features/archive/domain/fruit.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
+import 'package:malssi/features/seed/presentation/custom_quote_sheet.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
 
 /// 씨앗 탭 (메인). 매일 씨앗 1개 → 탭 1회 → 명언 공개.
@@ -170,16 +171,39 @@ class _LockedSeed extends StatelessWidget {
   /// 대기 사유 (#203, 디버그 표시용): `'delivery'` · `''`.
   final String gateReason;
 
+  /// 자작 명언 작성 시트 (#129). 심은 뒤에는 같은 플로우로 자라난다.
+  void _openCustomQuote(BuildContext context, String seedTheme) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => CustomQuoteSheet(
+        initialTheme: seedTheme,
+        onPlant: ({
+          required text,
+          required author,
+          required theme,
+        }) =>
+            context.read<SeedProvider>().plantSeedWithCustom(
+                  text: text,
+                  author: author,
+                  theme: theme,
+                ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 설정 탭의 런타임 스위치로 스크린샷용으로 가릴 수 있다.
     final showDebug = context.watch<DebugUiProvider>().showButtons;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      // #129: 직접 쓰기 버튼 추가로 내용이 길어질 수 있어 스크롤 허용.
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Container(
               width: 112,
               height: 112,
@@ -264,6 +288,20 @@ class _LockedSeed extends StatelessWidget {
                       : const Text('씨앗 심기'),
                 ),
               ),
+            // #129: 자작 명언으로 심기 (심기 전 1회, 테마 직접 선택).
+            if (!isMissed && !deliveryPending)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: isBusy
+                        ? null
+                        : () => _openCustomQuote(context, theme),
+                    child: const Text('직접 쓰기'),
+                  ),
+                ),
+              ),
             if (showDebug) ...[
               const SizedBox(height: 8),
               // 디버그용 현재 시각. 시간 이동 버튼의 효과를 눈으로 확인한다.
@@ -308,6 +346,7 @@ class _LockedSeed extends StatelessWidget {
               ),
             ],
           ],
+          ),
         ),
       ),
     );
@@ -332,7 +371,9 @@ class _QuoteBlock extends StatelessWidget {
           // #177: 단어 중간 줄바꿈 방지 (원문은 저장소에서 그대로 둔다).
           '"${keepWordsTogether(quote.text)}"',
           textAlign: TextAlign.center,
-          style: AppTheme.quoteTextStyle(fontSize: 26),
+          // #252: 길이에 따라 자동 축소 (짧은 명언의 임팩트는 유지).
+          style: AppTheme.quoteTextStyle(
+              fontSize: quoteFontSizeFor(quote.text)),
         ),
         const SizedBox(height: 16),
         Text(
@@ -379,6 +420,16 @@ String formatGrowthTimer(Duration remaining) {
   final rest = minutes % 60;
   return '${hours.toString().padLeft(2, '0')}:'
       '${rest.toString().padLeft(2, '0')}';
+}
+
+/// 명언 길이에 따른 본문 글자 크기 (#252).
+/// 시스템 글씨 최대(1.2x, #201)에서도 번들 최장 82자 명언이 화면을
+/// 과점유하지 않게 길수록 작게 그린다. 짧은 명언의 임팩트(26)는 유지한다.
+double quoteFontSizeFor(String text) {
+  final length = text.length;
+  if (length > 60) return 18;
+  if (length > 40) return 22;
+  return 26;
 }
 
 /// 다음 성장까지 남은시간 표시 (#138). 30초마다 다시 계산한다.

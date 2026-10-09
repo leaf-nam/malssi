@@ -20,6 +20,7 @@
 		9F315F37C60EC7604CE0E0C3 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD3DE83757B9C6379E3F63A6 /* Pods_RunnerTests.framework */; };
 		3B48D5841087A3EADDB921D0 /* MalssiWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77288147591D53437D28949E /* MalssiWidget.swift */; };
 		E56DBC0DB881B88DEFB116DE /* MalssiWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 986AE5B10978947FD4457BA8 /* MalssiWidgetBundle.swift */; };
+		7A1C4E2B9D084F13AA57C3E1 /* LiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C40F1A9E2B6D48C7A0D51F66 /* LiveActivity.swift */; };
 		DBD448C847EF39A30F505457 /* MalssiWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 77E3E504C0066E3236B7E0D9 /* MalssiWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -92,6 +93,7 @@
 		DE4FA9B9D288571DFDE3190E /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		77288147591D53437D28949E /* MalssiWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MalssiWidget.swift; sourceTree = "<group>"; };
 		986AE5B10978947FD4457BA8 /* MalssiWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MalssiWidgetBundle.swift; sourceTree = "<group>"; };
+		C40F1A9E2B6D48C7A0D51F66 /* LiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivity.swift; sourceTree = "<group>"; };
 		7B6ACE4542B1E62128778066 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5D95E2FDDA8430812747BC3 /* MalssiWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MalssiWidget.entitlements; sourceTree = "<group>"; };
 		1214B5693F7F47DBD890B702 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
@@ -213,6 +215,7 @@
 			children = (
 				77288147591D53437D28949E /* MalssiWidget.swift */,
 				986AE5B10978947FD4457BA8 /* MalssiWidgetBundle.swift */,
+				C40F1A9E2B6D48C7A0D51F66 /* LiveActivity.swift */,
 				7B6ACE4542B1E62128778066 /* Info.plist */,
 				B5D95E2FDDA8430812747BC3 /* MalssiWidget.entitlements */,
 			);
@@ -461,6 +464,7 @@
 			files = (
 				3B48D5841087A3EADDB921D0 /* MalssiWidget.swift in Sources */,
 				E56DBC0DB881B88DEFB116DE /* MalssiWidgetBundle.swift in Sources */,
+				7A1C4E2B9D084F13AA57C3E1 /* LiveActivity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -798,7 +802,7 @@
 				DEVELOPMENT_TEAM = NBK24GWKM5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MalssiWidget/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leaf.malssi.MalssiWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -820,7 +824,7 @@
 				DEVELOPMENT_TEAM = NBK24GWKM5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MalssiWidget/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leaf.malssi.MalssiWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -841,7 +845,7 @@
 				DEVELOPMENT_TEAM = NBK24GWKM5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MalssiWidget/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leaf.malssi.MalssiWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";

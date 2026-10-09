@@ -11,12 +11,17 @@ class AppSettings {
   /// 성장 단계 도달 알림 여부 (#244). 기본값 off (하루 최대 4건이라 opt-in).
   final bool growthNotifyEnabled;
 
+  /// 잠금 해제 시 오늘의 말씨 먼저 보기 (#253, Android만).
+  /// 씨앗 도착 일일 알림에 full-screen intent를 붙인다. 기본값 off (opt-in).
+  final bool lockscreenFirstEnabled;
+
   const AppSettings({
     required this.seedTime,
     required this.notifyEnabled,
     this.themeMode = defaultThemeMode,
     this.fruitRainEnabled = defaultFruitRainEnabled,
     this.growthNotifyEnabled = defaultGrowthNotifyEnabled,
+    this.lockscreenFirstEnabled = defaultLockscreenFirstEnabled,
   });
 
   static const defaultSeedTime = '08:00';
@@ -30,6 +35,8 @@ class AppSettings {
   static const defaultFruitRainEnabled = true;
 
   static const defaultGrowthNotifyEnabled = true;
+
+  static const defaultLockscreenFirstEnabled = false;
 
   static const validThemeModes = ['light', 'dark', 'system'];
 
@@ -69,6 +76,8 @@ class AppSettings {
           map['fruitRainEnabled'] ?? defaultFruitRainEnabled,
       growthNotifyEnabled:
           map['growthNotifyEnabled'] ?? defaultGrowthNotifyEnabled,
+      lockscreenFirstEnabled:
+          map['lockscreenFirstEnabled'] ?? defaultLockscreenFirstEnabled,
     );
   }
 
@@ -79,6 +88,7 @@ class AppSettings {
       'themeMode': themeMode,
       'fruitRainEnabled': fruitRainEnabled,
       'growthNotifyEnabled': growthNotifyEnabled,
+      'lockscreenFirstEnabled': lockscreenFirstEnabled,
     };
   }
 
@@ -87,13 +97,16 @@ class AppSettings {
       bool? notifyEnabled,
       String? themeMode,
       bool? fruitRainEnabled,
-      bool? growthNotifyEnabled}) {
+      bool? growthNotifyEnabled,
+      bool? lockscreenFirstEnabled}) {
     return AppSettings(
       seedTime: seedTime ?? this.seedTime,
       notifyEnabled: notifyEnabled ?? this.notifyEnabled,
       themeMode: themeMode ?? this.themeMode,
       fruitRainEnabled: fruitRainEnabled ?? this.fruitRainEnabled,
       growthNotifyEnabled: growthNotifyEnabled ?? this.growthNotifyEnabled,
+      lockscreenFirstEnabled:
+          lockscreenFirstEnabled ?? this.lockscreenFirstEnabled,
     );
   }
 }

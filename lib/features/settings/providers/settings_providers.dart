@@ -2,13 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 
-/// 설정 변경 시 일일 알림을 다시 등록하는 콜백.
-/// 실제 등록은 `app.dart`에서 `NotificationService`로 연결한다.
-/// 테스트에서는 기록용 가짜를 주입한다.
+/// 설정 변경 시 일일 알림을 다시 등록 + 잠금 오버레이를 동기화하는 콜백.
+/// 실제 등록은 `app.dart`에서 `NotificationService`·`LockscreenService`로
+/// 연결한다. 테스트에서는 기록용 가짜를 주입한다.
 typedef RescheduleSeedNotification = Future<void> Function({
   required int hour,
   required int minute,
   required bool enabled,
+  required bool lockscreenFirst,
 });
 
 /// 성장 알림 스위치 변경 시 호출된다 (#244).
@@ -121,6 +122,23 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
+  /// 잠금 해제 시 먼저 보기 on/off (#253, Android만).
+  /// 일일 알림 재등록 경로(`_reschedule`)를 그대로 타서
+  /// 씨앗 시각·매일 알림 변경과 같은 full-screen intent 플래그로 예약된다.
+  Future<void> setLockscreenFirstEnabled(bool enabled) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _settings =
+          await _settingsRepository.setLockscreenFirstEnabled(enabled);
+      await _reschedule();
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
+  }
+
   Future<void> _reschedule() async {
     final settings = _settings;
     final reschedule = _onSettingsChanged;
@@ -130,6 +148,7 @@ class SettingsProvider extends ChangeNotifier {
         hour: settings.seedHour,
         minute: settings.seedMinute,
         enabled: settings.notifyEnabled,
+        lockscreenFirst: settings.lockscreenFirstEnabled,
       );
     } catch (e) {
       _errorMessage = '$e';

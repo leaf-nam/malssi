@@ -106,13 +106,16 @@ class CollectionNames {
   (제거 전 위치: `lib/features/category/data/hashtag_repository.dart`)
 - **컬렉션**: `categories` (`CollectionNames.categories`) — 사용 중단.
 
-### 4.6 `Submission` — 제거됨 (#19)
+### 4.6 `Submission` — 제거됨 (#19, #129에서 `Quote` 재사용으로 부활)
 
 - **현황**: 구 내 명언 화면과 함께 제거됨. 전용 모델 클래스 없이
   `Map<String, dynamic>`으로 다루었었다.
   (제거 전 위치: `lib/features/my_quote/data/submission_repository.dart`,
   컬렉션 `submissions`.)
-- **향후 과제**: 자작 명언 부활 시(#129) 모델·상태 정책을 새로 확정한다.
+- **부활 정책** (#129, 구현됨): 전용 모델을 신설하지 않고 `Quote`(§4.1)를
+  재사용한다. 자작 항목은 `id: 'custom-<dateKey>'`,
+  `source: '직접 작성'`, `explanation: ''`로 구분한다.
+  심기 전 1회 작성·테마 직접 선택, 심은 뒤 수정 불가(번들과 동일).
 
 ### 4.7 `Auth` — 인증 (백엔드 없음, 확정)
 

@@ -10,10 +10,11 @@ import 'package:malssi/features/settings/presentation/settings_screen.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
 
 class _ScheduleCall {
-  _ScheduleCall(this.hour, this.minute, this.enabled);
+  _ScheduleCall(this.hour, this.minute, this.enabled, this.lockscreenFirst);
   final int hour;
   final int minute;
   final bool enabled;
+  final bool lockscreenFirst;
 }
 
 Widget _wrap(SettingsProvider provider, {DebugUiProvider? debugUi}) {
@@ -42,6 +43,12 @@ void main() {
       expect(restored.themeMode, 'dark');
       expect(restored.fruitRainEnabled, isFalse);
       expect(restored.growthNotifyEnabled, isTrue);
+      // #253: 잠금 먼저 보기는 기본 off.
+      expect(restored.lockscreenFirstEnabled, isFalse);
+      expect(
+          restored.copyWith(lockscreenFirstEnabled: true)
+              .lockscreenFirstEnabled,
+          isTrue);
       expect(restored.seedHour, 8);
       expect(restored.seedMinute, 30);
       expect(restored.copyWith(notifyEnabled: true).notifyEnabled, isTrue);
@@ -65,6 +72,8 @@ void main() {
       expect(settings.fruitRainEnabled, isTrue);
       // #244: 성장 알림은 기본값 on.
       expect(settings.growthNotifyEnabled, isTrue);
+      // #253: 잠금 먼저 보기는 기본값 off (opt-in).
+      expect(settings.lockscreenFirstEnabled, isFalse);
     });
 
     test('fromMap falls back to system theme on bad values', () {
@@ -149,6 +158,21 @@ void main() {
           (await repo.setGrowthNotifyEnabled(true)).growthNotifyEnabled,
           isTrue);
     });
+
+    test('setLockscreenFirstEnabled toggles first-on-lock (#253)', () async {
+      final repo = InMemorySettingsRepository();
+      expect(
+          (await repo.getSettings()).lockscreenFirstEnabled, isFalse);
+
+      expect(
+          (await repo.setLockscreenFirstEnabled(true))
+              .lockscreenFirstEnabled,
+          isTrue);
+      expect(
+          (await repo.setLockscreenFirstEnabled(false))
+              .lockscreenFirstEnabled,
+          isFalse);
+    });
   });
 
   group('SettingsProvider', () {
@@ -156,9 +180,13 @@ void main() {
       final calls = <_ScheduleCall>[];
       final provider = SettingsProvider(
         settingsRepository: InMemorySettingsRepository(),
-        onSettingsChanged:
-            ({required hour, required minute, required enabled}) async {
-          calls.add(_ScheduleCall(hour, minute, enabled));
+        onSettingsChanged: (
+            {required hour,
+            required minute,
+            required enabled,
+            required lockscreenFirst}) async {
+          calls.add(
+              _ScheduleCall(hour, minute, enabled, lockscreenFirst));
         },
       );
 
@@ -174,9 +202,13 @@ void main() {
     test('updateSeedTime and toggle reschedule', () async {      final calls = <_ScheduleCall>[];
       final provider = SettingsProvider(
         settingsRepository: InMemorySettingsRepository(),
-        onSettingsChanged:
-            ({required hour, required minute, required enabled}) async {
-          calls.add(_ScheduleCall(hour, minute, enabled));
+        onSettingsChanged: (
+            {required hour,
+            required minute,
+            required enabled,
+            required lockscreenFirst}) async {
+          calls.add(
+              _ScheduleCall(hour, minute, enabled, lockscreenFirst));
         },
       );
       await provider.load();
@@ -198,9 +230,13 @@ void main() {
       final calls = <_ScheduleCall>[];
       final provider = SettingsProvider(
         settingsRepository: InMemorySettingsRepository(),
-        onSettingsChanged:
-            ({required hour, required minute, required enabled}) async {
-          calls.add(_ScheduleCall(hour, minute, enabled));
+        onSettingsChanged: (
+            {required hour,
+            required minute,
+            required enabled,
+            required lockscreenFirst}) async {
+          calls.add(
+              _ScheduleCall(hour, minute, enabled, lockscreenFirst));
         },
       );
       await provider.load();
@@ -217,9 +253,13 @@ void main() {
       final calls = <_ScheduleCall>[];
       final provider = SettingsProvider(
         settingsRepository: InMemorySettingsRepository(),
-        onSettingsChanged:
-            ({required hour, required minute, required enabled}) async {
-          calls.add(_ScheduleCall(hour, minute, enabled));
+        onSettingsChanged: (
+            {required hour,
+            required minute,
+            required enabled,
+            required lockscreenFirst}) async {
+          calls.add(
+              _ScheduleCall(hour, minute, enabled, lockscreenFirst));
         },
       );
       await provider.load();
@@ -240,9 +280,13 @@ void main() {
       final calls = <_ScheduleCall>[];
       final provider = SettingsProvider(
         settingsRepository: InMemorySettingsRepository(),
-        onSettingsChanged:
-            ({required hour, required minute, required enabled}) async {
-          calls.add(_ScheduleCall(hour, minute, enabled));
+        onSettingsChanged: (
+            {required hour,
+            required minute,
+            required enabled,
+            required lockscreenFirst}) async {
+          calls.add(
+              _ScheduleCall(hour, minute, enabled, lockscreenFirst));
         },
       );
       await provider.load();
@@ -280,6 +324,38 @@ void main() {
       expect(growthCalls, [false, true]);
       expect(provider.errorMessage, isNull);
     });
+
+    test('setLockscreenFirstEnabled reschedules with the flag (#253)',
+        () async {
+      final calls = <_ScheduleCall>[];
+      final provider = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+        onSettingsChanged: (
+            {required hour,
+            required minute,
+            required enabled,
+            required lockscreenFirst}) async {
+          calls.add(
+              _ScheduleCall(hour, minute, enabled, lockscreenFirst));
+        },
+      );
+      await provider.load();
+      // 시작 상태: 매일 알림 on + 잠금 먼저 보기 off.
+      expect(calls.single.enabled, isTrue);
+      expect(calls.single.lockscreenFirst, isFalse);
+      calls.clear();
+
+      await provider.setLockscreenFirstEnabled(true);
+      expect(provider.settings!.lockscreenFirstEnabled, isTrue);
+      expect(calls.single.enabled, isTrue);
+      expect(calls.single.lockscreenFirst, isTrue);
+      expect(provider.errorMessage, isNull);
+
+      await provider.setLockscreenFirstEnabled(false);
+      expect(provider.settings!.lockscreenFirstEnabled, isFalse);
+      expect(calls.last.lockscreenFirst, isFalse);
+      expect(provider.errorMessage, isNull);
+    });
   });
 
   group('SettingsScreen', () {
@@ -299,9 +375,11 @@ void main() {
       expect(find.text('다크'), findsOneWidget);
       expect(find.text('열매 비 효과'), findsOneWidget);
       expect(find.text('성장 알림'), findsOneWidget);
+      // #253: 테스트 플랫폼은 Android라 잠금 먼저 보기 행이 보인다.
+      expect(find.text('잠금화면에서 먼저 보기'), findsOneWidget);
       // 디버그 모드에서는 '디버그 버튼 숨기기' 스위치가 하나 더 보인다.
       expect(find.text('디버그 버튼 숨기기'), findsOneWidget);
-      expect(find.byType(Switch), findsNWidgets(4));
+      expect(find.byType(Switch), findsNWidgets(5));
     });
 
     testWidgets('toggling the switch disables notifications', (tester) async {
@@ -411,6 +489,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(provider.settings!.growthNotifyEnabled, isFalse);
+    });
+
+    testWidgets('toggling the lockscreen switch flips first-on-lock (#253)',
+        (tester) async {
+      final provider = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+      );
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      expect(provider.settings!.lockscreenFirstEnabled, isFalse);
+
+      await tester.tap(find.byType(Switch).at(3));
+      await tester.pumpAndSettle();
+
+      expect(provider.settings!.lockscreenFirstEnabled, isTrue);
     });
   });
 }

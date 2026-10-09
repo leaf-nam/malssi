@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/services/home_widget_service.dart';
+import 'package:malssi/core/services/live_activity_service.dart';
+import 'package:malssi/core/services/lockscreen_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/update_gate.dart';
@@ -143,15 +145,28 @@ class AppShell extends StatelessWidget {
             )..ensureTodaySeed();
             // #139: 공개된 명언을 홈 위젯에 반영한다.
             // #242: 성장 상태(단계·다음 단계·완성 시각)도 함께 전달한다.
+            // #248: Live Activity(잠금화면 실시간 카운트다운)도 함께 동기화한다.
             // 중복 갱신은 서비스가 제거하고, 실패해도 앱에 영향없다.
             seedProvider.addListener(() {
               final quote = seedProvider.revealedQuote;
               final seed = seedProvider.todaySeed;
               if (quote == null || seed == null) {
                 HomeWidgetService.instance.updatePlaceholder();
+                LiveActivityService.instance.syncSeed(
+                  dateKey: '',
+                  quoteText: '',
+                  status: 'locked',
+                  stage: 0,
+                );
               } else {
                 final now = DateTime.now();
                 final growing = seed.isGrowing;
+                final completeAtIso = growing
+                    ? seed.plantedAt
+                        .add(Seed.stageInterval * Seed.maxGrowthStage)
+                        .toUtc()
+                        .toIso8601String()
+                    : '';
                 HomeWidgetService.instance.updateSeed(
                   quoteId: quote.id,
                   text: quote.text,
@@ -160,6 +175,7 @@ class AppShell extends StatelessWidget {
                   stage: seed.growthStageAt(now),
                   totalStages: Seed.totalStages,
                   seedDate: seed.dateKey,
+                  theme: seed.theme,
                   nextStageAtIso: growing
                       ? now
                           .add(seed.timeUntilNextStage(now))
@@ -167,12 +183,14 @@ class AppShell extends StatelessWidget {
                           .toUtc()
                           .toIso8601String()
                       : '',
-                  completeAtIso: growing
-                      ? seed.plantedAt
-                          .add(Seed.stageInterval * Seed.maxGrowthStage)
-                          .toUtc()
-                          .toIso8601String()
-                      : '',
+                  completeAtIso: completeAtIso,
+                );
+                LiveActivityService.instance.syncSeed(
+                  dateKey: seed.dateKey,
+                  quoteText: quote.text,
+                  status: seed.status,
+                  stage: seed.growthStageAt(now),
+                  completeAtIso: completeAtIso,
                 );
               }
             });
@@ -188,7 +206,7 @@ class AppShell extends StatelessWidget {
             settingsRepository:
                 settingsRepository ?? InMemorySettingsRepository(),
             onSettingsChanged:
-                ({required hour, required minute, required enabled}) async {
+                ({required hour, required minute, required enabled, required bool lockscreenFirst}) async {
               if (enabled) {
                 // #244 후속: OS 권한이 거부된 상태에서는 예약을 해도
                 // 알림이 오지 않으므로, 켜는 시점에 권한을 먼저 요청한다.
@@ -230,6 +248,10 @@ class AppShell extends StatelessWidget {
                       NotificationService.growthNotificationId(stage));
                 }
               }
+              // #253: 잠금 오버레이 상태를 설정과 일치시킨다.
+              // 매일 알림 on/off와 무관하다 (알림이 아닌 오버레이).
+              // iOS·권한 미허용에서는 네이티브가 무시한다.
+              await LockscreenService.instance.setEnabled(lockscreenFirst);
             },
             // #244: 성장 알림 스위치 변경. 끄면 예약을 취소하고,
             // 켜면 성장 중 씨앗의 남은 단계 알림을 예약한다.

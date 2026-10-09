@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 일일 씨앗 알림 (Android 13+, #244). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 켤 때마다 먼저 보는 잠금 오버레이 (#253). -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="malssi"
         android:name="${applicationName}"
@@ -25,6 +32,23 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- 켤 때마다 먼저 보는 잠금 오버레이 서비스 (#253). -->
+        <service
+            android:name=".MalssiLockscreenService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="오늘의 명언 잠금화면 표시" />
+        </service>
+        <!-- 재부팅 후 오버레이 복구 (#253). -->
+        <receiver
+            android:name=".MalssiLockscreenBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
         <!-- 홈 위젯: 오늘의 명언 + 저자 (#139). -->
         <receiver
             android:name=".MalssiWidgetProvider"
