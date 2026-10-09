@@ -11,8 +11,38 @@ import 'package:malssi/features/settings/domain/app_settings.dart';
 import 'package:malssi/features/settings/providers/settings_providers.dart';
 
 /// 설정 탭. 씨앗 생성시간 + 매일 알림 on/off.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// 시스템 설정(오버레이 권한)에서 돌아오면 서비스를 다시 맞춘다 (#253 후속).
+  /// 허용 전에 켠 스위치는 서비스가 안 돈 상태로 남아 있으므로,
+  /// 복귀 시점에 현재 설정을 푸시한다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final provider = context.read<SettingsProvider>();
+    if (provider.settings?.lockscreenFirstEnabled == true) {
+      provider.resyncLockscreen();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

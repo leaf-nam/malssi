@@ -139,6 +139,13 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
+  /// 잠금 오버레이 재동기화 (#253 후속).
+  /// 시스템 설정에서 권한을 허용하고 앱으로 돌아오면 서비스가 안 돈 상태이므로
+  /// 앱 복귀 시점에 현재 설정을 다시 푸시한다 (일일 알림 재예약 포함, 멱등).
+  Future<void> resyncLockscreen() async {
+    await _reschedule();
+  }
+
   Future<void> _reschedule() async {
     final settings = _settings;
     final reschedule = _onSettingsChanged;
