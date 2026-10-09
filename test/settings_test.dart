@@ -356,6 +356,31 @@ void main() {
       expect(calls.last.lockscreenFirst, isFalse);
       expect(provider.errorMessage, isNull);
     });
+
+    test('resyncLockscreen pushes current settings again (#253 후속)',
+        () async {
+      final calls = <_ScheduleCall>[];
+      final provider = SettingsProvider(
+        settingsRepository: InMemorySettingsRepository(),
+        onSettingsChanged: (
+            {required hour,
+            required minute,
+            required enabled,
+            required lockscreenFirst}) async {
+          calls.add(
+              _ScheduleCall(hour, minute, enabled, lockscreenFirst));
+        },
+      );
+      await provider.load();
+      await provider.setLockscreenFirstEnabled(true);
+      calls.clear();
+
+      await provider.resyncLockscreen();
+
+      expect(calls.single.enabled, isTrue);
+      expect(calls.single.lockscreenFirst, isTrue);
+      expect(provider.errorMessage, isNull);
+    });
   });
 
   group('SettingsScreen', () {
