@@ -1,6 +1,5 @@
 package com.leaf.malssi
 
-import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -31,8 +30,9 @@ class MalssiLockscreenService : Service() {
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            android.util.Log.d(TAG, "screen event: ${intent.action}")
             when (intent.action) {
-                Intent.ACTION_SCREEN_ON -> showOverlayIfLocked()
+                Intent.ACTION_SCREEN_ON -> showOverlay()
                 Intent.ACTION_USER_PRESENT,
                 Intent.ACTION_SCREEN_OFF -> hideOverlay()
             }
@@ -41,15 +41,23 @@ class MalssiLockscreenService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        android.util.Log.d(TAG, "service created")
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_USER_PRESENT)
         }
-        registerReceiver(screenReceiver, filter)
+        // Android 14+는 export 플래그 필수 (2-arg 호출은 SecurityException).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(screenReceiver, filter)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        android.util.Log.d(TAG, "service started")
         startForeground(NOTIF_ID, buildServiceNotification())
         return START_STICKY
     }
@@ -66,12 +74,18 @@ class MalssiLockscreenService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun showOverlayIfLocked() {
-        if (overlayView != null) return
-        val keyguard =
-            getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        if (!keyguard.isKeyguardLocked) return
-        if (!Settings.canDrawOverlays(this)) return
+    // 화면이 켜질 때마다 명언 오버레이를 보여준다 (#253).
+    // 잠금 여부와 무관하게 띄운다: 잠금 설정 없음(None)에서도
+    // "켤 때마다 명언" 요구를 만족하고, 잠금 해제·탭·화면 꺼짐에 사라진다.
+    private fun showOverlay() {
+        if (overlayView != null) {
+            android.util.Log.d(TAG, "overlay already shown")
+            return
+        }
+        if (!Settings.canDrawOverlays(this)) {
+            android.util.Log.d(TAG, "overlay skipped: permission revoked")
+            return
+        }
 
         val view = LayoutInflater.from(this)
             .inflate(R.layout.lockscreen_overlay, null)
@@ -97,6 +111,7 @@ class MalssiLockscreenService : Service() {
         ).apply { gravity = Gravity.TOP }
         getSystemService(WindowManager::class.java).addView(view, params)
         overlayView = view
+        android.util.Log.d(TAG, "overlay shown")
     }
 
     private fun hideOverlay() {
@@ -104,6 +119,7 @@ class MalssiLockscreenService : Service() {
         overlayView = null
         try {
             getSystemService(WindowManager::class.java).removeView(view)
+            android.util.Log.d(TAG, "overlay hidden")
         } catch (_: IllegalArgumentException) {
             // 이미 제거된 뷰는 무시한다.
         }
@@ -169,6 +185,7 @@ class MalssiLockscreenService : Service() {
     }
 
     companion object {
+        private const val TAG = "MalssiLockscreen"
         private const val CHANNEL_ID = "malssi_lockscreen_service"
         private const val NOTIF_ID = 3001
         private const val PREFS = "MalssiLockscreen"
@@ -187,6 +204,7 @@ class MalssiLockscreenService : Service() {
                 .edit()
                 .putBoolean(KEY_ENABLED, enabled)
                 .apply()
+            android.util.Log.d(TAG, "setEnabled($enabled)")
             val running = isRunning(app)
             if (enabled && !Settings.canDrawOverlays(app)) return false
             if (enabled && !running) {
