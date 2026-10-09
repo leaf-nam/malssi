@@ -400,8 +400,8 @@ void main() {
       expect(find.text('다크'), findsOneWidget);
       expect(find.text('열매 비 효과'), findsOneWidget);
       expect(find.text('성장 알림'), findsOneWidget);
-      // #253: 테스트 플랫폼은 Android라 잠금 먼저 보기 행이 보인다.
-      expect(find.text('잠금화면에서 먼저 보기'), findsOneWidget);
+      // #253: 테스트 플랫폼은 Android라 잠금화면 행이 보인다 (성장 알림 바로 아래).
+      expect(find.text('잠금화면'), findsOneWidget);
       // 디버그 모드에서는 '디버그 버튼 숨기기' 스위치가 하나 더 보인다.
       expect(find.text('디버그 버튼 숨기기'), findsOneWidget);
       expect(find.byType(Switch), findsNWidgets(5));
@@ -493,7 +493,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(provider.settings!.fruitRainEnabled, isTrue);
 
-      await tester.tap(find.byType(Switch).at(2));
+      await tester.tap(find.byType(Switch).at(3));
       await tester.pumpAndSettle();
 
       expect(provider.settings!.fruitRainEnabled, isFalse);
@@ -527,7 +527,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(provider.settings!.lockscreenFirstEnabled, isFalse);
 
-      await tester.tap(find.byType(Switch).at(3));
+      await tester.tap(find.byType(Switch).at(2));
       await tester.pumpAndSettle();
 
       expect(provider.settings!.lockscreenFirstEnabled, isTrue);

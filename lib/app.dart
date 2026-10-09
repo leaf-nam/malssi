@@ -249,14 +249,17 @@ class AppShell extends StatelessWidget {
                 }
               }
               // #253: 잠금 오버레이 상태를 설정과 일치시킨다.
-              // 매일 알림 on/off와 무관하다 (알림이 아닌 오버레이).
+              // 전역 알림 마스터가 꺼져 있으면 오버레이도 중단한다
+              // (#253 후속 — '알림' off면 씨앗·완성·리마인드·성장 + 오버레이 전부 off).
               // iOS·권한 미허용에서는 네이티브가 무시한다.
+              final lockscreenOn = lockscreenFirst && enabled;
               if (kDebugMode) {
                 debugPrint(
-                    'lockscreen sync: lockscreenFirst=$lockscreenFirst');
+                    'lockscreen sync: lockscreenFirst=$lockscreenFirst '
+                    'enabled=$enabled');
               }
               final lockscreenOk = await LockscreenService.instance
-                  .setEnabled(lockscreenFirst);
+                  .setEnabled(lockscreenOn);
               if (kDebugMode) {
                 debugPrint('lockscreen sync result: $lockscreenOk');
               }
