@@ -177,5 +177,28 @@ void main() {
         stage: 5,
       );
     });
+
+    test('endAll stops everything and allows restart (#253 후속)', () async {
+      final gateway = FakeLiveActivityGateway();
+      final service = LiveActivityService(gateway: gateway);
+
+      Future<void> grow() => service.syncSeed(
+            dateKey: '2030-01-01',
+            quoteText: 't',
+            status: 'growing',
+            stage: 2,
+            completeAtIso: '2030-01-01T08:00:00.000Z',
+          );
+      await grow();
+      expect(gateway.created['growth-2030-01-01'], isNotNull);
+
+      // 전역 알림 off: 진행 중 알림 종료.
+      await service.endAll();
+      expect(gateway.ended, ['growth-2030-01-01']);
+
+      // 다시 켜면 같은 단계라도 재시작된다 (키 초기화).
+      await grow();
+      expect(gateway.created['growth-2030-01-01'], isNotNull);
+    });
   });
 }

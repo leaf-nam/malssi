@@ -21,6 +21,9 @@ abstract class SettingsRepository {
   /// 성장 단계 도달 알림 on/off (#244).
   Future<AppSettings> setGrowthNotifyEnabled(bool enabled);
 
+  /// 상단바 진행 알림 on/off (#253 후속).
+  Future<AppSettings> setProgressNotifyEnabled(bool enabled);
+
   /// 잠금 해제 시 먼저 보기 on/off (#253, Android만).
   Future<AppSettings> setLockscreenFirstEnabled(bool enabled);
 }
@@ -97,6 +100,11 @@ class InMemorySettingsRepository implements SettingsRepository {
   @override
   Future<AppSettings> setGrowthNotifyEnabled(bool enabled) async {
     return _save(_settings.copyWith(growthNotifyEnabled: enabled));
+  }
+
+  @override
+  Future<AppSettings> setProgressNotifyEnabled(bool enabled) async {
+    return _save(_settings.copyWith(progressNotifyEnabled: enabled));
   }
 
   @override

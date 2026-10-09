@@ -275,6 +275,13 @@ void main() {
 
       expect(find.text('도움말 다시 보기'), findsOneWidget);
 
+      // 행이 늘어 뷰포트 밖일 수 있어 스크롤 후 탭한다.
+      await tester.dragUntilVisible(
+        find.text('도움말 다시 보기'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('도움말 다시 보기'));
       await tester.pumpAndSettle();
 
