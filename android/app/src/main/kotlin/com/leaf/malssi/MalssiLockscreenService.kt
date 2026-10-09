@@ -90,7 +90,9 @@ class MalssiLockscreenService : Service() {
         val view = LayoutInflater.from(this)
             .inflate(R.layout.lockscreen_overlay, null)
         fillQuote(view)
-        view.findViewById<View>(R.id.lock_root).setOnClickListener {
+        // 탭 영역은 이미지만으로 축소한다 (#253 후속).
+        // 루트 전체를 열기로 두면 잠금화면 어디를 눌러도 앱이 켜져 불편하다.
+        view.findViewById<View>(R.id.lock_image).setOnClickListener {
             hideOverlay()
             startActivity(
                 Intent(this, MainActivity::class.java).apply {
