@@ -151,16 +151,50 @@ class MalssiLockscreenService : Service() {
         val status = prefs.getString("seed_status", "").orEmpty()
         val stage = prefs.getInt("growth_stage", 0)
         val theme = prefs.getString("seed_theme", "").orEmpty()
+        val countdown =
+            view.findViewById<android.widget.TextView>(R.id.lock_countdown)
         // 날짜가 바뀌었거나(앱 미실행) 명언이 없으면 자리 문구를 보여준다.
         if (sameDay && text.isNotEmpty()) {
             quote.text = "“$text”"
             val by = prefs.getString("quote_author", "").orEmpty()
             author.text = if (by.isEmpty()) "말씨" else "— $by"
             fillGrowthImage(image, theme, status, stage)
+            // 말씨 탭과 같은 남은시간 표기 (#138, 작은 글씨).
+            // 성장 중이 아니면 숨긴다.
+            val remaining = remainingText(
+                prefs.getString("next_stage_at", "").orEmpty(),
+                status,
+            )
+            if (remaining.isEmpty()) {
+                countdown.visibility = View.GONE
+            } else {
+                countdown.text = remaining
+                countdown.visibility = View.VISIBLE
+            }
         } else {
             quote.text = "오늘의 씨앗을 심어보세요"
             author.text = "말씨"
             fillGrowthImage(image, theme, "locked", 0)
+            countdown.visibility = View.GONE
+        }
+    }
+
+    // 다음 성장까지 남은시간 (`다음 성장까지 01:23`, `HH:MM` 2자리 고정).
+    // 1분 미만은 올림하고, 지났거나 성장 중이 아니면 `''`
+    // (`formatGrowthTimer` Dart와 동일 규칙, #138).
+    private fun remainingText(nextStageAtIso: String, status: String): String {
+        if (status != "growing" || nextStageAtIso.isEmpty()) return ""
+        return try {
+            val seconds = java.time.Duration.between(
+                java.time.Instant.now(),
+                java.time.Instant.parse(nextStageAtIso),
+            ).seconds
+            if (seconds <= 0) return ""
+            val minutes = ((seconds + 59) / 60).toInt()
+            val text = "%02d:%02d".format(minutes / 60, minutes % 60)
+            "다음 성장까지 $text"
+        } catch (_: Exception) {
+            ""
         }
     }
 

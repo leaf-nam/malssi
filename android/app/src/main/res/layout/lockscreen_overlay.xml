@@ -9,16 +9,9 @@
     android:orientation="vertical"
     android:padding="48dp">
 
-    <ImageView
-        android:id="@+id/lock_image"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:contentDescription="@null" />
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
         android:text="오늘의 말씨"
         android:textSize="13sp"
         android:textColor="#8B92A3" />
@@ -40,4 +33,19 @@
         android:layout_marginTop="16dp"
         android:textSize="12sp"
         android:textColor="#C9C4B6" />
+
+    <ImageView
+        android:id="@+id/lock_image"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_marginTop="24dp"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/lock_countdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textSize="11sp"
+        android:textColor="#8B92A3" />
 </LinearLayout>
