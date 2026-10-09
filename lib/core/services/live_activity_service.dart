@@ -123,6 +123,20 @@ class LiveActivityService {
     }
   }
 
+  /// 실행 중인 Activity를 모두 종료한다 (전역 알림 마스터 off, #253 후속).
+  /// 다음 `syncSeed`가 같은 단계라도 다시 시작하도록 키를 초기화한다.
+  Future<void> endAll() async {
+    try {
+      for (final active in _activeIds.toList()) {
+        await _gateway.end(active);
+        _activeIds.remove(active);
+      }
+      _lastKey = null;
+    } catch (e) {
+      debugPrint('LiveActivity endAll failed: $e');
+    }
+  }
+
   /// iOS stale 처리: 완성 시각까지 남은 분 (최소 1분, 과거면 null).
   Duration? _staleIn(DateTime? completeAt) {
     if (completeAt == null) return null;

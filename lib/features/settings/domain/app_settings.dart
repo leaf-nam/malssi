@@ -11,6 +11,10 @@ class AppSettings {
   /// 성장 단계 도달 알림 여부 (#244). 기본값 off (하루 최대 4건이라 opt-in).
   final bool growthNotifyEnabled;
 
+  /// 상단바 진행 알림 여부 (#253 후속). 씨앗 자라는 중 상시 표시되는
+  /// 진행 알림(Live Activity·Android 진행 중 알림) on/off. 기본값 on.
+  final bool progressNotifyEnabled;
+
   /// 잠금 해제 시 오늘의 말씨 먼저 보기 (#253, Android만).
   /// 씨앗 도착 일일 알림에 full-screen intent를 붙인다. 기본값 off (opt-in).
   final bool lockscreenFirstEnabled;
@@ -22,6 +26,7 @@ class AppSettings {
     this.fruitRainEnabled = defaultFruitRainEnabled,
     this.growthNotifyEnabled = defaultGrowthNotifyEnabled,
     this.lockscreenFirstEnabled = defaultLockscreenFirstEnabled,
+    this.progressNotifyEnabled = defaultProgressNotifyEnabled,
   });
 
   static const defaultSeedTime = '08:00';
@@ -37,6 +42,8 @@ class AppSettings {
   static const defaultGrowthNotifyEnabled = true;
 
   static const defaultLockscreenFirstEnabled = false;
+
+  static const defaultProgressNotifyEnabled = true;
 
   static const validThemeModes = ['light', 'dark', 'system'];
 
@@ -78,6 +85,8 @@ class AppSettings {
           map['growthNotifyEnabled'] ?? defaultGrowthNotifyEnabled,
       lockscreenFirstEnabled:
           map['lockscreenFirstEnabled'] ?? defaultLockscreenFirstEnabled,
+      progressNotifyEnabled:
+          map['progressNotifyEnabled'] ?? defaultProgressNotifyEnabled,
     );
   }
 
@@ -89,6 +98,7 @@ class AppSettings {
       'fruitRainEnabled': fruitRainEnabled,
       'growthNotifyEnabled': growthNotifyEnabled,
       'lockscreenFirstEnabled': lockscreenFirstEnabled,
+      'progressNotifyEnabled': progressNotifyEnabled,
     };
   }
 
@@ -98,7 +108,8 @@ class AppSettings {
       String? themeMode,
       bool? fruitRainEnabled,
       bool? growthNotifyEnabled,
-      bool? lockscreenFirstEnabled}) {
+      bool? lockscreenFirstEnabled,
+      bool? progressNotifyEnabled}) {
     return AppSettings(
       seedTime: seedTime ?? this.seedTime,
       notifyEnabled: notifyEnabled ?? this.notifyEnabled,
@@ -107,6 +118,8 @@ class AppSettings {
       growthNotifyEnabled: growthNotifyEnabled ?? this.growthNotifyEnabled,
       lockscreenFirstEnabled:
           lockscreenFirstEnabled ?? this.lockscreenFirstEnabled,
+      progressNotifyEnabled:
+          progressNotifyEnabled ?? this.progressNotifyEnabled,
     );
   }
 }

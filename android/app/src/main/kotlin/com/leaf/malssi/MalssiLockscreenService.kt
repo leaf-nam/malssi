@@ -1,5 +1,6 @@
 package com.leaf.malssi
 
+import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -68,6 +69,7 @@ class MalssiLockscreenService : Service() {
         } catch (_: IllegalArgumentException) {
             // 미등록 상태 해제 시도는 무시한다.
         }
+        handler.removeCallbacks(dismissWatch)
         hideOverlay()
         super.onDestroy()
     }
@@ -89,18 +91,15 @@ class MalssiLockscreenService : Service() {
 
         val view = LayoutInflater.from(this)
             .inflate(R.layout.lockscreen_overlay, null)
+        // 표시 시점 잠금 여부를 기록한다 (감시 폴링의 전이 판단용).
+        lockedAtShow =
+            (getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager)
+                .isKeyguardLocked
         fillQuote(view)
-        view.findViewById<View>(R.id.lock_root).setOnClickListener {
-            hideOverlay()
-            startActivity(
-                Intent(this, MainActivity::class.java).apply {
-                    addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK or
-                            Intent.FLAG_ACTIVITY_REORDER_TO_FRONT,
-                    )
-                },
-            )
-        }
+        // 탭 이동 없음 (#253 후속). 오버레이 위 터치는 즉시 숨기고
+        // 아래 잠금화면으로 흘려보낸다.
+        dismissOnTouch(view)
+        applyFont(view)
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -111,12 +110,49 @@ class MalssiLockscreenService : Service() {
         ).apply { gravity = Gravity.TOP }
         getSystemService(WindowManager::class.java).addView(view, params)
         overlayView = view
+        handler.post(dismissWatch)
         android.util.Log.d(TAG, "overlay shown")
+    }
+
+    // 잠금 해제 놓침 대비 감시 (#253 후속).
+    // USER_PRESENT를 놓쳐도 잠김→풀림 전이가 보이면 오버레이를 내린다.
+    // 켜지는 순간 키가드 상태가 아직 false일 수 있으므로,
+    // 표시 시점 잠금 여부를 기록해 전이일 때만 숨긴다 (즉시 꺼짐 방지).
+    private var lockedAtShow = false
+    private val dismissWatch = object : Runnable {
+        override fun run() {
+            val keyguard =
+                getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+            if (!Settings.canDrawOverlays(this@MalssiLockscreenService)) {
+                hideOverlay()
+                return
+            }
+            if (lockedAtShow && !keyguard.isKeyguardLocked) {
+                hideOverlay()
+                return
+            }
+            handler.postDelayed(this, 1000)
+        }
+    }
+    private val handler = android.os.Handler(
+        android.os.Looper.getMainLooper(),
+    )
+
+    // 오버레이 위 어떤 터치든 즉시 숨긴다 (#253 후속).
+    // `false`를 돌려 이벤트를 아래 잠금화면으로 흘려보내
+    // 스와이프 잠금 해제가 막히지 않게 한다.
+    // 화면 내 소프트키(뒤로·홈·최근앱)도 터치라서 먼저 사라진다.
+    private fun dismissOnTouch(view: View) {
+        view.setOnTouchListener { _, _ ->
+            hideOverlay()
+            false
+        }
     }
 
     private fun hideOverlay() {
         val view = overlayView ?: return
         overlayView = null
+        handler.removeCallbacks(dismissWatch)
         try {
             getSystemService(WindowManager::class.java).removeView(view)
             android.util.Log.d(TAG, "overlay hidden")
@@ -195,6 +231,39 @@ class MalssiLockscreenService : Service() {
             "다음 성장까지 $text"
         } catch (_: Exception) {
             ""
+        }
+    }
+
+    // 오버레이 글씨체를 앱과 같은 Galmuri11로 맞춘다 (#253 후속).
+    // Flutter 번들(`flutter_assets`)에서 직접 읽어 `res` 복제 없이 쓴다.
+    // 명언은 Bold로 두껍게, 나머지는 Regular로 둔다. 실패하면 시스템 기본 글씨체.
+    private fun applyFont(view: View) {
+        val regular = try {
+            android.graphics.Typeface.createFromAsset(
+                assets,
+                "flutter_assets/assets/fonts/Galmuri11.ttf",
+            )
+        } catch (_: Exception) {
+            android.util.Log.d(TAG, "galmuri font missing, fallback")
+            return
+        }
+        val bold = try {
+            android.graphics.Typeface.createFromAsset(
+                assets,
+                "flutter_assets/assets/fonts/Galmuri11-Bold.ttf",
+            )
+        } catch (_: Exception) {
+            regular
+        }
+        view.findViewById<android.widget.TextView>(R.id.lock_quote)
+            ?.typeface = bold
+        for (id in intArrayOf(
+            R.id.lock_label,
+            R.id.lock_author,
+            R.id.lock_countdown,
+        )) {
+            view.findViewById<android.widget.TextView>(id)?.typeface =
+                regular
         }
     }
 

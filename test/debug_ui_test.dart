@@ -114,6 +114,13 @@ void main() {
       expect(find.text('디버그 버튼 숨기기'), findsOneWidget);
       expect(debugUi.hideButtons, isFalse);
 
+      // 행이 늘어 뷰포트 밖일 수 있어 스크롤 후 탭한다.
+      await tester.dragUntilVisible(
+        find.text('디버그 버튼 숨기기'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(Switch).last);
       await tester.pumpAndSettle();
 

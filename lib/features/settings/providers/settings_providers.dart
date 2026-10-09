@@ -12,6 +12,13 @@ typedef RescheduleSeedNotification = Future<void> Function({
   required bool lockscreenFirst,
 });
 
+/// 상단바 진행 알림 스위치 변경 시 호출된다 (#253 후속).
+/// `enabled`가 false면 진행 중 알림을 즉시 종료하고,
+/// true면 다음 스냅샷 갱신(탭 이동·15분·단계 변화) 때 다시 표시한다.
+typedef ProgressNotifyChanged = Future<void> Function({
+  required bool enabled,
+});
+
 /// 성장 알림 스위치 변경 시 호출된다 (#244).
 /// `enabled`가 false면 예약 취소를, true면 남은 단계 예약을 요청한다.
 /// 실제 예약·취소는 `app.dart`에서 `NotificationService`로 연결한다.
@@ -25,11 +32,13 @@ class SettingsProvider extends ChangeNotifier {
     required this._settingsRepository,
     this._onSettingsChanged,
     this._onGrowthNotifyChanged,
+    this._onProgressNotifyChanged,
   });
 
   final SettingsRepository _settingsRepository;
   final RescheduleSeedNotification? _onSettingsChanged;
   final GrowthNotifyChanged? _onGrowthNotifyChanged;
+  final ProgressNotifyChanged? _onProgressNotifyChanged;
 
   AppSettings? _settings;
   AppSettings? get settings => _settings;
@@ -132,6 +141,28 @@ class SettingsProvider extends ChangeNotifier {
       _settings =
           await _settingsRepository.setLockscreenFirstEnabled(enabled);
       await _reschedule();
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  /// 잠금 오버레이 재동기화 (#253 후속).
+  /// 시스템 설정에서 권한을 허용하고 앱으로 돌아오면 서비스가 안 돈 상태이므로
+  /// 앱 복귀 시점에 현재 설정을 다시 푸시한다 (일일 알림 재예약 포함, 멱등).
+  Future<void> resyncLockscreen() async {
+    await _reschedule();
+  }
+
+  /// 상단바 진행 알림 on/off (#253 후속). 변경을 콜백으로 알린다.
+  Future<void> setProgressNotifyEnabled(bool enabled) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _settings =
+          await _settingsRepository.setProgressNotifyEnabled(enabled);
+      await _onProgressNotifyChanged?.call(enabled: enabled);
     } catch (e) {
       _errorMessage = '$e';
     } finally {
