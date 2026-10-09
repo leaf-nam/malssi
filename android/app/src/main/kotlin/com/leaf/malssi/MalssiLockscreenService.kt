@@ -192,9 +192,9 @@ class MalssiLockscreenService : Service() {
 
     // 오버레이 글씨체를 앱과 같은 Galmuri11로 맞춘다 (#253 후속).
     // Flutter 번들(`flutter_assets`)에서 직접 읽어 `res` 복제 없이 쓴다.
-    // 실패하면 시스템 기본 글씨체로 둔다.
+    // 명언은 Bold로 두껍게, 나머지는 Regular로 둔다. 실패하면 시스템 기본 글씨체.
     private fun applyFont(view: View) {
-        val face = try {
+        val regular = try {
             android.graphics.Typeface.createFromAsset(
                 assets,
                 "flutter_assets/assets/fonts/Galmuri11.ttf",
@@ -203,13 +203,23 @@ class MalssiLockscreenService : Service() {
             android.util.Log.d(TAG, "galmuri font missing, fallback")
             return
         }
+        val bold = try {
+            android.graphics.Typeface.createFromAsset(
+                assets,
+                "flutter_assets/assets/fonts/Galmuri11-Bold.ttf",
+            )
+        } catch (_: Exception) {
+            regular
+        }
+        view.findViewById<android.widget.TextView>(R.id.lock_quote)
+            ?.typeface = bold
         for (id in intArrayOf(
             R.id.lock_label,
-            R.id.lock_quote,
             R.id.lock_author,
             R.id.lock_countdown,
         )) {
-            view.findViewById<android.widget.TextView>(id)?.typeface = face
+            view.findViewById<android.widget.TextView>(id)?.typeface =
+                regular
         }
     }
 
