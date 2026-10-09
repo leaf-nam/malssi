@@ -251,7 +251,15 @@ class AppShell extends StatelessWidget {
               // #253: 잠금 오버레이 상태를 설정과 일치시킨다.
               // 매일 알림 on/off와 무관하다 (알림이 아닌 오버레이).
               // iOS·권한 미허용에서는 네이티브가 무시한다.
-              await LockscreenService.instance.setEnabled(lockscreenFirst);
+              if (kDebugMode) {
+                debugPrint(
+                    'lockscreen sync: lockscreenFirst=$lockscreenFirst');
+              }
+              final lockscreenOk = await LockscreenService.instance
+                  .setEnabled(lockscreenFirst);
+              if (kDebugMode) {
+                debugPrint('lockscreen sync result: $lockscreenOk');
+              }
             },
             // #244: 성장 알림 스위치 변경. 끄면 예약을 취소하고,
             // 켜면 성장 중 씨앗의 남은 단계 알림을 예약한다.

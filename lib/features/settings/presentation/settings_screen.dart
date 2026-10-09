@@ -40,6 +40,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (state != AppLifecycleState.resumed) return;
     final provider = context.read<SettingsProvider>();
     if (provider.settings?.lockscreenFirstEnabled == true) {
+      if (kDebugMode) {
+        debugPrint('lockscreen resync on resume');
+      }
       provider.resyncLockscreen();
     }
   }
