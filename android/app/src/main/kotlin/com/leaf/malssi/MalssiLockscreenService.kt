@@ -1,0 +1,214 @@
+package com.leaf.malssi
+
+import android.app.KeyguardManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.PixelFormat
+import android.os.Build
+import android.os.IBinder
+import android.provider.Settings
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.WindowManager
+import androidx.core.content.ContextCompat
+import java.time.LocalDate
+
+// 켤 때마다 먼저 보는 잠금 오버레이 (#253).
+// 포그라운드 서비스가 화면 켜짐(잠금 상태)을 감지해 오늘 명언을 띄우고,
+// 잠금 해제·화면 꺼짐에 숨긴다. 명언 원천은 홈 위젯과 같은
+// `HomeWidgetPreferences`다 (위젯 동기화 재사용, 날짜 가드 포함).
+class MalssiLockscreenService : Service() {
+
+    private var overlayView: View? = null
+
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_SCREEN_ON -> showOverlayIfLocked()
+                Intent.ACTION_USER_PRESENT,
+                Intent.ACTION_SCREEN_OFF -> hideOverlay()
+            }
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        registerReceiver(screenReceiver, filter)
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(NOTIF_ID, buildServiceNotification())
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        try {
+            unregisterReceiver(screenReceiver)
+        } catch (_: IllegalArgumentException) {
+            // 미등록 상태 해제 시도는 무시한다.
+        }
+        hideOverlay()
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun showOverlayIfLocked() {
+        if (overlayView != null) return
+        val keyguard =
+            getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        if (!keyguard.isKeyguardLocked) return
+        if (!Settings.canDrawOverlays(this)) return
+
+        val view = LayoutInflater.from(this)
+            .inflate(R.layout.lockscreen_overlay, null)
+        fillQuote(view)
+        view.findViewById<View>(R.id.lock_root).setOnClickListener {
+            hideOverlay()
+            startActivity(
+                Intent(this, MainActivity::class.java).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_REORDER_TO_FRONT,
+                    )
+                },
+            )
+        }
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            overlayType(),
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT,
+        ).apply { gravity = Gravity.TOP }
+        getSystemService(WindowManager::class.java).addView(view, params)
+        overlayView = view
+    }
+
+    private fun hideOverlay() {
+        val view = overlayView ?: return
+        overlayView = null
+        try {
+            getSystemService(WindowManager::class.java).removeView(view)
+        } catch (_: IllegalArgumentException) {
+            // 이미 제거된 뷰는 무시한다.
+        }
+    }
+
+    private fun overlayType(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            @Suppress("DEPRECATION")
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+    }
+
+    private fun fillQuote(view: View) {
+        // 위젯과 같은 저장소·키를 읽는다 (#139, #242).
+        val prefs = getSharedPreferences(
+            "HomeWidgetPreferences",
+            Context.MODE_PRIVATE,
+        )
+        val today = LocalDate.now().toString()
+        val sameDay = prefs.getString("seed_date", "") == today
+        val text = prefs.getString("quote_text", "").orEmpty()
+        val quote = view.findViewById<android.widget.TextView>(R.id.lock_quote)
+        val author =
+            view.findViewById<android.widget.TextView>(R.id.lock_author)
+        // 날짜가 바뀌었거나(앱 미실행) 명언이 없으면 자리 문구를 보여준다.
+        if (sameDay && text.isNotEmpty()) {
+            quote.text = "“$text”"
+            val by = prefs.getString("quote_author", "").orEmpty()
+            author.text = if (by.isEmpty()) "말씨" else "— $by"
+        } else {
+            quote.text = "오늘의 씨앗을 심어보세요"
+            author.text = "말씨"
+        }
+    }
+
+    private fun buildServiceNotification(): Notification {
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID,
+                "잠금화면 먼저 보기",
+                NotificationManager.IMPORTANCE_LOW,
+            ),
+        )
+        val tap = PendingIntent.getActivity(
+            this,
+            300,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        return Notification.Builder(this, CHANNEL_ID)
+            .setContentTitle("말씨가 잠금화면을 준비 중이에요")
+            .setContentText("켤 때마다 오늘의 명언을 먼저 보여줘요")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentIntent(tap)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .build()
+    }
+
+    companion object {
+        private const val CHANNEL_ID = "malssi_lockscreen_service"
+        private const val NOTIF_ID = 3001
+        private const val PREFS = "MalssiLockscreen"
+        private const val KEY_ENABLED = "enabled"
+
+        fun isEnabled(context: Context): Boolean {
+            return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_ENABLED, false)
+        }
+
+        /// 오버레이 on/off. 권한이 없으면 저장만 하고 `false`를 돌려준다.
+        /// 상태가 같으면 아무 것도 하지 않는다.
+        fun setEnabled(context: Context, enabled: Boolean): Boolean {
+            val app = context.applicationContext
+            app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_ENABLED, enabled)
+                .apply()
+            val running = isRunning(app)
+            if (enabled && !Settings.canDrawOverlays(app)) return false
+            if (enabled && !running) {
+                ContextCompat.startForegroundService(
+                    app,
+                    Intent(app, MalssiLockscreenService::class.java),
+                )
+            } else if (!enabled && running) {
+                app.stopService(
+                    Intent(app, MalssiLockscreenService::class.java),
+                )
+            }
+            return enabled
+        }
+
+        private fun isRunning(context: Context): Boolean {
+            val manager =
+                context.getSystemService(Context.ACTIVITY_SERVICE)
+                    as android.app.ActivityManager
+            @Suppress("DEPRECATION")
+            return manager.getRunningServices(Int.MAX_VALUE)
+                .any { it.service.className == MalssiLockscreenService::class.java.name }
+        }
+    }
+}

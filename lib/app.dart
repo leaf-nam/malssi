@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/services/home_widget_service.dart';
 import 'package:malssi/core/services/live_activity_service.dart';
+import 'package:malssi/core/services/lockscreen_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/widgets/update_gate.dart';
@@ -217,8 +218,6 @@ class AppShell extends StatelessWidget {
                   body: '씨앗을 깨고 오늘의 명언을 만나보세요',
                   hour: hour,
                   minute: minute,
-                  // #253: 잠금 해제 시 먼저 보기 (Android full-screen intent).
-                  lockscreenFirst: lockscreenFirst,
                 );
                 // 꺼져 있을 때 심은 씨앗은 완성·성장 예약이 안 되어 있으므로,
                 // 켜는 시점에 성장 중 씨앗이 있으면 (재)예약한다.
@@ -248,6 +247,10 @@ class AppShell extends StatelessWidget {
                       NotificationService.growthNotificationId(stage));
                 }
               }
+              // #253: 잠금 오버레이 상태를 설정과 일치시킨다.
+              // 매일 알림 on/off와 무관하다 (알림이 아닌 오버레이).
+              // iOS·권한 미허용에서는 네이티브가 무시한다.
+              await LockscreenService.instance.setEnabled(lockscreenFirst);
             },
             // #244: 성장 알림 스위치 변경. 끄면 예약을 취소하고,
             // 켜면 성장 중 씨앗의 남은 단계 알림을 예약한다.

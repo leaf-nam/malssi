@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 켤 때마다 먼저 보는 명언 오버레이 (#253). 잠금화면 위에 전체를 덮는다. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/lock_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#E60A0C11"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="48dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="오늘의 말씨"
+        android:textSize="13sp"
+        android:textColor="#8B92A3" />
+
+    <TextView
+        android:id="@+id/lock_quote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:textSize="24sp"
+        android:lineSpacingMultiplier="1.55"
+        android:textColor="#EFE9DD" />
+
+    <TextView
+        android:id="@+id/lock_author"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textSize="12sp"
+        android:textColor="#C9C4B6" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:text="탭하면 말씨 열기 · 잠금 해제 시 사라져요"
+        android:textSize="11sp"
+        android:textColor="#8B92A3" />
+</LinearLayout>

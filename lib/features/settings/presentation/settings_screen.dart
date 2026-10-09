@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_ui.dart';
+import 'package:malssi/core/services/lockscreen_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
@@ -92,14 +93,14 @@ class SettingsScreen extends StatelessWidget {
             onChanged: state.setFruitRainEnabled,
           ),
         ),
-        // #253: 잠금 해제 시 먼저 보기 (Android full-screen intent, opt-in).
+        // #253: 켤 때마다 먼저 보기 (Android 잠금 오버레이, opt-in).
         // iOS는 잠금화면 위젯(#242)·Live Activity(#248)로 커버하므로 숨긴다.
         if (defaultTargetPlatform == TargetPlatform.android)
           _Row(
             label: '잠금화면에서 먼저 보기',
             trailingWidget: Switch(
               value: settings.lockscreenFirstEnabled,
-              onChanged: state.setLockscreenFirstEnabled,
+              onChanged: (value) => _toggleLockscreen(context, state, value),
             ),
           ),
         _Row(
@@ -171,6 +172,26 @@ class SettingsScreen extends StatelessWidget {
           onPressed: () => sys_settings.AppSettings.openAppSettings(
             type: sys_settings.AppSettingsType.notification,
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 잠금 오버레이 스위치 (#253). 켤 때 다른 앱 위에 표시 권한이 없으면
+  /// 시스템 설정으로 안내한다 (OS 팝업이 다시 뜨지 않으므로).
+  /// 설정값은 먼저 저장한다 — 권한 허용 후 앱 시작 시 동기화로 서비스가 돈다.
+  Future<void> _toggleLockscreen(
+      BuildContext context, SettingsProvider state, bool value) async {
+    await state.setLockscreenFirstEnabled(value);
+    if (!value || !context.mounted) return;
+    final granted = await LockscreenService.instance.isGranted();
+    if (granted || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('잠금화면에 보여주려면 다른 앱 위에 표시를 허용해주세요.'),
+        action: SnackBarAction(
+          label: '설정으로 이동',
+          onPressed: () => LockscreenService.instance.openSettings(),
         ),
       ),
     );

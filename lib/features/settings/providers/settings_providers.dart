@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
 import 'package:malssi/features/settings/domain/app_settings.dart';
 
-/// 설정 변경 시 일일 알림을 다시 등록하는 콜백.
-/// 실제 등록은 `app.dart`에서 `NotificationService`로 연결한다.
-/// 테스트에서는 기록용 가짜를 주입한다.
+/// 설정 변경 시 일일 알림을 다시 등록 + 잠금 오버레이를 동기화하는 콜백.
+/// 실제 등록은 `app.dart`에서 `NotificationService`·`LockscreenService`로
+/// 연결한다. 테스트에서는 기록용 가짜를 주입한다.
 typedef RescheduleSeedNotification = Future<void> Function({
   required int hour,
   required int minute,
