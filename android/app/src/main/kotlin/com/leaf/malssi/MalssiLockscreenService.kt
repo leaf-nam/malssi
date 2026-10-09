@@ -146,14 +146,72 @@ class MalssiLockscreenService : Service() {
         val quote = view.findViewById<android.widget.TextView>(R.id.lock_quote)
         val author =
             view.findViewById<android.widget.TextView>(R.id.lock_author)
+        val image =
+            view.findViewById<android.widget.ImageView>(R.id.lock_image)
+        val status = prefs.getString("seed_status", "").orEmpty()
+        val stage = prefs.getInt("growth_stage", 0)
+        val theme = prefs.getString("seed_theme", "").orEmpty()
         // 날짜가 바뀌었거나(앱 미실행) 명언이 없으면 자리 문구를 보여준다.
         if (sameDay && text.isNotEmpty()) {
             quote.text = "“$text”"
             val by = prefs.getString("quote_author", "").orEmpty()
             author.text = if (by.isEmpty()) "말씨" else "— $by"
+            fillGrowthImage(image, theme, status, stage)
         } else {
             quote.text = "오늘의 씨앗을 심어보세요"
             author.text = "말씨"
+            fillGrowthImage(image, theme, "locked", 0)
+        }
+    }
+
+    // 성장 에셋을 Flutter 번들에서 직접 읽는다 (#253).
+    // `res` 복제 없이 `flutter_assets`를 디코딩한다.
+    // - 완성: `<이름>.png`, 0단계·잠금: `<이름>_seed.png`,
+    // - 1~5단계: `<이름>-<n>.png` (`ThemeAssets.growthImage`와 동일 규칙).
+    // 미등록 테마·실패 시 이미지를 숨긴다.
+    private fun fillGrowthImage(
+        image: android.widget.ImageView,
+        theme: String,
+        status: String,
+        stage: Int,
+    ) {
+        val name = fruitName(theme)
+        if (name.isEmpty()) {
+            image.visibility = View.GONE
+            return
+        }
+        val file = when {
+            status == "complete" -> "$name.png"
+            stage <= 0 -> "${name}_seed.png"
+            else -> "$name-$stage.png"
+        }
+        try {
+            assets.open("flutter_assets/assets/images/$file").use { stream ->
+                val bitmap =
+                    android.graphics.BitmapFactory.decodeStream(stream)
+                if (bitmap == null) {
+                    image.visibility = View.GONE
+                } else {
+                    image.setImageBitmap(bitmap)
+                    image.visibility = View.VISIBLE
+                }
+            }
+        } catch (_: Exception) {
+            android.util.Log.d(TAG, "growth image missing: $file")
+            image.visibility = View.GONE
+        }
+    }
+
+    private fun fruitName(theme: String): String {
+        return when (theme) {
+            "vitality" -> "strawberry"
+            "happiness" -> "orange"
+            "growth" -> "lemon"
+            "health" -> "kiwi"
+            "peace" -> "blueberry"
+            "relationship" -> "grape"
+            "wisdom" -> "grapefruit"
+            else -> ""
         }
     }
 

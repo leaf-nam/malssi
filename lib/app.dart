@@ -175,6 +175,7 @@ class AppShell extends StatelessWidget {
                   stage: seed.growthStageAt(now),
                   totalStages: Seed.totalStages,
                   seedDate: seed.dateKey,
+                  theme: seed.theme,
                   nextStageAtIso: growing
                       ? now
                           .add(seed.timeUntilNextStage(now))

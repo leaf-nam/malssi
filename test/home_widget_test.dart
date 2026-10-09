@@ -94,6 +94,7 @@ void main() {
       String status = 'growing',
       int stage = 2,
       String seedDate = '2030-01-01',
+      String theme = 'peace',
     }) =>
         service.updateSeed(
           quoteId: quoteId,
@@ -103,6 +104,7 @@ void main() {
           stage: stage,
           totalStages: 6,
           seedDate: seedDate,
+          theme: theme,
           nextStageAtIso: '2030-01-01T00:00:00.000',
           completeAtIso: '2030-01-01T08:00:00.000',
         );
@@ -117,6 +119,8 @@ void main() {
       expect(store.savedInts[HomeWidgetService.stageKey], 2);
       expect(store.savedInts[HomeWidgetService.totalStagesKey], 6);
       expect(store.saved[HomeWidgetService.dateKey], '2030-01-01');
+      // #253: 잠금 오버레이가 단계 에셋을 고를 때 쓴다.
+      expect(store.saved[HomeWidgetService.themeKey], 'peace');
       expect(store.saved[HomeWidgetService.nextStageAtKey],
           '2030-01-01T00:00:00.000');
       expect(store.saved[HomeWidgetService.completeAtKey],
