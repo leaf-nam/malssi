@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 일일 씨앗 알림 (Android 13+, #244). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 잠금 해제 시 먼저 보기 full-screen intent (Android 14+ 필수, #253). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <application
         android:label="malssi"
         android:name="${applicationName}"

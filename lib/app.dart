@@ -204,7 +204,7 @@ class AppShell extends StatelessWidget {
             settingsRepository:
                 settingsRepository ?? InMemorySettingsRepository(),
             onSettingsChanged:
-                ({required hour, required minute, required enabled}) async {
+                ({required hour, required minute, required enabled, required bool lockscreenFirst}) async {
               if (enabled) {
                 // #244 후속: OS 권한이 거부된 상태에서는 예약을 해도
                 // 알림이 오지 않으므로, 켜는 시점에 권한을 먼저 요청한다.
@@ -217,6 +217,8 @@ class AppShell extends StatelessWidget {
                   body: '씨앗을 깨고 오늘의 명언을 만나보세요',
                   hour: hour,
                   minute: minute,
+                  // #253: 잠금 해제 시 먼저 보기 (Android full-screen intent).
+                  lockscreenFirst: lockscreenFirst,
                 );
                 // 꺼져 있을 때 심은 씨앗은 완성·성장 예약이 안 되어 있으므로,
                 // 켜는 시점에 성장 중 씨앗이 있으면 (재)예약한다.
