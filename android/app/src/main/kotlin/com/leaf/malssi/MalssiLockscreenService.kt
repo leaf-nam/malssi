@@ -68,6 +68,7 @@ class MalssiLockscreenService : Service() {
         } catch (_: IllegalArgumentException) {
             // 미등록 상태 해제 시도는 무시한다.
         }
+        handler.removeCallbacks(dismissWatch)
         hideOverlay()
         super.onDestroy()
     }
@@ -104,12 +105,33 @@ class MalssiLockscreenService : Service() {
         ).apply { gravity = Gravity.TOP }
         getSystemService(WindowManager::class.java).addView(view, params)
         overlayView = view
+        handler.post(dismissWatch)
         android.util.Log.d(TAG, "overlay shown")
     }
+
+    // 잠금 해제 놓침 대비 감시 (#253 후속).
+    // USER_PRESENT를 놓쳐도 잠금이 풀리면 오버레이를 내린다.
+    private val dismissWatch = object : Runnable {
+        override fun run() {
+            val keyguard =
+                getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+            if (!keyguard.isKeyguardLocked ||
+                !Settings.canDrawOverlays(this@MalssiLockscreenService)
+            ) {
+                hideOverlay()
+                return
+            }
+            handler.postDelayed(this, 1000)
+        }
+    }
+    private val handler = android.os.Handler(
+        android.os.Looper.getMainLooper(),
+    )
 
     // 오버레이 위 어떤 터치든 즉시 숨긴다 (#253 후속).
     // `false`를 돌려 이벤트를 아래 잠금화면으로 흘려보내
     // 스와이프 잠금 해제가 막히지 않게 한다.
+    // 화면 내 소프트키(뒤로·홈·최근앱)도 터치라서 먼저 사라진다.
     private fun dismissOnTouch(view: View) {
         view.setOnTouchListener { _, _ ->
             hideOverlay()
@@ -120,6 +142,7 @@ class MalssiLockscreenService : Service() {
     private fun hideOverlay() {
         val view = overlayView ?: return
         overlayView = null
+        handler.removeCallbacks(dismissWatch)
         try {
             getSystemService(WindowManager::class.java).removeView(view)
             android.util.Log.d(TAG, "overlay hidden")
