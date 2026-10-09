@@ -92,6 +92,7 @@ class MalssiLockscreenService : Service() {
         fillQuote(view)
         // 탭 이동 없음 (#253 후속). 오버레이는 잠금 해제 시 사라질 뿐,
         // 어디를 눌러도 앱이 켜지지 않는다.
+        applyFont(view)
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -186,6 +187,29 @@ class MalssiLockscreenService : Service() {
             "다음 성장까지 $text"
         } catch (_: Exception) {
             ""
+        }
+    }
+
+    // 오버레이 글씨체를 앱과 같은 Galmuri11로 맞춘다 (#253 후속).
+    // Flutter 번들(`flutter_assets`)에서 직접 읽어 `res` 복제 없이 쓴다.
+    // 실패하면 시스템 기본 글씨체로 둔다.
+    private fun applyFont(view: View) {
+        val face = try {
+            android.graphics.Typeface.createFromAsset(
+                assets,
+                "flutter_assets/assets/fonts/Galmuri11.ttf",
+            )
+        } catch (_: Exception) {
+            android.util.Log.d(TAG, "galmuri font missing, fallback")
+            return
+        }
+        for (id in intArrayOf(
+            R.id.lock_label,
+            R.id.lock_quote,
+            R.id.lock_author,
+            R.id.lock_countdown,
+        )) {
+            view.findViewById<android.widget.TextView>(id)?.typeface = face
         }
     }
 
