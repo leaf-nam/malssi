@@ -210,6 +210,9 @@ class AppShell extends StatelessWidget {
                   await NotificationService.instance.cancelSeedNotification(
                       NotificationService.growthNotificationId(stage));
                 }
+                // #253 후속: 진행 중 알림도 즉시 종료한다.
+                // 스냅샷 게이트만으로는 다음 갱신까지 남아 있게 된다.
+                await LiveActivityService.instance.endAll();
               }
               // #253: 잠금 오버레이 상태를 설정과 일치시킨다.
               // 전역 알림 마스터가 꺼져 있으면 오버레이도 중단한다
