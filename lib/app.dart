@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -147,52 +149,13 @@ class AppShell extends StatelessWidget {
             // #242: 성장 상태(단계·다음 단계·완성 시각)도 함께 전달한다.
             // #248: Live Activity(잠금화면 실시간 카운트다운)도 함께 동기화한다.
             // 중복 갱신은 서비스가 제거하고, 실패해도 앱에 영향없다.
+            // #253 후속: 전역 알림 off면 진행 중 알림(Live Activity)도
+            // 종료한다 (Android 진행 중 알림 포함 — 홈 위젯은 알림이 아니라 유지).
             seedProvider.addListener(() {
-              final quote = seedProvider.revealedQuote;
-              final seed = seedProvider.todaySeed;
-              if (quote == null || seed == null) {
-                HomeWidgetService.instance.updatePlaceholder();
-                LiveActivityService.instance.syncSeed(
-                  dateKey: '',
-                  quoteText: '',
-                  status: 'locked',
-                  stage: 0,
-                );
-              } else {
-                final now = DateTime.now();
-                final growing = seed.isGrowing;
-                final completeAtIso = growing
-                    ? seed.plantedAt
-                        .add(Seed.stageInterval * Seed.maxGrowthStage)
-                        .toUtc()
-                        .toIso8601String()
-                    : '';
-                HomeWidgetService.instance.updateSeed(
-                  quoteId: quote.id,
-                  text: quote.text,
-                  author: quote.author,
-                  status: seed.status,
-                  stage: seed.growthStageAt(now),
-                  totalStages: Seed.totalStages,
-                  seedDate: seed.dateKey,
-                  theme: seed.theme,
-                  nextStageAtIso: growing
-                      ? now
-                          .add(seed.timeUntilNextStage(now))
-                          // 네이티브 공용 형식: UTC ISO8601 (#242).
-                          .toUtc()
-                          .toIso8601String()
-                      : '',
-                  completeAtIso: completeAtIso,
-                );
-                LiveActivityService.instance.syncSeed(
-                  dateKey: seed.dateKey,
-                  quoteText: quote.text,
-                  status: seed.status,
-                  stage: seed.growthStageAt(now),
-                  completeAtIso: completeAtIso,
-                );
-              }
+              unawaited(_syncSeedSnapshot(
+                seedProvider,
+                settingsRepository,
+              ));
             });
             return seedProvider;
           },
@@ -320,6 +283,66 @@ class AppShell extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// 씨앗 스냅샷을 위젯·Live Activity에 반영한다 (리스너 본문, #139·#242·#248).
+/// 전역 알림 off면 진행 중 알림을 종료한다 (#253 후속).
+/// 홈 위젯은 알림이 아니라 유지하고, 오버레이 중단은 `onSettingsChanged`가 담당.
+Future<void> _syncSeedSnapshot(
+  SeedProvider seedProvider,
+  SettingsRepository? settingsRepository,
+) async {
+  final quote = seedProvider.revealedQuote;
+  final seed = seedProvider.todaySeed;
+  if (quote == null || seed == null) {
+    HomeWidgetService.instance.updatePlaceholder();
+    LiveActivityService.instance.syncSeed(
+      dateKey: '',
+      quoteText: '',
+      status: 'locked',
+      stage: 0,
+    );
+    return;
+  }
+  final settings = await (settingsRepository ?? InMemorySettingsRepository())
+      .getSettings();
+  final now = DateTime.now();
+  final growing = seed.isGrowing;
+  final completeAtIso = growing
+      ? seed.plantedAt
+          .add(Seed.stageInterval * Seed.maxGrowthStage)
+          .toUtc()
+          .toIso8601String()
+      : '';
+  HomeWidgetService.instance.updateSeed(
+    quoteId: quote.id,
+    text: quote.text,
+    author: quote.author,
+    status: seed.status,
+    stage: seed.growthStageAt(now),
+    totalStages: Seed.totalStages,
+    seedDate: seed.dateKey,
+    theme: seed.theme,
+    nextStageAtIso: growing
+        ? now
+            .add(seed.timeUntilNextStage(now))
+            // 네이티브 공용 형식: UTC ISO8601 (#242).
+            .toUtc()
+            .toIso8601String()
+        : '',
+    completeAtIso: completeAtIso,
+  );
+  if (settings.notifyEnabled) {
+    LiveActivityService.instance.syncSeed(
+      dateKey: seed.dateKey,
+      quoteText: quote.text,
+      status: seed.status,
+      stage: seed.growthStageAt(now),
+      completeAtIso: completeAtIso,
+    );
+  } else {
+    await LiveActivityService.instance.endAll();
   }
 }
 
