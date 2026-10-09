@@ -80,6 +80,9 @@ class HomeWidgetService {
   static const completeAtKey = 'complete_at';
   static const dateKey = 'seed_date';
 
+  /// 씨앗 테마 키 (#253). 잠금 오버레이가 단계 에셋을 고를 때 쓴다.
+  static const themeKey = 'seed_theme';
+
   /// 미공개 상태(심기 전) 플레이스홀더 (#139).
   static const placeholderText = '씨앗을 심으면 오늘의 명언이 보여요';
   static const placeholderAuthor = 'malssi';
@@ -114,6 +117,7 @@ class HomeWidgetService {
     required String seedDate,
     String nextStageAtIso = '',
     String completeAtIso = '',
+    String theme = '',
   }) async {
     final key = '$quoteId|$status|$stage|$seedDate';
     if (key == _lastPushedKey) return;
@@ -121,6 +125,7 @@ class HomeWidgetService {
       await _store.saveText(quoteKey, text);
       await _store.saveText(authorKey, author);
       await _store.saveText(statusKey, status);
+      await _store.saveText(themeKey, theme);
       await _store.saveInt(stageKey, stage);
       await _store.saveInt(totalStagesKey, totalStages);
       await _store.saveText(dateKey, seedDate);

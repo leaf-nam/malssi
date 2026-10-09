@@ -97,27 +97,20 @@ class NotificationService {
   /// `matchDateTimeComponents: time`으로 일일 반복된다.
   /// inexact 모드이므로 SCHEDULE_EXACT_ALARM 권한이 필요 없고,
   /// 수분 단위 오차가 발생할 수 있다 (일일 씨앗 알림 용도로 허용).
-  /// [lockscreenFirst]가 true면 full-screen intent를 붙여 (#253, Android만)
-  /// 잠금 상태에서도 씨앗 도착 화면을 먼저 보여준다.
-  /// Android 14+에서는 `USE_FULL_SCREEN_INTENT` 권한 허용이 필요하다.
   Future<void> scheduleDailySeedNotification({
     required int id,
     required String title,
     required String body,
     required int hour,
     required int minute,
-    bool lockscreenFirst = false,
   }) async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'channel_id',
       'channel_name',
       importance: Importance.high,
       priority: Priority.high,
-      visibility: NotificationVisibility.public,
-      category: lockscreenFirst ? AndroidNotificationCategory.alarm : null,
-      fullScreenIntent: lockscreenFirst,
     );
-    final details = NotificationDetails(android: androidDetails);
+    const details = NotificationDetails(android: androidDetails);
 
     final now = tz.TZDateTime.now(tz.local);
     var scheduled =
