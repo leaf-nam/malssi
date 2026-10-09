@@ -91,6 +91,10 @@ class MalssiLockscreenService : Service() {
 
         val view = LayoutInflater.from(this)
             .inflate(R.layout.lockscreen_overlay, null)
+        // 표시 시점 잠금 여부를 기록한다 (감시 폴링의 전이 판단용).
+        lockedAtShow =
+            (getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager)
+                .isKeyguardLocked
         fillQuote(view)
         // 탭 이동 없음 (#253 후속). 오버레이 위 터치는 즉시 숨기고
         // 아래 잠금화면으로 흘려보낸다.
@@ -111,14 +115,19 @@ class MalssiLockscreenService : Service() {
     }
 
     // 잠금 해제 놓침 대비 감시 (#253 후속).
-    // USER_PRESENT를 놓쳐도 잠금이 풀리면 오버레이를 내린다.
+    // USER_PRESENT를 놓쳐도 잠김→풀림 전이가 보이면 오버레이를 내린다.
+    // 켜지는 순간 키가드 상태가 아직 false일 수 있으므로,
+    // 표시 시점 잠금 여부를 기록해 전이일 때만 숨긴다 (즉시 꺼짐 방지).
+    private var lockedAtShow = false
     private val dismissWatch = object : Runnable {
         override fun run() {
             val keyguard =
                 getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-            if (!keyguard.isKeyguardLocked ||
-                !Settings.canDrawOverlays(this@MalssiLockscreenService)
-            ) {
+            if (!Settings.canDrawOverlays(this@MalssiLockscreenService)) {
+                hideOverlay()
+                return
+            }
+            if (lockedAtShow && !keyguard.isKeyguardLocked) {
                 hideOverlay()
                 return
             }
