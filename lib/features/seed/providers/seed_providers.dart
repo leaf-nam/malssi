@@ -289,10 +289,13 @@ class SeedProvider extends ChangeNotifier {
     }
   }
 
-  /// 비료 주기 (#264). 성장을 2시간(1단계) 앞당긴다. 씨앗당 1회.
+  /// 비료 주기 (#264). 현재 단계에서 1회, 성장을 1시간 앞당긴다.
+  /// 단계가 바뀌면 다시 줄 수 있다.
   Future<void> applyFertilizer() async {
     final seed = _todaySeed;
-    if (seed == null || !seed.isGrowing || seed.fertilizerUsed) return;
+    if (seed == null || !seed.isGrowing) return;
+    final stage = seed.growthStage;
+    if (stage >= Seed.maxGrowthStage || seed.hasFertilizedAt(stage)) return;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();

@@ -142,7 +142,7 @@ class CollectionNames {
 | theme     | `String`   | `theme`      | `''` (`SeedTheme` 키 값 — §4.11, 생성 시 랜덤 부여) |
 | growthStage | `int`    | `growthStage` | `0` (0~5, 2시간마다 +1)   |
 | plantedAt | `DateTime` | `plantedAt`  | `createdAt` (심은 시각, 단계 계산 기준) |
-| fertilizerUsed | `bool` | `fertilizerUsed` | `false` (비료 사용 여부, 씨앗당 1회 — #264) |
+| fertilizerStage | `int` | `fertilizerStage` | `-1` (`Seed.fertilizerNone`, 마지막으로 비료를 준 단계 — #264) |
 
 - **상태 전이**: `locked` (생성, 탭 → 심기) → `growing` (2시간 간격 성장) →
   `complete` (5단계 도달, 열매 수확 대상).
@@ -164,9 +164,12 @@ class CollectionNames {
   저장소 행 생성 시점은 관찰할 수 없으므로 생성 차단이 아닌 수령 차단으로 구현한다
   (심기 버튼 숨김 + `plantSeed()` 거부).
 - **컬렉션**: `seeds` (`CollectionNames.seeds`).
-- **비료 주기** (#264, 2026-11-10, 구현됨): 성장 중 씨앗에 1회 사용하면
-  `plantedAt`을 `Seed.stageInterval`(2시간)만큼 앞당겨 단계를 1단계 가속한다.
-  `fertilizerUsed = true`로 저장해 씨앗당 재사용을 막는다.
+- **비료 주기** (#264, 2026-11-10, 구현됨): 성장 단계마다 1회씩 사용할 수 있고,
+  사용할 때마다 `plantedAt`을 `Seed.fertilizerReduction`(1시간)만큼 앞당긴다.
+  마지막으로 비료를 준 단계를 `fertilizerStage`에 저장해 같은 단계에서의
+  재사용을 막는다 (`Seed.hasFertilizedAt(stage)`). 단계가 바뀌면 다시 줄 수 있다.
+  버튼을 누르면 오늘의 명언·저자를 다시 보여 주는 확인 시트를 거쳐
+  한 번 더 읽고 마음에 새긴 뒤 적용한다.
   적용 후 완성 예정 시각이 당겨지므로 완성·성장 알림을 다시 예약하고
   홈 위젯·Live Activity 스냅샷을 갱신한다.
 - **향후 과제**: 성장 단계 연출 에셋 확정 시 §4.11 개정.

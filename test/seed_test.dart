@@ -120,7 +120,7 @@ void main() {
         status: SeedStatus.opened,
         createdAt: DateTime(2026, 9, 4),
         plantedAt: DateTime(2026, 9, 4),
-        fertilizerUsed: true,
+        fertilizerStage: 2,
       );
       final restored = Seed.fromMap(
           seed.toMap()
@@ -133,7 +133,19 @@ void main() {
       expect(restored.status, seed.status);
       expect(restored.isOpened, isTrue);
       expect(restored.isLocked, isFalse);
-      expect(restored.fertilizerUsed, isTrue);
+      expect(restored.fertilizerStage, 2);
+      expect(restored.hasFertilizedAt(2), isTrue);
+    });
+
+    test('fromMap migrates the legacy fertilizerUsed flag (#264)', () {
+      final restored = Seed.fromMap({
+        'id': '2026-09-04',
+        'createdAt': _FakeTimestamp(DateTime(2026, 9, 4)),
+        'growthStage': 3,
+        'fertilizerUsed': true,
+      });
+
+      expect(restored.fertilizerStage, 3);
     });
 
     test('fromMap defaults a missing status to locked', () {
@@ -585,23 +597,38 @@ void main() {
       expect(provider.completedFruit!.fidelityScore, 3);
     });
 
-    test('applyFertilizer advances growth by 2 hours once (#264)',
+    test('applyFertilizer works once per stage and shortens by 1 hour (#264)',
         () async {
-      final provider = _buildProvider();
+      var now = DateTime(2026, 9, 4, 8);
+      final provider = _buildProvider(clock: () => now);
 
       await provider.ensureTodaySeed();
       await provider.plantSeed();
       expect(provider.todaySeed!.growthStage, 0);
-      expect(provider.todaySeed!.fertilizerUsed, isFalse);
+      expect(provider.todaySeed!.fertilizerStage, Seed.fertilizerNone);
 
+      final plantedAt = provider.todaySeed!.plantedAt;
       await provider.applyFertilizer();
 
-      expect(provider.todaySeed!.fertilizerUsed, isTrue);
+      // 1시간만 당겨지므로 단계는 그대로 0이다.
+      expect(provider.todaySeed!.growthStage, 0);
+      expect(provider.todaySeed!.fertilizerStage, 0);
+      expect(plantedAt.difference(provider.todaySeed!.plantedAt),
+          Seed.fertilizerReduction);
+
+      // 같은 단계에서는 두 번째 비료가 무시된다.
+      await provider.applyFertilizer();
+      expect(provider.todaySeed!.fertilizerStage, 0);
+      expect(provider.todaySeed!.plantedAt, plantedAt.subtract(
+          Seed.fertilizerReduction));
+
+      // 1시간 뒤 다음 단계로 오르면 다시 비료를 줄 수 있다.
+      now = now.add(const Duration(hours: 1));
+      await provider.refreshGrowth();
       expect(provider.todaySeed!.growthStage, 1);
 
-      // 두 번째 비료는 무시된다.
       await provider.applyFertilizer();
-      expect(provider.todaySeed!.growthStage, 1);
+      expect(provider.todaySeed!.fertilizerStage, 1);
     });
 
     test('saveReview ignores an empty first save (#71)', () async {
@@ -1311,6 +1338,40 @@ void main() {
       expect(provider.todaySeed!.isComplete, isTrue);
       expect(find.textContaining(keepWordsTogether(provider.revealedQuote!.text)),
           findsOneWidget);
+    });
+
+    testWidgets('fertilizer sheet re-reads the quote before applying (#264)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+
+      final quote = provider.revealedQuote!;
+      final plantedAt = provider.todaySeed!.plantedAt;
+
+      // 비료 버튼을 누르면 명언을 다시 보여 주는 확인 시트가 열린다.
+      await tester.tap(find.byKey(const ValueKey('fertilizer-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('비료를 주기 전에 오늘의 말씨를 한 번 더 읽어보세요.'),
+          findsOneWidget);
+      expect(find.textContaining(keepWordsTogether(quote.text)),
+          findsNWidgets(2)); // 화면 뒤 명언 + 시트 명언
+      expect(find.text('— ${quote.author}'), findsWidgets);
+
+      // 확인을 누르면 이번 단계 성장이 1시간 당겨진다.
+      await tester.tap(find.byKey(const ValueKey('fertilizer-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(provider.todaySeed!.fertilizerStage, 0);
+      expect(plantedAt.difference(provider.todaySeed!.plantedAt),
+          Seed.fertilizerReduction);
+      expect(find.text('이번 단계 비료를 주었어요 · 1시간 단축'), findsOneWidget);
+      expect(find.byKey(const ValueKey('fertilizer-button')), findsNothing);
     });
 
     testWidgets('long quotes render smaller, short quotes keep 26 (#252)',

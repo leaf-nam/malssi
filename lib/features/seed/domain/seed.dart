@@ -15,8 +15,15 @@ class Seed {
   /// 심은 시각. 경과 시간으로 단계를 계산한다.
   final DateTime plantedAt;
 
-  /// 비료 사용 여부 (#264). 씨앗당 1회만 사용할 수 있다.
-  final bool fertilizerUsed;
+  /// 마지막으로 비료를 준 단계 (#264). `fertilizerNone`이면 아직 없음.
+  /// 단계마다 1회씩 줄 수 있으므로 어떤 단계에 줬는지 저장한다.
+  final int fertilizerStage;
+
+  /// 비료를 아직 주지 않은 상태.
+  static const fertilizerNone = -1;
+
+  /// 비료 1회당 성장 단축 시간.
+  static const fertilizerReduction = Duration(hours: 1);
 
   /// 전체 단계 수 (0~5, 6단계).
   static const totalStages = 6;
@@ -47,7 +54,7 @@ class Seed {
     this.theme = '',
     this.growthStage = 0,
     required this.plantedAt,
-    this.fertilizerUsed = false,
+    this.fertilizerStage = fertilizerNone,
   });
 
   /// 날짜키 (`'YYYY-MM-DD'`). 문서 ID로도 사용한다.
@@ -63,6 +70,14 @@ class Seed {
   factory Seed.fromMap(Map<String, dynamic> map) {
     final createdAt =
         (map['createdAt'] as dynamic).toDate() ?? DateTime.now();
+    final rawFertilizerStage = map['fertilizerStage'];
+    // v1.1.3 초안의 bool 필드(fertilizerUsed)도 읽어 마이그레이션한다.
+    final legacyFertilizerUsed = map['fertilizerUsed'] == true;
+    final fertilizerStage = rawFertilizerStage is int
+        ? rawFertilizerStage
+        : (legacyFertilizerUsed
+            ? (map['growthStage'] ?? 0) as int
+            : fertilizerNone);
     return Seed(
       id: map['id'] ?? '',
       dateKey: map['dateKey'] ?? '',
@@ -73,7 +88,7 @@ class Seed {
       growthStage: map['growthStage'] ?? 0,
       plantedAt:
           (map['plantedAt'] as dynamic)?.toDate() ?? createdAt,
-      fertilizerUsed: map['fertilizerUsed'] ?? false,
+      fertilizerStage: fertilizerStage,
     );
   }
 
@@ -87,7 +102,7 @@ class Seed {
       'theme': theme,
       'growthStage': growthStage,
       'plantedAt': plantedAt,
-      'fertilizerUsed': fertilizerUsed,
+      'fertilizerStage': fertilizerStage,
     };
   }
 
@@ -100,7 +115,7 @@ class Seed {
     String? theme,
     int? growthStage,
     DateTime? plantedAt,
-    bool? fertilizerUsed,
+    int? fertilizerStage,
   }) {
     return Seed(
       id: id ?? this.id,
@@ -111,12 +126,15 @@ class Seed {
       theme: theme ?? this.theme,
       growthStage: growthStage ?? this.growthStage,
       plantedAt: plantedAt ?? this.plantedAt,
-      fertilizerUsed: fertilizerUsed ?? this.fertilizerUsed,
+      fertilizerStage: fertilizerStage ?? this.fertilizerStage,
     );
   }
 
   bool get isGrowing => status == SeedStatus.growing;
   bool get isComplete => status == SeedStatus.complete;
+
+  /// [stage] 단계에 이미 비료를 줬는지 (#264).
+  bool hasFertilizedAt(int stage) => fertilizerStage == stage;
 
   /// [now] 기준 성장 단계. `growing`이 아니면 저장된 단계 그대로.
   int growthStageAt(DateTime now) {
