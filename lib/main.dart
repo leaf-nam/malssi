@@ -5,6 +5,7 @@ import 'package:malssi/core/services/live_activity_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
 import 'package:malssi/features/home/data/quote_assets.dart';
+import 'package:malssi/features/home/data/quote_repository.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/settings/data/settings_repository.dart';
 import 'package:malssi/core/services/local_store.dart';
@@ -40,10 +41,13 @@ Future<void> main() async {
   final seedRepository = InMemorySeedRepository(store: store);
   final fruitRepository = InMemoryFruitRepository(store: store);
   final settingsRepository = InMemorySettingsRepository(store: store);
+  // 노출한 명언 이력 (#265). 재시작해도 같은 명언이 반복되지 않는다.
+  final quoteRepository = InMemoryQuoteRepository(seed: quotes, store: store);
   for (final loader in [
     seedRepository.load,
     fruitRepository.load,
     settingsRepository.load,
+    quoteRepository.load,
   ]) {
     try {
       await loader();
@@ -61,6 +65,7 @@ Future<void> main() async {
   }
   runApp(AppShell(
     initialQuotes: quotes,
+    quoteRepository: quoteRepository,
     seedRepository: seedRepository,
     fruitRepository: fruitRepository,
     settingsRepository: settingsRepository,

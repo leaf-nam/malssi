@@ -5,9 +5,10 @@ import 'package:malssi/core/widgets/explanation_toggle.dart';
 import 'package:malssi/core/widgets/word_wrap.dart';
 
 /// 열매 리뷰 카드 (별점 + 한줄 리뷰).
-/// 메인(완성 열매 탭)에서는 작성용으로, 보관(잔디 상세)에서는 읽기 전용으로 쓴다.
+/// 메인(완성 열매 탭)과 보관(잔디 상세)에서 같은 카드를 쓴다.
 /// 저장은 호출 측이 [onSave]로 주입한다 (작성 모드에서 필수).
-/// 보관에서는 이미 저장된 리뷰만 보여주고 새로 쓸 수 없다 (#48).
+/// 저장된 리뷰는 수확 당일까지만 수정할 수 있고, 날짜가 지나면 읽기 전용이다
+/// (#48, #263).
 class FruitReviewSheet extends StatefulWidget {
   const FruitReviewSheet({
     super.key,

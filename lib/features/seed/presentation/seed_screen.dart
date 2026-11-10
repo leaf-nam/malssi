@@ -53,8 +53,9 @@ class _SeedScreenState extends State<SeedScreen> {
 
   void _openReview(
       BuildContext context, SeedProvider state, Fruit fruit) {
-    // #71: 리뷰를 저장한 뒤에는 읽기만 가능하다.
-    final readOnly = fruit.isReviewed;
+    // #263: 수확 당일에는 저장 후에도 수정할 수 있다.
+    // 날짜가 지나면 읽기 전용이다 (#71).
+    final readOnly = !fruit.isReviewEditableAt(DebugClock.now());
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -696,10 +697,26 @@ class _GrowingSeed extends StatelessWidget {
   final Quote? quote;
   final bool isBusy;
 
+  void _openFertilizer(BuildContext context, Quote quote) {
+    final provider = context.read<SeedProvider>();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _FertilizerSheet(
+        quote: quote,
+        onApply: provider.applyFertilizer,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final quote = this.quote;
     final showDebug = context.watch<DebugUiProvider>().showButtons;
+    final stage = seed.growthStageAt(DebugClock.now());
+    final canFertilize = seed.isGrowing &&
+        stage < Seed.maxGrowthStage &&
+        !seed.hasFertilizedAt(stage);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -717,6 +734,28 @@ class _GrowingSeed extends StatelessWidget {
         ),
         // 남은시간: 화면 가운데. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
         _GrowthCountdown(seed: seed),
+        // 비료 주기 (#264): 단계마다 1회, 성장을 1시간 앞당긴다.
+        // 비료를 주기 전에 명언을 다시 보여 주는 확인 시트를 거친다.
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Center(
+            child: canFertilize
+                ? TextButton.icon(
+                    key: const ValueKey('fertilizer-button'),
+                    onPressed: isBusy || quote == null
+                        ? null
+                        : () => _openFertilizer(context, quote),
+                    icon: const Icon(Icons.eco_outlined, size: 16),
+                    label: const Text('비료 주기 · 1시간 단축'),
+                  )
+                : seed.hasFertilizedAt(stage)
+                    ? const Text(
+                        '이번 단계 비료를 주었어요 · 1시간 단축',
+                        style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                      )
+                    : const SizedBox.shrink(),
+          ),
+        ),
         // #191: 심겨진 씨앗 종류 (성장 중에도 확인). 미등록 테마는 기본 문구.
         Padding(
           padding: const EdgeInsets.only(top: 4),
@@ -810,6 +849,114 @@ class _GrowingSeed extends StatelessWidget {
     );
   }
 }
+
+/// 비료 주기 확인 시트 (#264).
+/// 비료를 주기 전에 오늘의 명언을 한 번 더 읽고 마음에 새기도록 한다.
+/// 단계마다 1회, 이번 단계 성장을 1시간 앞당긴다.
+class _FertilizerSheet extends StatefulWidget {
+  const _FertilizerSheet({required this.quote, required this.onApply});
+
+  final Quote quote;
+  final Future<void> Function() onApply;
+
+  @override
+  State<_FertilizerSheet> createState() => _FertilizerSheetState();
+}
+
+class _FertilizerSheetState extends State<_FertilizerSheet> {
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 20,
+        bottom: bottomInset + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '비료 주기',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '비료를 주기 전에 오늘의 말씨를 한 번 더 읽어보세요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              '"${keepWordsTogether(widget.quote.text)}"',
+              textAlign: TextAlign.center,
+              style: AppTheme.quoteTextStyle(
+                fontSize: quoteFontSizeFor(widget.quote.text),
+              ).copyWith(color: colors.onSurface),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '— ${widget.quote.author}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colors.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              '이번 단계의 성장이 1시간 빨라져요.\n'
+              '단계마다 한 번씩 비료를 줄 수 있어요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              key: const ValueKey('fertilizer-confirm'),
+              onPressed: _saving
+                  ? null
+                  : () async {
+                      setState(() => _saving = true);
+                      try {
+                        await widget.onApply();
+                      } finally {
+                        if (mounted) setState(() => _saving = false);
+                      }
+                      if (context.mounted) Navigator.of(context).pop();
+                    },
+              child: const Text('비료 주기 · 1시간 단축'),
+            ),
+            TextButton(
+              onPressed:
+                  _saving ? null : () => Navigator.of(context).pop(),
+              child: const Text('그만두기'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _OpenedQuote extends StatefulWidget {
   const _OpenedQuote({
     required this.quote,
@@ -963,15 +1110,19 @@ class _OpenedQuoteState extends State<_OpenedQuote>
           if (widget.onTapReview != null) ...[
             // #153: 미리뷰 열매 별점·리뷰 유도 배너.
             // 리뷰를 남겨야 정원에 심어지므로(#65) 완성 화면에서 유도한다.
-            // 리뷰 완료 후에는 읽기 안내로 바뀐다 (#71).
+            // 수확 당일에는 수정 안내, 날짜가 지나면 보기 안내로 바뀐다
+            // (#263, #71).
             // 탭 처리는 바깥 GestureDetector가 담당한다 (중복 시트 방지).
             if (fruit?.isReviewed == true)
-              const Padding(
-                padding: EdgeInsets.only(top: 8, bottom: 20),
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 20),
                 child: Text(
-                  '눌러서 오늘의 리뷰 보기',
+                  fruit!.isReviewEditableAt(DebugClock.now())
+                      ? '눌러서 오늘의 리뷰 수정하기'
+                      : '눌러서 오늘의 리뷰 보기',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                  style:
+                      const TextStyle(fontSize: 11, color: AppTheme.muted),
                 ),
               )
             else

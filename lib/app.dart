@@ -9,6 +9,7 @@ import 'package:malssi/core/services/live_activity_service.dart';
 import 'package:malssi/core/services/lockscreen_service.dart';
 import 'package:malssi/core/services/notification_service.dart';
 import 'package:malssi/core/theme/app_theme.dart';
+import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/core/widgets/update_gate.dart';
 import 'package:malssi/features/auth/data/dummy_auth_service.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
@@ -306,12 +307,14 @@ Future<void> _syncSeedSnapshot(
   final seed = seedProvider.todaySeed;
   if (quote == null || seed == null) {
     HomeWidgetService.instance.updatePlaceholder();
-    LiveActivityService.instance.syncSeed(
-      dateKey: '',
-      quoteText: '',
-      status: 'locked',
-      stage: 0,
-    );
+    // 잠금·만료 씨앗이면 진행 중/완료 Live Activity를 정리한다 (#268 후속).
+    // 이전 세션에서 남은 완성 Activity도 게이트웨이 수준에서 모두 종료한다.
+    if (seed == null ||
+        seed.isLocked ||
+        seed.status == SeedStatus.expired ||
+        seed.isMissed(DateTime.now())) {
+      await LiveActivityService.instance.endAll();
+    }
     return;
   }
   final settings = await (settingsRepository ?? InMemorySettingsRepository())
@@ -348,7 +351,10 @@ Future<void> _syncSeedSnapshot(
       quoteText: quote.text,
       status: seed.status,
       stage: seed.growthStageAt(now),
+      plantedAtIso: seed.plantedAt.toUtc().toIso8601String(),
       completeAtIso: completeAtIso,
+      themeLabel: ThemeAssets.fruitName(seed.theme),
+      fruitEmoji: ThemeAssets.fruitEmoji(seed.theme),
     );
   } else {
     await LiveActivityService.instance.endAll();

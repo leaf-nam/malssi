@@ -214,16 +214,23 @@ lib/
 
 ### 2.6 성장 Live Activity (`LiveActivityService`, #248)
 
-- 표시: 잠금화면 실시간 카운트다운 (명언 1줄 + `N단계` + 완성까지 남은시간,
-  네이티브 타이머라 초 단위로 틱톡). Dynamic Island(compact/expanded/minimal) 포함.
-- 수명: 1단계 도달 시 시작해 단계마다 갱신하고 수확·미심김 시 종료한다.
-  iOS 8시간 제한에 걸리지 않게 1단계(2시간 경과)부터 시작한다 (2+8=10시간 커버).
-  같은 명언·단계 중복 갱신 방지 + 실패 무시 (앱에 영향없음).
+- 표시: 잠금화면 배너·Dynamic Island(compact/expanded/minimal).
+  긴 명언 전문 대신 **이번 씨앗 종류**(예: `🌱 딸기 씨앗`)와
+  `말씨에서 씨앗을 확인하세요` 안내를 1줄로 보여준다 (#266).
+  `N단계` + 완성까지 남은시간은 그대로 유지한다.
+- 수명: 씨앗을 심은 직후 0단계부터 시작해 완성 후에도 Activity를 유지하며
+  열매(`🍓 딸기 열매`, `말씨에서 열매를 확인하세요`)를 보여준다 (#267·#268).
+  미심김·만료·전역 알림 off 시 종료하고, 다음 날 새 씨앗이 도착하면
+  이전 세션에서 남은 Activity까지 `endAllActivities()`로 정리한다.
+- 단계 계산: Dart는 `planted_at`/`complete_at`(UTC epoch millis)과 상태를 전달하고,
+  Swift `TimelineView`가 현재 시각 기준 경과 시간으로 0~5단계를 직접 계산한다.
+  앱이 백그라운드·종료 상태여도 2시간마다 표시가 바뀐다 (#267).
 - 동기화: `app.dart`의 `SeedProvider` 리스너가 위젯과 같은 스냅샷으로 전달.
+  같은 상태·단계 중복 갱신 방지 + 실패 무시 (앱에 영향없음).
   `main()`에서 플러그인 초기화 (App Group 공유).
-  데이터 키 `quote_text`/`stage`/`complete_at`(UTC epoch millis) —
-  플러그인이 App Group UserDefaults(`<uuid>_<key>`)에 저장하고
-  네이티브가 읽는다. 원격 푸시 갱신 미사용.
+  데이터 키 `status`/`stage`/`theme_label`/`fruit_emoji`/`planted_at`/`complete_at`/
+  `quote_text`(호환용) — 플러그인이 App Group UserDefaults(`<uuid>_<key>`)에
+  저장하고 네이티브가 읽는다. 원격 푸시 갱신 미사용.
 - 네이티브: iOS `MalssiGrowthActivity` (`ActivityConfiguration`,
   위젯 타깃 배포 타깃 16.1+, 양쪽 `Info.plist`에 `NSSupportsLiveActivities`),
   Android `MalssiLiveActivityManager` + `res/layout/live_activity.xml`

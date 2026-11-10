@@ -188,9 +188,11 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
     );
   }
 
-  /// 보관 상세는 읽기 전용: 저장된 별점·리뷰만 보여준다.
-  /// 리뷰 작성은 말씨 탭의 완성 열매 흐름에서만 가능하다 (#48).
+  /// 보관 상세: 수확 당일에는 저장한 리뷰도 수정할 수 있고 (#263),
+  /// 날짜가 지나면 읽기 전용이다 (#48).
   void _openDetail(BuildContext context, Fruit fruit) {
+    final readOnly = !fruit.isReviewEditableAt(DebugClock.now());
+    final archive = context.read<ArchiveProvider>();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -201,7 +203,16 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
         imagePath: ThemeAssets.fruitImage(fruit.theme),
         initialMemo: fruit.memo,
         initialScore: fruit.fidelityScore,
-        readOnly: true,
+        readOnly: readOnly,
+        onSave: readOnly
+            ? null
+            : ({required memo, required fidelityScore}) async {
+                await archive.updateReview(
+                  fruitId: fruit.id,
+                  memo: memo,
+                  fidelityScore: fidelityScore,
+                );
+              },
         // #123: 날짜별 명언 조회에서도 출처를 볼 수 있다.
         source: fruit.source,
         // #216: 날짜별 명언 조회에서도 해설을 볼 수 있다.

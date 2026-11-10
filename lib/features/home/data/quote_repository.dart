@@ -1,13 +1,22 @@
 import 'dart:math';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/services/local_store.dart';
 import 'package:malssi/features/quote.dart';
 
 abstract class QuoteRepository {
   Future<Quote> getRandomQuote();
 
   /// [theme] 테마의 명언 중 랜덤 1개. 해당 테마가 없으면 전체에서 랜덤 (폴백).
-  Future<Quote> getRandomQuoteByTheme(String theme);
+  /// [excludeIds]에 든 명언은 후보에서 제외한다 (#265).
+  Future<Quote> getRandomQuoteByTheme(
+    String theme, {
+    Set<String> excludeIds = const {},
+  });
+
+  /// 공개된 번들 명언 ID를 이력에 기록한다 (#265).
+  /// 자작 명언(`custom-`)은 기록하지 않는다.
+  Future<void> markShown(String quoteId);
 
   Stream<List<Quote>> getQuotesStream();
 
@@ -21,7 +30,7 @@ abstract class QuoteRepository {
 /// In-memory implementation backed by the bundled asset (#123).
 /// No backend; seed data only with no persistence across restarts.
 class InMemoryQuoteRepository implements QuoteRepository {
-  InMemoryQuoteRepository({List<Quote>? seed})
+  InMemoryQuoteRepository({List<Quote>? seed, this._store})
       : _quotes = List.of(
             seed == null || seed.isEmpty ? _defaultSeed : seed);
 
@@ -87,6 +96,33 @@ class InMemoryQuoteRepository implements QuoteRepository {
   final List<Quote> _quotes;
   final Random _random = Random();
 
+  /// 로컬 저장소 (#265). `null`이면 세션 내 이력만 사용한다.
+  final LocalStore? _store;
+
+  /// 이미 공개된 번들 명언 ID.
+  final Set<String> _shownIds = {};
+
+  /// 저장된 노출 이력을 불러온다. `main()` 시작 시 1회 호출한다.
+  Future<void> load() async {
+    final store = _store;
+    if (store == null) return;
+    final raw = await store.readMap(StoreKeys.shownQuotes);
+    final ids = raw['ids'];
+    if (ids is List) {
+      _shownIds
+        ..clear()
+        ..addAll(ids.whereType<String>());
+    }
+  }
+
+  Future<void> _persistShown() async {
+    final store = _store;
+    if (store == null) return;
+    await store.writeMap(StoreKeys.shownQuotes, {
+      'ids': _shownIds.toList(),
+    });
+  }
+
   @override
   Future<Quote> getRandomQuote() async {
     if (_quotes.isEmpty) {
@@ -96,12 +132,33 @@ class InMemoryQuoteRepository implements QuoteRepository {
   }
 
   @override
-  Future<Quote> getRandomQuoteByTheme(String theme) async {
+  Future<Quote> getRandomQuoteByTheme(
+    String theme, {
+    Set<String> excludeIds = const {},
+  }) async {
     final themed = _quotes.where((q) => q.theme == theme).toList();
-    if (themed.isEmpty) {
+    final pool = themed.isEmpty ? _quotes : themed;
+    var candidates = pool
+        .where((q) => !_shownIds.contains(q.id) && !excludeIds.contains(q.id))
+        .toList();
+    if (candidates.isEmpty) {
+      // 해당 테마를 모두 봤다면 이력만 초기화하고 다시 순환한다.
+      _shownIds.removeAll(pool.map((q) => q.id));
+      await _persistShown();
+      candidates = pool.where((q) => !excludeIds.contains(q.id)).toList();
+    }
+    if (candidates.isEmpty) {
       return getRandomQuote();
     }
-    return themed[_random.nextInt(themed.length)];
+    return candidates[_random.nextInt(candidates.length)];
+  }
+
+  @override
+  Future<void> markShown(String quoteId) async {
+    if (quoteId.isEmpty || quoteId.startsWith('custom-')) return;
+    if (_shownIds.add(quoteId)) {
+      await _persistShown();
+    }
   }
 
   @override
