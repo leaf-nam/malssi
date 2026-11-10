@@ -13,6 +13,9 @@ abstract class LiveActivityGateway {
     Duration? staleIn,
   });
   Future<void> end(String activityId);
+
+  /// 이전 세션에서 시작한 Activity까지 모두 종료한다.
+  Future<void> endAll();
 }
 
 /// `live_activities` 플러그인 기반 호출 (실기기용).
@@ -45,12 +48,17 @@ class LiveActivitiesPluginGateway implements LiveActivityGateway {
 
   @override
   Future<void> end(String activityId) => _plugin.endActivity(activityId);
+
+  @override
+  Future<void> endAll() => _plugin.endAllActivities();
 }
 
 /// 성장 Live Activity 동기화 (#248).
-/// 1단계 도달 시 시작해 단계마다 갱신하고, 수확·미심김 시 종료한다.
-/// iOS 8시간 제한에 걸리지 않게 1단계(2시간 경과)부터 시작한다 (2+8=10시간 커버).
-/// 같은 명언·단계면 다시 요청하지 않는다. 실패해도 앱에 영향없다.
+/// 심은 직후 0단계부터 시작해 단계마다 갱신하고, 완성 후에는 열매 상태로
+/// 유지한다 (#266·#268). 미심김·만료 시 종료한다.
+/// 네이티브는 `planted_at` 기준으로 단계를 자체 계산하므로 앱이 꺼져 있어도
+/// 2시간마다 표시가 바뀐다.
+/// 같은 상태·단계면 다시 요청하지 않는다. 실패해도 앱에 영향없다.
 class LiveActivityService {
   LiveActivityService({LiveActivityGateway? gateway})
       : _gateway = gateway ?? LiveActivitiesPluginGateway();
@@ -85,17 +93,22 @@ class LiveActivityService {
 
   /// 씨앗 스냅샷을 Live Activity에 반영한다.
   /// [completeAtIso]는 UTC ISO8601 (위젯과 동일 형식).
+  /// [plantedAtIso]는 단계 자동 계산 기준 시각, [themeLabel]/[fruitEmoji]는
+  /// 명언 대신 보여줄 씨앗 종류다 (#266·#268).
   Future<void> syncSeed({
     required String dateKey,
     required String quoteText,
     required String status,
     required int stage,
     String completeAtIso = '',
+    String plantedAtIso = '',
+    String themeLabel = '',
+    String fruitEmoji = '🌱',
   }) async {
     final id = activityIdFor(dateKey);
     try {
-      if (status == 'growing' && stage >= 1) {
-        final key = '$id|$stage';
+      if (status == 'growing' || status == 'complete') {
+        final key = '$id|$status|$stage';
         // 날짜가 바뀌면 전날 Activity를 정리한다.
         for (final active in _activeIds.toList()) {
           if (active != id) {
@@ -106,11 +119,16 @@ class LiveActivityService {
         if (key == _lastKey) return;
         if (!await _gateway.areEnabled()) return;
         final completeAt = DateTime.tryParse(completeAtIso);
+        final plantedAt = DateTime.tryParse(plantedAtIso);
         await _gateway.createOrUpdate(id, {
           'quote_text': quoteText,
           'stage': stage,
+          'status': status,
+          'theme_label': themeLabel,
+          'fruit_emoji': fruitEmoji,
+          'planted_at': plantedAt?.millisecondsSinceEpoch ?? 0,
           'complete_at': completeAt?.millisecondsSinceEpoch ?? 0,
-        }, staleIn: _staleIn(completeAt));
+        }, staleIn: status == 'growing' ? _staleIn(completeAt) : null);
         _activeIds.add(id);
         _lastKey = key;
       } else {
@@ -124,16 +142,16 @@ class LiveActivityService {
   }
 
   /// 실행 중인 Activity를 모두 종료한다 (전역 알림 마스터 off, #253 후속).
+  /// 이전 앱 세션에서 시작한 Activity도 포함한다 (#268 후속).
   /// 다음 `syncSeed`가 같은 단계라도 다시 시작하도록 키를 초기화한다.
   Future<void> endAll() async {
     try {
-      for (final active in _activeIds.toList()) {
-        await _gateway.end(active);
-        _activeIds.remove(active);
-      }
-      _lastKey = null;
+      await _gateway.endAll();
     } catch (e) {
       debugPrint('LiveActivity endAll failed: $e');
+    } finally {
+      _activeIds.clear();
+      _lastKey = null;
     }
   }
 

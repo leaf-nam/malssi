@@ -25,6 +25,32 @@ abstract class ThemeAssets {
     SeedTheme.wisdom: '지혜',
   };
 
+  static const _fruitNames = {
+    SeedTheme.vitality: '딸기',
+    SeedTheme.happiness: '오렌지',
+    SeedTheme.growth: '레몬',
+    SeedTheme.health: '키위',
+    SeedTheme.peace: '블루베리',
+    SeedTheme.relationship: '포도',
+    SeedTheme.wisdom: '자몽',
+  };
+
+  static const _fruitEmojis = {
+    SeedTheme.vitality: '🍓',
+    SeedTheme.happiness: '🍊',
+    SeedTheme.growth: '🍋',
+    SeedTheme.health: '🥝',
+    SeedTheme.peace: '🫐',
+    SeedTheme.relationship: '🍇',
+    SeedTheme.wisdom: '🍊',
+  };
+
+  /// 열매 이름 (예: `딸기`). 미등록 테마는 `'오늘의 씨앗'`.
+  static String fruitName(String theme) => _fruitNames[theme] ?? '오늘의 씨앗';
+
+  /// 열매 이모지 (Live Activity·알림용). 미등록 테마는 `'🌱'`.
+  static String fruitEmoji(String theme) => _fruitEmojis[theme] ?? '🌱';
+
   /// 열매 이미지 (`assets/images/<이름>.png`). 미등록 테마는 `''`.
   static String fruitImage(String theme) {
     final name = _fruits[theme];

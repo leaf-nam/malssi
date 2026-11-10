@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:malssi/core/constants/seed_themes.dart';
+import 'package:malssi/core/services/local_store.dart';
 import 'package:malssi/core/theme/app_theme.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/data/fruit_repository.dart';
@@ -11,6 +12,7 @@ import 'package:malssi/features/quote.dart';
 import 'package:malssi/features/seed/data/seed_repository.dart';
 import 'package:malssi/features/seed/domain/seed.dart';
 import 'package:malssi/features/seed/providers/seed_providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Firestore `Timestamp` 흉내 (`fromMap`의 `.toDate()` 호출용).
 class _FakeTimestamp {
@@ -345,6 +347,105 @@ void main() {
 
         expect(quote.theme, theme);
       }
+    });
+
+    test('already shown quotes are excluded (#265)', () async {
+      final repo = InMemoryQuoteRepository(seed: [
+        Quote(
+          id: 'g1',
+          text: '첫 번째',
+          author: 'a',
+          likes: 0,
+          createdAt: DateTime(2026, 1, 1),
+          theme: SeedTheme.growth,
+        ),
+        Quote(
+          id: 'g2',
+          text: '두 번째',
+          author: 'b',
+          likes: 0,
+          createdAt: DateTime(2026, 1, 2),
+          theme: SeedTheme.growth,
+        ),
+      ]);
+
+      await repo.markShown('g1');
+      final quote = await repo.getRandomQuoteByTheme(SeedTheme.growth);
+
+      expect(quote.id, 'g2');
+    });
+
+    test('quote history resets after the theme is exhausted (#265)',
+        () async {
+      final repo = InMemoryQuoteRepository(seed: [
+        Quote(
+          id: 'g1',
+          text: '첫 번째',
+          author: 'a',
+          likes: 0,
+          createdAt: DateTime(2026, 1, 1),
+          theme: SeedTheme.growth,
+        ),
+      ]);
+
+      await repo.markShown('g1');
+      final quote = await repo.getRandomQuoteByTheme(SeedTheme.growth);
+
+      // 후보가 하나뿐이라 이력을 비우고 다시 선택한다.
+      expect(quote.id, 'g1');
+    });
+
+    test('quote history survives a restart (#265)', () async {
+      SharedPreferences.setMockInitialValues({});
+      final store = await PrefsLocalStore.create();
+      final first = InMemoryQuoteRepository(
+        seed: [
+          Quote(
+            id: 'g1',
+            text: '첫 번째',
+            author: 'a',
+            likes: 0,
+            createdAt: DateTime(2026, 1, 1),
+            theme: SeedTheme.growth,
+          ),
+          Quote(
+            id: 'g2',
+            text: '두 번째',
+            author: 'b',
+            likes: 0,
+            createdAt: DateTime(2026, 1, 2),
+            theme: SeedTheme.growth,
+          ),
+        ],
+        store: store,
+      );
+      await first.markShown('g1');
+
+      final second = InMemoryQuoteRepository(
+        seed: [
+          Quote(
+            id: 'g1',
+            text: '첫 번째',
+            author: 'a',
+            likes: 0,
+            createdAt: DateTime(2026, 1, 1),
+            theme: SeedTheme.growth,
+          ),
+          Quote(
+            id: 'g2',
+            text: '두 번째',
+            author: 'b',
+            likes: 0,
+            createdAt: DateTime(2026, 1, 2),
+            theme: SeedTheme.growth,
+          ),
+        ],
+        store: store,
+      );
+      await second.load();
+
+      final quote = await second.getRandomQuoteByTheme(SeedTheme.growth);
+      expect(quote.id, 'g2');
     });
 
     test('planting reveals a quote of the seed theme at once',

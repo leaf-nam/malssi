@@ -120,6 +120,7 @@ void main() {
         status: SeedStatus.opened,
         createdAt: DateTime(2026, 9, 4),
         plantedAt: DateTime(2026, 9, 4),
+        fertilizerUsed: true,
       );
       final restored = Seed.fromMap(
           seed.toMap()
@@ -132,6 +133,7 @@ void main() {
       expect(restored.status, seed.status);
       expect(restored.isOpened, isTrue);
       expect(restored.isLocked, isFalse);
+      expect(restored.fertilizerUsed, isTrue);
     });
 
     test('fromMap defaults a missing status to locked', () {
@@ -549,7 +551,7 @@ void main() {
       expect(provider.errorMessage, isNull);
     });
 
-    test('saveReview locks after the first save (#71)', () async {
+    test('saveReview can edit the same day (#263)', () async {
       final provider = _buildProvider();
 
       await provider.ensureTodaySeed();
@@ -560,11 +562,46 @@ void main() {
       await provider.saveReview(memo: '첫 리뷰', fidelityScore: 4);
       expect(provider.completedFruit!.memo, '첫 리뷰');
 
-      // 두 번째 저장은 무시된다 (수정 잠금).
+      // 수확 당일에는 다시 저장해 수정할 수 있다.
       await provider.saveReview(memo: '바꾼 리뷰', fidelityScore: 1);
-      expect(provider.completedFruit!.memo, '첫 리뷰');
-      expect(provider.completedFruit!.fidelityScore, 4);
+      expect(provider.completedFruit!.memo, '바꾼 리뷰');
+      expect(provider.completedFruit!.fidelityScore, 1);
       expect(provider.errorMessage, isNull);
+    });
+
+    test('saveReview is read-only after the harvest day (#263)', () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      await provider.debugCompleteNow();
+      await provider.saveReview(memo: '당일 리뷰', fidelityScore: 3);
+
+      // 날짜가 바뀌면 수정할 수 없다.
+      DebugClock.shift(const Duration(days: 1));
+      await provider.saveReview(memo: '다음날 리뷰', fidelityScore: 5);
+
+      expect(provider.completedFruit!.memo, '당일 리뷰');
+      expect(provider.completedFruit!.fidelityScore, 3);
+    });
+
+    test('applyFertilizer advances growth by 2 hours once (#264)',
+        () async {
+      final provider = _buildProvider();
+
+      await provider.ensureTodaySeed();
+      await provider.plantSeed();
+      expect(provider.todaySeed!.growthStage, 0);
+      expect(provider.todaySeed!.fertilizerUsed, isFalse);
+
+      await provider.applyFertilizer();
+
+      expect(provider.todaySeed!.fertilizerUsed, isTrue);
+      expect(provider.todaySeed!.growthStage, 1);
+
+      // 두 번째 비료는 무시된다.
+      await provider.applyFertilizer();
+      expect(provider.todaySeed!.growthStage, 1);
     });
 
     test('saveReview ignores an empty first save (#71)', () async {
@@ -1558,14 +1595,24 @@ void main() {
       // #153: 별점 5 저장 직후 스토어 리뷰를 1회 요청한다.
       expect(reviewGateway.requests, 1);
 
-      // #71: 저장 후에는 읽기만 된다.
-      expect(find.text('눌러서 오늘의 리뷰 보기'), findsOneWidget);
+      // #263: 수확 당일에는 저장 후에도 수정할 수 있다.
+      expect(find.text('눌러서 오늘의 리뷰 수정하기'), findsOneWidget);
       await tester.tap(find.text('— 노자'));
       await tester.pumpAndSettle();
 
       expect(find.text('오늘 잘 지켰다'), findsOneWidget);
-      expect(find.text('리뷰 저장하기'), findsNothing);
-      expect(find.byType(TextField), findsNothing);
+      expect(find.text('리뷰 저장하기'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+
+      // 저장된 리뷰를 고쳐 다시 저장할 수 있다.
+      await tester.enterText(find.byType(TextField), '조금 고친 리뷰');
+      await tester.tap(find.byKey(const ValueKey('score-3')));
+      await tester.pump();
+      await tester.tap(find.text('리뷰 저장하기'));
+      await tester.pumpAndSettle();
+
+      expect(provider.completedFruit!.memo, '조금 고친 리뷰');
+      expect(provider.completedFruit!.fidelityScore, 3);
     });
 
     testWidgets('fresh harvest celebrates with rain and pop (#210)',
@@ -1687,9 +1734,10 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      // 리뷰 완료 후에는 배너 없이 읽기 안내만 보인다.
+      // 리뷰 완료 후에는 배너 대신 수정/보기 안내만 보인다.
       expect(find.byKey(const ValueKey('review-nudge')), findsNothing);
-      expect(find.text('눌러서 오늘의 리뷰 보기'), findsOneWidget);
+      // #263: 수확 당일에는 수정 안내가 나온다.
+      expect(find.text('눌러서 오늘의 리뷰 수정하기'), findsOneWidget);
     });
   });
 

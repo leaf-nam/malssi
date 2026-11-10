@@ -53,8 +53,9 @@ class _SeedScreenState extends State<SeedScreen> {
 
   void _openReview(
       BuildContext context, SeedProvider state, Fruit fruit) {
-    // #71: 리뷰를 저장한 뒤에는 읽기만 가능하다.
-    final readOnly = fruit.isReviewed;
+    // #263: 수확 당일에는 저장 후에도 수정할 수 있다.
+    // 날짜가 지나면 읽기 전용이다 (#71).
+    final readOnly = !fruit.isReviewEditableAt(DebugClock.now());
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -717,6 +718,27 @@ class _GrowingSeed extends StatelessWidget {
         ),
         // 남은시간: 화면 가운데. 라벨 + 큰 타이머, 완성 임박 시 문구만 (#138).
         _GrowthCountdown(seed: seed),
+        // 비료 주기 (#264): 씨앗당 1회, 성장을 2시간 앞당긴다.
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Center(
+            child: seed.fertilizerUsed
+                ? const Text(
+                    '비료를 주었어요 · 성장 2시간 단축',
+                    style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                  )
+                : TextButton.icon(
+                    key: const ValueKey('fertilizer-button'),
+                    onPressed: isBusy
+                        ? null
+                        : () => context
+                            .read<SeedProvider>()
+                            .applyFertilizer(),
+                    icon: const Icon(Icons.eco_outlined, size: 16),
+                    label: const Text('비료 주기 · 2시간 단축'),
+                  ),
+          ),
+        ),
         // #191: 심겨진 씨앗 종류 (성장 중에도 확인). 미등록 테마는 기본 문구.
         Padding(
           padding: const EdgeInsets.only(top: 4),
@@ -963,15 +985,19 @@ class _OpenedQuoteState extends State<_OpenedQuote>
           if (widget.onTapReview != null) ...[
             // #153: 미리뷰 열매 별점·리뷰 유도 배너.
             // 리뷰를 남겨야 정원에 심어지므로(#65) 완성 화면에서 유도한다.
-            // 리뷰 완료 후에는 읽기 안내로 바뀐다 (#71).
+            // 수확 당일에는 수정 안내, 날짜가 지나면 보기 안내로 바뀐다
+            // (#263, #71).
             // 탭 처리는 바깥 GestureDetector가 담당한다 (중복 시트 방지).
             if (fruit?.isReviewed == true)
-              const Padding(
-                padding: EdgeInsets.only(top: 8, bottom: 20),
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 20),
                 child: Text(
-                  '눌러서 오늘의 리뷰 보기',
+                  fruit!.isReviewEditableAt(DebugClock.now())
+                      ? '눌러서 오늘의 리뷰 수정하기'
+                      : '눌러서 오늘의 리뷰 보기',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: AppTheme.muted),
+                  style:
+                      const TextStyle(fontSize: 11, color: AppTheme.muted),
                 ),
               )
             else

@@ -198,6 +198,24 @@ void main() {
       expect(
           fruit(memo: '', fidelityScore: 4).isReviewed, isTrue);
     });
+
+    test('isReviewEditableAt allows only the harvest day (#263)', () {
+      final fruit = Fruit(
+        id: 'x',
+        seedId: 'y',
+        quoteId: 'q',
+        text: 't',
+        author: 'a',
+        harvestedAt: DateTime(2026, 9, 4, 23, 30),
+        memo: '잘 살았다',
+        fidelityScore: 5,
+      );
+
+      expect(fruit.isReviewEditableAt(DateTime(2026, 9, 4, 0, 1)), isTrue);
+      expect(fruit.isReviewEditableAt(DateTime(2026, 9, 4, 23, 59)), isTrue);
+      expect(fruit.isReviewEditableAt(DateTime(2026, 9, 5, 0, 0)), isFalse);
+      expect(fruit.isReviewEditableAt(DateTime(2025, 9, 4, 12)), isFalse);
+    });
   });
 
   group('InMemoryFruitRepository review', () {

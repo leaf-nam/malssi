@@ -26,7 +26,7 @@
 - **관련 코드**:
   - 모델: `Seed` (`model_spec.md` §4.8 참조).
   - 저장소: `SeedRepository` (`getActiveSeed()`, `getTodaySeed()`, `plantSeed()`,
-    `openSeed()`, `refreshGrowth()`),
+    `openSeed()`, `applyFertilizer()` (#264), `refreshGrowth()`),
     `FruitRepository` (`harvestFromSeed()`, `getFruitsStream()`)
     (`lib/features/seed/data/`, `lib/features/archive/data/`).
   - 화면: `SeedScreen` (`lib/features/seed/presentation/seed_screen.dart`).
@@ -40,15 +40,20 @@
      보여준다 (배달 게이트, #196).
   2. 사용자가 씨앗을 탭 1회 → `plantSeed()` → `status: locked → growing` →
      같은 테마의 명언 확정 + **명언 즉시 공개** (해당 테마가 없으면 전체 랜덤 폴백).
+     이미 공개한 번들 명언은 로컬 노출 이력(`StoreKeys.shownQuotes`)으로 제외하고,
+     테마 후보를 모두 소진하면 이력만 초기화해 다시 순환한다 (#265).
      직접 쓰기(#129)로는 `plantSeedWithCustom()` → 자작 명언(본문 1~82자·
      지은이 필수·테마 직접 선택, 출처 `직접 작성`)으로 심는다.
-     심은 뒤에는 수정 불가이며 이후 흐름(성장·수확·리뷰·잔디)은 번들과 동일하다.
+     자작 명언은 중복 방지 이력에 넣지 않는다.
+     심은 뒤에는 명언을 수정할 수 없으며 이후 흐름(성장·수확·리뷰·잔디)은 번들과 동일하다.
      당일 14시를 넘긴 미심김 씨앗은 만료되어 심을 수 없다
      (`expired`, 14시 정각까지 심기 가능, #147).
      마감 1시간 전(13:00)에는 미심김 씨앗 리마인드 알림이 발송된다
      (매일 알림 스위치 공유, inexact 모드).
   3. 명언 아래에 성장 에셋 표시. 2시간마다 1단계씩 성장 (디버그·릴리즈 동일, #95.
      단계 이미지는 §4·`model_spec.md` §4.11).
+     성장 중에는 `비료 주기 · 2시간 단축` 버튼으로 씨앗당 1회 성장을 2시간
+     앞당길 수 있다 (#264). 사용 후에는 버튼 대신 사용 완료 문구를 보여준다.
      앱 실행 중 15분 간격 자동 갱신 + 말씨 탭 진입 시 갱신 + 재실행 시 경과 시간 계산 (#62).
    4. 5단계 도달 → `complete` → `Fruit` 수확.
       완성되면 열매 완성 알림이 발송된다 (#140, 매일 알림 스위치 공유,
@@ -59,7 +64,8 @@
       않으면 해당 열매는 폐기되어 정원에 보관되지 않는다.
       후기를 남긴 열매만 보관·잔디에 남는다.
   5. 완성된 명언을 탭 → 리뷰 카드 (별점 1~5 + 한줄 후기, `FruitReviewSheet` 공용).
-     후기는 첫 저장 이후 수정 불가(읽기만, #71). 빈 내용의 첫 저장은 무시된다.
+     후기는 수확 당일까지만 수정할 수 있고, 날짜가 지나면 읽기 전용이 된다
+     (#71, #263). 빈 내용의 첫 저장은 무시된다.
      저장된 후기가 있어야 잔디가 심어진다 (#65).
    6. 개발 모드 한정 임시 버튼 (`kDebugMode` — `디버그: +1단계` 1단계 진행,
       `디버그: 열매 만들기` 즉시 완성·수확, #69.
@@ -73,9 +79,10 @@
 - **요구**: 지금까지 수확한 열매들을 기록한다.
   GitHub 잔디 스타일로 **연도별 그리드**로 보여주고, 각 칸은 해당 날짜 열매의
   **테마 색깔로만** 표시한다. 칸을 터치하면 확대되면서 **열매 + 저장된 후기 및 점수 카드**가 나온다.
-  **후기 작성은 불가**하며 이미 저장된 후기만 불러온다 (#48).
+  **후기 작성은 말씨 탭에서 시작하지만, 수확 당일에는 정원 상세에서도 저장된
+  후기를 수정할 수 있다** (#263). 날짜가 지나면 읽기 전용이다 (#48).
   **잔디는 후기를 남긴 열매만 심어진다** — 수확만으로는 표시되지 않는다 (#65).
-  작성은 말씨 탭의 완성 열매 흐름(#41)에서만 가능하고, 저장 후에는 수정할 수 없다 (#71).
+  작성은 말씨 탭의 완성 열매 흐름(#41)에서도 가능하다.
 - **연도 보기** (#97, #99): 항상 1년(1월 1일이 속한 주~12월 31일이 속한 주)이 보인다.
   연도 선택기(`<`/`>`)로 처음 심어진 년도까지 돌아갈 수 있다.
   다음 해로는 넘어갈 수 없다. 개수는 선택 연도 기준(`2026 · N개의 열매`).
@@ -99,14 +106,15 @@
   3×4 격자에 1개씩·동일 속도로 배치해 겹치지 않고 (#100),
   위상 분산으로 항상 전체 높이에 퍼져 있다 (#103).
   방울 크기 32~64px (#102). 모은 열매가 없으면 배경 연출 없음.
-- **구현 상태**: 잔디 그리드 + 읽기 전용 상세 카드 구현됨 (#31, #48).
+- **구현 상태**: 잔디 그리드 + 상세 카드 구현됨 (#31, #48, #263).
   기존 목록형 MVP는 본 형태로 대체되었다.
 - **관련 코드**:
   - 모델: `Fruit` (`model_spec.md` §4.9 참조) — `memo`/`fidelityScore`(0~5, `0`=미평가) 포함.
   - 저장소: `FruitRepository.getFruitsStream()` (날짜 내림차순),
     `updateReview({fruitId, memo, fidelityScore})` (0~5 범위 외는 `ArgumentError`).
   - 화면: `ArchiveScreen` (`lib/features/archive/presentation/archive_screen.dart`) —
-    `_GrassGrid`(53주 × 7일, 가로 스크롤) + 공용 `FruitReviewSheet`(읽기 전용, `readOnly: true`).
+    `_GrassGrid`(53주 × 7일, 가로 스크롤) + 공용 `FruitReviewSheet`
+    (수확 당일 수정 가능, 이후 `readOnly: true`, #263).
   - 상태: `ArchiveProvider` (`load()`, `fruitsByDateKey`, `updateReview()`).
   - 메인 진입점: 완성 명언 탭 → 같은 `FruitReviewSheet` 작성 모드 (`SeedProvider.saveReview()` 저장, #41).
   - 셀 색상: `ThemeAssets.cellColor(theme)` (`lib/core/theme/theme_assets.dart`).
@@ -190,7 +198,7 @@
 | 5 | 랜딩 (매 실행) | — | — | — | `LandingScreen` (`lib/features/landing/presentation/`) | 구현됨 (#162) |
 | 6 | 스토어 업데이트 유도 | — | — | — (스토어 직접 조회) | `UpdateGate` (`lib/core/widgets/update_gate.dart`, `upgrader` 패키지) | 구현됨 (#192) |
 | 7 | 홈 위젯 | — (App Group 공유) | — | — | `HomeWidgetService` + 네이티브 위젯 (Android `MalssiWidgetProvider`, iOS `MalssiWidget`) | 구현됨 (#139, 성장 상태·잠금화면 #242) |
-| 8 | 성장 Live Activity | — (App Group 공유) | — | — | `LiveActivityService` + `MalssiGrowthActivity` (iOS) + `MalssiLiveActivityManager` (Android) | 구현됨 (#248) |
+| 8 | 성장 Live Activity | — (App Group 공유) | — | — | `LiveActivityService` + `MalssiGrowthActivity` (iOS) + `MalssiLiveActivityManager` (Android) | 구현됨 (#248, #266~#268 — 0단계 즉시 시작·네이티브 시간 기반 단계·완성 후 열매) |
 
 ## 6. 폐기된 기존 7기능과 사유 (2026-09-04 확정)
 

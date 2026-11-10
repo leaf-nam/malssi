@@ -15,6 +15,9 @@ class Seed {
   /// 심은 시각. 경과 시간으로 단계를 계산한다.
   final DateTime plantedAt;
 
+  /// 비료 사용 여부 (#264). 씨앗당 1회만 사용할 수 있다.
+  final bool fertilizerUsed;
+
   /// 전체 단계 수 (0~5, 6단계).
   static const totalStages = 6;
 
@@ -44,6 +47,7 @@ class Seed {
     this.theme = '',
     this.growthStage = 0,
     required this.plantedAt,
+    this.fertilizerUsed = false,
   });
 
   /// 날짜키 (`'YYYY-MM-DD'`). 문서 ID로도 사용한다.
@@ -69,6 +73,7 @@ class Seed {
       growthStage: map['growthStage'] ?? 0,
       plantedAt:
           (map['plantedAt'] as dynamic)?.toDate() ?? createdAt,
+      fertilizerUsed: map['fertilizerUsed'] ?? false,
     );
   }
 
@@ -82,6 +87,7 @@ class Seed {
       'theme': theme,
       'growthStage': growthStage,
       'plantedAt': plantedAt,
+      'fertilizerUsed': fertilizerUsed,
     };
   }
 
@@ -94,6 +100,7 @@ class Seed {
     String? theme,
     int? growthStage,
     DateTime? plantedAt,
+    bool? fertilizerUsed,
   }) {
     return Seed(
       id: id ?? this.id,
@@ -104,6 +111,7 @@ class Seed {
       theme: theme ?? this.theme,
       growthStage: growthStage ?? this.growthStage,
       plantedAt: plantedAt ?? this.plantedAt,
+      fertilizerUsed: fertilizerUsed ?? this.fertilizerUsed,
     );
   }
 

@@ -26,6 +26,10 @@ abstract class SeedRepository {
   /// 잠금 상태가 아니면 [StateError]를 던진다.
   Future<Seed> plantSeed({required String seedId, required Quote quote});
 
+  /// 비료 주기 (#264). 성장 중 씨앗을 2시간(1단계) 앞당긴다.
+  /// 씨앗당 1회만 가능하며, 이미 사용했거나 성장 중이 아니면 [StateError].
+  Future<Seed> applyFertilizer({required String seedId});
+
   /// `growing` 씨앗들의 단계를 경과 시간에 맞춰 갱신한다.
   /// 최종 단계 도달 시 `complete`로 전환한다.
   Future<void> refreshGrowth();
@@ -187,6 +191,26 @@ class InMemorySeedRepository implements SeedRepository {
     _seeds[seedId] = planted;
     await _persist();
     return planted;
+  }
+
+  @override
+  Future<Seed> applyFertilizer({required String seedId}) async {
+    final seed = _seeds[seedId];
+    if (seed == null) {
+      throw StateError('Seed not found: $seedId');
+    }
+    if (!seed.isGrowing) {
+      throw StateError('Seed is not growing: $seedId (${seed.status})');
+    }
+    if (seed.fertilizerUsed) {
+      throw StateError('Fertilizer already used: $seedId');
+    }
+    _seeds[seedId] = seed.copyWith(
+      plantedAt: seed.plantedAt.subtract(Seed.stageInterval),
+      fertilizerUsed: true,
+    );
+    await refreshGrowth();
+    return _seeds[seedId]!;
   }
 
   @override
