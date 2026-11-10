@@ -108,4 +108,12 @@ class Fruit {
   /// 리뷰 작성 여부. 잔디는 리뷰를 남긴 열매만 심어진다 (#65).
   /// 별점(1~5) 또는 한줄 리뷰 둘 중 하나라도 있으면 작성됨으로 본다.
   bool get isReviewed => memo.isNotEmpty || fidelityScore > 0;
+
+  /// 수확 당일에는 저장한 리뷰도 수정할 수 있다 (#263).
+  /// [now]와 수확일이 같으면 `true`, 날짜가 지나면 `false`.
+  bool isReviewEditableAt(DateTime now) {
+    return harvestedAt.year == now.year &&
+        harvestedAt.month == now.month &&
+        harvestedAt.day == now.day;
+  }
 }

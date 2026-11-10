@@ -276,10 +276,37 @@ class SeedProvider extends ChangeNotifier {
           await _quoteRepository.getRandomQuoteByTheme(seed.theme);
       _todaySeed =
           await _seedRepository.plantSeed(seedId: seed.id, quote: quote);
+      await _quoteRepository.markShown(quote.id);
       _plantedQuote = quote;
       _revealedQuote = quote;
       // 심었으므로 완성 알림을 예약한다 (#140).
       await _notifyPlanted(_todaySeed!);
+    } catch (e) {
+      _errorMessage = '$e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// 비료 주기 (#264). 현재 단계에서 1회, 성장을 1시간 앞당긴다.
+  /// 단계가 바뀌면 다시 줄 수 있다.
+  Future<void> applyFertilizer() async {
+    final seed = _todaySeed;
+    if (seed == null || !seed.isGrowing) return;
+    final stage = seed.growthStage;
+    if (stage >= Seed.maxGrowthStage || seed.hasFertilizedAt(stage)) return;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      _todaySeed = await _seedRepository.applyFertilizer(seedId: seed.id);
+      await _maybeHarvest();
+      final refreshed = _todaySeed;
+      if (refreshed != null) {
+        await _notifyPlanted(refreshed);
+      }
+      await _updateDeliveryGate();
     } catch (e) {
       _errorMessage = '$e';
     } finally {
@@ -448,15 +475,20 @@ class SeedProvider extends ChangeNotifier {
   }
 
   /// 완성 열매의 리뷰를 저장한다 (그날의 리뷰, #41).
-  /// 첫 저장 이후에는 수정할 수 없고 읽기만 가능하다 (#71).
+  /// 수확 당일에는 저장 후에도 수정할 수 있고 (#263),
+  /// 날짜가 지나면 수정할 수 없고 읽기만 가능하다 (#71).
   /// 빈 내용(리뷰 없음 + 별점 0)의 첫 저장은 무시한다 (빈 잠금 방지).
   Future<void> saveReview({
     required String memo,
     required int fidelityScore,
   }) async {
     final fruit = _completedFruit;
-    if (fruit == null || fruit.isReviewed) return;
-    if (memo.isEmpty && fidelityScore == 0) return;
+    if (fruit == null) return;
+    if (fruit.isReviewed &&
+        !fruit.isReviewEditableAt(DebugClock.now())) {
+      return;
+    }
+    if (!fruit.isReviewed && memo.isEmpty && fidelityScore == 0) return;
     _errorMessage = null;
     notifyListeners();
     try {

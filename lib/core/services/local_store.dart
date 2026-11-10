@@ -7,6 +7,9 @@ abstract class StoreKeys {
   static const seeds = 'seeds';
   static const fruits = 'fruits';
   static const settings = 'settings';
+
+  /// 공개된 번들 명언 ID 이력 (#265). `{'ids': [...]}` 형태.
+  static const shownQuotes = 'shownQuotes';
 }
 
 /// JSON 직렬화 로컬 저장소 (#122).

@@ -31,11 +31,19 @@ class FakeLiveActivityGateway implements LiveActivityGateway {
     if (shouldThrow) throw StateError('activity unavailable');
     ended.add(activityId);
   }
+
+  @override
+  Future<void> endAll() async {
+    if (shouldThrow) throw StateError('activity unavailable');
+    for (final id in created.keys) {
+      if (!ended.contains(id)) ended.add(id);
+    }
+  }
 }
 
 void main() {
   group('LiveActivityService (#248)', () {
-    test('starts on stage 1+ with quote and stage data', () async {
+    test('starts with seed type and stage data', () async {
       final gateway = FakeLiveActivityGateway();
       final service = LiveActivityService(gateway: gateway);
 
@@ -44,17 +52,23 @@ void main() {
         quoteText: 't',
         status: 'growing',
         stage: 2,
+        plantedAtIso: '2030-01-01T00:00:00.000Z',
         completeAtIso: '2030-01-01T08:00:00.000Z',
+        themeLabel: '딸기',
+        fruitEmoji: '🍓',
       );
 
       final data = gateway.created['growth-2030-01-01'];
       expect(data, isNotNull);
-      expect(data!['quote_text'], 't');
+      expect(data!['status'], 'growing');
       expect(data['stage'], 2);
+      expect(data['theme_label'], '딸기');
+      expect(data['fruit_emoji'], '🍓');
+      expect(data['planted_at'], isNonZero);
       expect(data['complete_at'], isNonZero);
     });
 
-    test('does not start before stage 1', () async {
+    test('starts immediately at stage 0 (#267)', () async {
       final gateway = FakeLiveActivityGateway();
       final service = LiveActivityService(gateway: gateway);
 
@@ -63,9 +77,13 @@ void main() {
         quoteText: 't',
         status: 'growing',
         stage: 0,
+        plantedAtIso: '2030-01-01T00:00:00.000Z',
+        completeAtIso: '2030-01-01T10:00:00.000Z',
+        themeLabel: '딸기',
+        fruitEmoji: '🍓',
       );
 
-      expect(gateway.created, isEmpty);
+      expect(gateway.created['growth-2030-01-01']!['stage'], 0);
     });
 
     test('same stage is not pushed twice', () async {
@@ -105,7 +123,8 @@ void main() {
       expect(gateway.created['growth-2030-01-01']!['stage'], 3);
     });
 
-    test('ends the started activity on complete', () async {
+    test('keeps the activity and shows fruit on complete (#268)',
+        () async {
       final gateway = FakeLiveActivityGateway();
       final service = LiveActivityService(gateway: gateway);
 
@@ -113,7 +132,7 @@ void main() {
         dateKey: '2030-01-01',
         quoteText: 't',
         status: 'growing',
-        stage: 2,
+        stage: 4,
         completeAtIso: '2030-01-01T08:00:00.000Z',
       );
       await service.syncSeed(
@@ -121,9 +140,15 @@ void main() {
         quoteText: 't',
         status: 'complete',
         stage: 5,
+        themeLabel: '딸기',
+        fruitEmoji: '🍓',
       );
 
-      expect(gateway.ended, ['growth-2030-01-01']);
+      expect(gateway.ended, isEmpty);
+      final data = gateway.created['growth-2030-01-01']!;
+      expect(data['status'], 'complete');
+      expect(data['stage'], 5);
+      expect(data['fruit_emoji'], '🍓');
     });
 
     test('ends the previous day activity on date change', () async {
@@ -199,6 +224,23 @@ void main() {
       // 다시 켜면 같은 단계라도 재시작된다 (키 초기화).
       await grow();
       expect(gateway.created['growth-2030-01-01'], isNotNull);
+    });
+
+    test('endAll clears activities from a previous session', () async {
+      final gateway = FakeLiveActivityGateway();
+      final first = LiveActivityService(gateway: gateway);
+      await first.syncSeed(
+        dateKey: '2030-01-01',
+        quoteText: 't',
+        status: 'complete',
+        stage: 5,
+      );
+
+      // 앱을 재시작하면 세션 내 active 목록이 비어 있다.
+      final second = LiveActivityService(gateway: gateway);
+      await second.endAll();
+
+      expect(gateway.ended, ['growth-2030-01-01']);
     });
   });
 }

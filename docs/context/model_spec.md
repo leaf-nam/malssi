@@ -142,6 +142,7 @@ class CollectionNames {
 | theme     | `String`   | `theme`      | `''` (`SeedTheme` 키 값 — §4.11, 생성 시 랜덤 부여) |
 | growthStage | `int`    | `growthStage` | `0` (0~5, 2시간마다 +1)   |
 | plantedAt | `DateTime` | `plantedAt`  | `createdAt` (심은 시각, 단계 계산 기준) |
+| fertilizerStage | `int` | `fertilizerStage` | `-1` (`Seed.fertilizerNone`, 마지막으로 비료를 준 단계 — #264) |
 
 - **상태 전이**: `locked` (생성, 탭 → 심기) → `growing` (2시간 간격 성장) →
   `complete` (5단계 도달, 열매 수확 대상).
@@ -163,6 +164,14 @@ class CollectionNames {
   저장소 행 생성 시점은 관찰할 수 없으므로 생성 차단이 아닌 수령 차단으로 구현한다
   (심기 버튼 숨김 + `plantSeed()` 거부).
 - **컬렉션**: `seeds` (`CollectionNames.seeds`).
+- **비료 주기** (#264, 2026-11-10, 구현됨): 성장 단계마다 1회씩 사용할 수 있고,
+  사용할 때마다 `plantedAt`을 `Seed.fertilizerReduction`(1시간)만큼 앞당긴다.
+  마지막으로 비료를 준 단계를 `fertilizerStage`에 저장해 같은 단계에서의
+  재사용을 막는다 (`Seed.hasFertilizedAt(stage)`). 단계가 바뀌면 다시 줄 수 있다.
+  버튼을 누르면 오늘의 명언·저자를 다시 보여 주는 확인 시트를 거쳐
+  한 번 더 읽고 마음에 새긴 뒤 적용한다.
+  적용 후 완성 예정 시각이 당겨지므로 완성·성장 알림을 다시 예약하고
+  홈 위젯·Live Activity 스냅샷을 갱신한다.
 - **향후 과제**: 성장 단계 연출 에셋 확정 시 §4.11 개정.
 
 ### 4.9 `Fruit` — 열매 (3탭 개편 신규, 2026-09-04, 구현됨)
@@ -189,7 +198,9 @@ class CollectionNames {
 - **스냅샷 규칙**: `text`/`author`/`theme`/`source`/`explanation`은 수확 시점의 `Quote` 복사본이다.
   원천 `quotes` 문서가 변경/삭제되어도 보관 목록은 변하지 않는다.
   `memo`/`fidelityScore`는 말씨 탭의 완성 열매 흐름에서 작성하고 (#41),
-  보관 상세 카드에서는 읽기만 한다 (#48).
+  저장 후 수확 당일까지는 말씨 탭·정원 상세에서 다시 수정할 수 있으며
+  날짜가 지나면 읽기 전용이 된다 (#48, #263).
+  판정은 `Fruit.isReviewEditableAt(now)`(수확일과 같은 연·월·일)을 쓴다.
 - **컬렉션**: `fruits` (`CollectionNames.fruits`).
 - **향후 과제 (후속 이슈로 분리)**: 성장 단계 필드 추가 시 본 스펙 개정.
 
@@ -291,13 +302,17 @@ class CollectionNames {
 
 | Repository             | 위치                                                    | 핵심 메서드                                                                    |
 | ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `QuoteRepository`      | `lib/features/home/data/quote_repository.dart`          | `getRandomQuote`, `getRandomQuoteByTheme` (테마 폴백 포함), `getQuotesStream`, `addQuote`, `updateLike`, `deleteQuote` — 씨앗 탭의 명언 원천 조회 용도로 유지 |
+| `QuoteRepository`      | `lib/features/home/data/quote_repository.dart`          | `getRandomQuote`, `getRandomQuoteByTheme` (테마 폴백 + 노출 이력 제외, #265), `markShown` (노출 이력 기록), `getQuotesStream`, `addQuote`, `updateLike`, `deleteQuote` — 씨앗 탭의 명언 원천 조회 용도로 유지 |
 | `UserRepository` (제거됨, #19) | — | 구 `mypage` 화면과 함께 제거 |
 | `HashtagRepository` (제거됨, #19) | — | 구 `category` 화면과 함께 제거 |
 | `SubmissionRepository` (제거됨, #19) | — | 구 `my_quote` 화면과 함께 제거 |
-| `SeedRepository` | `lib/features/seed/data/seed_repository.dart` | `getTodaySeed`, `getActiveSeed`, `getSeedsStream`, `openSeed`, `plantSeed`, `refreshGrowth`, `debugFastForward`, `debugShiftTime` |
+| `SeedRepository` | `lib/features/seed/data/seed_repository.dart` | `getTodaySeed`, `getActiveSeed`, `getSeedsStream`, `openSeed`, `plantSeed`, `applyFertilizer` (#264), `refreshGrowth`, `debugFastForward`, `debugShiftTime` |
 | `FruitRepository` | `lib/features/archive/data/fruit_repository.dart` | `harvestFromSeed`, `getFruits`/`getFruitsStream` (수확일 내림차순), `updateReview` (후기·점수 저장), `pruneUnreviewedBeforeToday` (이월 만료 폐기, #113), `debugShiftTime` |
 | `SettingsRepository` | `lib/features/settings/data/settings_repository.dart` | `getSettings`, `getSettingsStream`, `updateSeedTime`, `setNotifyEnabled`, `setThemeMode`, `setFruitRainEnabled` (#108), `load` (로컬 복원, #122) |
 
 > `Quote` 명언 원천은 번들(`assets/docs/quotes.json`, #123)을 `QuoteAssets`로 읽어
 > `InMemoryQuoteRepository`에 주입한다. 로드 실패 시 기본 7시드로 동작한다.
+> 공개된 번들 명언 ID는 로컬 저장소의 `StoreKeys.shownQuotes`(`{'ids': [...]}`)에
+> 기록해 재시작 후에도 같은 명언이 다시 등장하지 않게 한다 (#265).
+> 해당 테마 후보를 모두 소진하면 이력만 초기화하고 다시 순환하며,
+> 자작 명언(`custom-` 접두사)은 이력에 기록하지 않는다.
