@@ -203,15 +203,22 @@ class InMemorySeedRepository implements SeedRepository {
     if (!seed.isGrowing) {
       throw StateError('Seed is not growing: $seedId (${seed.status})');
     }
-    final stage = seed.growthStageAt(_clock());
+    final now = _clock();
+    final stage = seed.growthStageAt(now);
     if (stage >= Seed.maxGrowthStage) {
       throw StateError('Seed already complete: $seedId');
     }
     if (seed.hasFertilizedAt(stage)) {
       throw StateError('Fertilizer already used at stage $stage: $seedId');
     }
+    // #272: 다음 단계까지 1시간 미만이면 단계를 중간부터 시작하지 않는다.
+    // 현재 단계를 지금 마무리하고 다음 단계가 2시간 온전히 이어지도록 보정한다.
+    final remaining = seed.timeToNextStage(now);
+    final plantedAt = remaining < Seed.fertilizerReduction
+        ? now.subtract(Seed.stageInterval * (stage + 1))
+        : seed.plantedAt.subtract(Seed.fertilizerReduction);
     _seeds[seedId] = seed.copyWith(
-      plantedAt: seed.plantedAt.subtract(Seed.fertilizerReduction),
+      plantedAt: plantedAt,
       fertilizerStage: stage,
     );
     await refreshGrowth();
