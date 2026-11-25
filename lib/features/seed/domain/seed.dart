@@ -144,6 +144,23 @@ class Seed {
     return elapsed.clamp(0, Seed.maxGrowthStage);
   }
 
+  /// [now] 기준 다음 단계 도달 시각 (#272).
+  /// 성장 중이 아니거나 이미 최종 단계면 `null`.
+  DateTime? nextStageAt(DateTime now) {
+    if (!isGrowing) return null;
+    final stage = growthStageAt(now);
+    if (stage >= maxGrowthStage) return null;
+    return plantedAt.add(stageInterval * (stage + 1));
+  }
+
+  /// [now] 기준 다음 단계까지 남은 시간 (#272). 최종 단계면 `Duration.zero`.
+  Duration timeToNextStage(DateTime now) {
+    final next = nextStageAt(now);
+    if (next == null) return Duration.zero;
+    final remaining = next.difference(now);
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
   /// 당일 마감(14시)을 넘겨 심을 수 없게 된 `locked` 씨앗인지 (#147).
   /// `growing`·`complete` 등에는 해당 없고, 자정 만료와 별개다.
   /// 마감 정각까지는 심을 수 있고, 그 이후는 마감이다.

@@ -921,7 +921,8 @@ class _FertilizerSheetState extends State<_FertilizerSheet> {
             const SizedBox(height: 20),
             Text(
               '이번 단계의 성장이 1시간 빨라져요.\n'
-              '단계마다 한 번씩 비료를 줄 수 있어요.',
+              '단계마다 한 번씩 비료를 줄 수 있어요.\n'
+              '다음 단계까지 1시간 미만이면 다음 단계를 2시간으로 시작해요.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,

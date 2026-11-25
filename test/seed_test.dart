@@ -430,6 +430,69 @@ void main() {
       });
     });
 
+    test('applyFertilizer keeps the next stage at 2 hours under 1 hour (#272)',
+        () async {
+      var now = DateTime(2026, 9, 4, 8);
+      final repo = InMemorySeedRepository(clock: () => now);
+      final seed = await repo.getTodaySeed();
+      await repo.plantSeed(
+        seedId: seed.id,
+        quote: Quote(
+          id: 'seed-1',
+          text: 't',
+          author: 'a',
+          likes: 0,
+          createdAt: DateTime(2026, 1, 1),
+        ),
+      );
+
+      // 1시간 30분 경과 → 다음 단계까지 30분 남은 상태.
+      now = DateTime(2026, 9, 4, 9, 30);
+      final fertilized = await repo.applyFertilizer(seedId: seed.id);
+
+      // 현재 단계를 마무리하고 다음 단계의 경과 시간을 0으로 맞춘다.
+      expect(fertilized.growthStage, 1);
+      expect(fertilized.plantedAt,
+          now.subtract(const Duration(hours: 2)));
+
+      // 다음 단계는 2시간 온전히 유지된다.
+      now = DateTime(2026, 9, 4, 11, 29);
+      expect((await repo.getActiveSeed()).growthStage, 1);
+      now = DateTime(2026, 9, 4, 11, 30);
+      expect((await repo.getActiveSeed()).growthStage, 2);
+    });
+
+    test('applyFertilizer subtracts 1 hour when a stage is far ahead (#272)',
+        () async {
+      var now = DateTime(2026, 9, 4, 8);
+      final repo = InMemorySeedRepository(clock: () => now);
+      final seed = await repo.getTodaySeed();
+      await repo.plantSeed(
+        seedId: seed.id,
+        quote: Quote(
+          id: 'seed-1',
+          text: 't',
+          author: 'a',
+          likes: 0,
+          createdAt: DateTime(2026, 1, 1),
+        ),
+      );
+
+      // 30분 경과 → 다음 단계까지 1시간 30분 남음.
+      now = DateTime(2026, 9, 4, 8, 30);
+      final fertilized = await repo.applyFertilizer(seedId: seed.id);
+
+      expect(fertilized.growthStage, 0);
+      expect(fertilized.plantedAt,
+          now.subtract(const Duration(hours: 1, minutes: 30)));
+
+      // 1시간 단축만 적용되어 다음 단계는 30분 뒤에 온다.
+      now = DateTime(2026, 9, 4, 8, 59);
+      expect((await repo.getActiveSeed()).growthStage, 0);
+      now = DateTime(2026, 9, 4, 9, 0);
+      expect((await repo.getActiveSeed()).growthStage, 1);
+    });
+
     test('getActiveSeed yields to today when completion is stale (#109)',
         () async {
       var now = DateTime(2026, 9, 4, 12);
