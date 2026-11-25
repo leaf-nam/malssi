@@ -101,8 +101,12 @@
   스크롤 모드에서도 보이는 주 수에 딱 맞게 칸을 키워 정지 시 가장자리에
   반칸이 생기지 않는다 (#83). 스크롤바는 항상 표시해 연도 전체 이동을 알린다 (#86).
   첫 진입에는 오늘이 가운데 오도록 이동한다 (스크롤 모드·당해 연도만, #98).
-- **통계**: 그리드 아래에 모은 색깔·색깔별 개수를 칩으로 보여준다 (#88).
-  심어진(후기 완료) 기준, 보유 테마만 개수 내림차순. 최다 색깔은 정원 테마(#89)에 재사용한다.
+- **통계**: 그리드 아래에 `모은 색깔` 통계를 보여준다 (#88, #273).
+  `모은 열매 N개` 요약과 함께 색 점·테마 이름·개수·비율(%)·비율 막대를 표시한다.
+  심어진(후기 완료) 기준, 보유 테마만 개수 내림차순이며 동률이면 테마 정의 순서로
+  안정 정렬한다. 가장 많이 모은 색깔에는 `가장 많은 색` 배지를 주고,
+  정수 비율은 최대잔여법으로 합이 100%가 되게 한다. 모은 색깔이 없으면
+  `아직 모은 색깔이 없어요` 안내를 보여준다. 최다 색깔은 정원 테마(#89)에 재사용한다.
 - **테마 연출**: 가장 많이 모은 색깔(`topTheme`)의 열매 12개가 배경에 대각선으로
   비처럼 내린다 (#89, `FruitRain` — 14초 주기·불투명도 라이트 0.14/다크 0.20).
   설정 탭의 `열매 비 효과` 스위치로 켜고 끌 수 있다 (기본값 on, #108).
@@ -118,7 +122,8 @@
   - 화면: `ArchiveScreen` (`lib/features/archive/presentation/archive_screen.dart`) —
     `_GrassGrid`(53주 × 7일, 가로 스크롤) + 공용 `FruitReviewSheet`
     (수확 당일 수정 가능, 이후 `readOnly: true`, #263).
-  - 상태: `ArchiveProvider` (`load()`, `fruitsByDateKey`, `updateReview()`).
+  - 상태: `ArchiveProvider` (`load()`, `fruitsByDateKey`, `updateReview()`,
+    `themeCounts`/`themeStats`/`themeTotal` — `ThemeStat`은 `archive/domain`).
   - 메인 진입점: 완성 명언 탭 → 같은 `FruitReviewSheet` 작성 모드 (`SeedProvider.saveReview()` 저장, #41).
   - 셀 색상: `ThemeAssets.cellColor(theme)` (`lib/core/theme/theme_assets.dart`).
 - **동작 플로우 (목표)**:

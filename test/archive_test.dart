@@ -388,12 +388,131 @@ void main() {
       expect(provider.topTheme, SeedTheme.growth);
     });
 
+    test('themeCounts breaks ties by theme definition order (#273)',
+        () async {
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      // 동률(각 1개)이면 테마 정의 순서(활력 → 행복 → 성장)를 따른다.
+      for (final (index, theme) in [
+        SeedTheme.growth,
+        SeedTheme.happiness,
+        SeedTheme.vitality,
+      ].indexed) {
+        final id = '2026-09-0${index + 2}';
+        await _harvest(repo,
+            seedId: id, text: theme, at: at, theme: theme);
+        await repo.updateReview(
+          fruitId: 'fruit-$id',
+          memo: '좋았다',
+          fidelityScore: 4,
+        );
+      }
+
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      expect(provider.themeCounts.keys.toList(),
+          [SeedTheme.vitality, SeedTheme.happiness, SeedTheme.growth]);
+      expect(provider.themeStats.map((stat) => stat.theme).toList(),
+          [SeedTheme.vitality, SeedTheme.happiness, SeedTheme.growth]);
+    });
+
+    test('themeStats converts counts to ratios summing to 100 (#273)',
+        () async {
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      final themes = [
+        SeedTheme.vitality,
+        SeedTheme.happiness,
+        SeedTheme.growth,
+      ];
+      for (final (index, theme) in themes.indexed) {
+        final id = '2026-09-0${index + 2}';
+        await _harvest(repo,
+            seedId: id, text: theme, at: at, theme: theme);
+        await repo.updateReview(
+          fruitId: 'fruit-$id',
+          memo: '좋았다',
+          fidelityScore: 4,
+        );
+      }
+
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      final stats = provider.themeStats;
+      expect(stats.map((stat) => stat.percent).toList(), [34, 33, 33]);
+      expect(stats.fold<int>(0, (sum, stat) => sum + stat.percent), 100);
+      for (final stat in stats) {
+        expect(stat.count, 1);
+        expect(stat.ratio, closeTo(1 / 3, 0.0001));
+      }
+      expect(provider.themeTotal, 3);
+    });
+
+    test('themeStats keeps proportions for uneven counts (#273)', () async {
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      final themes = [
+        SeedTheme.growth,
+        SeedTheme.growth,
+        SeedTheme.vitality,
+      ];
+      for (final (index, theme) in themes.indexed) {
+        final id = '2026-09-0${index + 2}';
+        await _harvest(repo,
+            seedId: id, text: theme, at: at, theme: theme);
+        await repo.updateReview(
+          fruitId: 'fruit-$id',
+          memo: '좋았다',
+          fidelityScore: 4,
+        );
+      }
+
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      final stats = provider.themeStats;
+      expect(stats.map((stat) => stat.theme).toList(),
+          [SeedTheme.growth, SeedTheme.vitality]);
+      expect(stats.map((stat) => stat.count).toList(), [2, 1]);
+      expect(stats.map((stat) => stat.percent).toList(), [67, 33]);
+      expect(stats.first.ratio, closeTo(2 / 3, 0.0001));
+      expect(stats.last.ratio, closeTo(1 / 3, 0.0001));
+    });
+
+    test('themeStats skips unclassified fruits in the ratio (#273)', () async {
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      await _harvest(repo,
+          seedId: '2026-09-02', text: '성장', at: at,
+          theme: SeedTheme.growth);
+      await _harvest(repo,
+          seedId: '2026-09-03', text: '미분류', at: at);
+      for (final id in ['2026-09-02', '2026-09-03']) {
+        await repo.updateReview(
+          fruitId: 'fruit-$id',
+          memo: '좋았다',
+          fidelityScore: 4,
+        );
+      }
+
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      expect(provider.plantedFruits.length, 2);
+      expect(provider.themeTotal, 1);
+      expect(provider.themeStats.single.percent, 100);
+    });
+
     test('topTheme is empty without planted fruits (#88)', () async {
       final provider = ArchiveProvider(
           fruitRepository: InMemoryFruitRepository());
       await provider.load();
 
       expect(provider.themeCounts, isEmpty);
+      expect(provider.themeStats, isEmpty);
+      expect(provider.themeTotal, 0);
       expect(provider.topTheme, isEmpty);
     });
 
@@ -775,8 +894,9 @@ void main() {
       await tester.pumpWidget(_wrap(provider));
       await tester.pumpAndSettle();
 
-      // 리뷰 전에는 통계가 없다.
-      expect(find.text('모은 색깔'), findsNothing);
+      // 리뷰 전에는 빈 상태 안내를 보여준다 (#273).
+      expect(find.text('모은 색깔'), findsOneWidget);
+      expect(find.text('아직 모은 색깔이 없어요'), findsOneWidget);
 
       await provider.updateReview(
         fruitId: 'fruit-2026-09-04',
@@ -785,8 +905,92 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('모은 색깔'), findsOneWidget);
-      expect(find.text('성장 1개'), findsOneWidget);
+      expect(find.text('아직 모은 색깔이 없어요'), findsNothing);
+      expect(find.text('모은 열매 1개'), findsOneWidget);
+      final growthRow = find.byKey(
+          const ValueKey('theme-stat-${SeedTheme.growth}'));
+      expect(growthRow, findsOneWidget);
+      expect(
+          find.descendant(
+              of: growthRow, matching: find.text('성장')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: growthRow, matching: find.text('1개')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: growthRow, matching: find.text('100%')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: growthRow, matching: find.text('가장 많은 색')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: growthRow,
+              matching: find.byType(LinearProgressIndicator)),
+          findsOneWidget);
+      ArchiveScreen.debugToday = null;
+    });
+
+    testWidgets('color stats list every theme with counts and ratios (#273)',
+        (tester) async {
+      ArchiveScreen.debugToday = DateTime(2026, 9, 4);
+      final at = DateTime(2026, 9, 4, 12);
+      final repo = InMemoryFruitRepository(clock: () => at);
+      final themes = [
+        SeedTheme.growth,
+        SeedTheme.growth,
+        SeedTheme.vitality,
+      ];
+      for (final (index, theme) in themes.indexed) {
+        final id = '2026-09-0${index + 2}';
+        await _harvest(repo,
+            seedId: id, text: theme, at: at, theme: theme);
+        await repo.updateReview(
+          fruitId: 'fruit-$id',
+          memo: '좋았다',
+          fidelityScore: 4,
+        );
+      }
+      final provider = ArchiveProvider(fruitRepository: repo);
+      await provider.load();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+
+      expect(find.text('모은 열매 3개'), findsOneWidget);
+      final growthRow = find.byKey(
+          const ValueKey('theme-stat-${SeedTheme.growth}'));
+      final vitalityRow = find.byKey(
+          const ValueKey('theme-stat-${SeedTheme.vitality}'));
+      expect(
+          find.descendant(of: growthRow, matching: find.text('2개')),
+          findsOneWidget);
+      expect(
+          find.descendant(of: growthRow, matching: find.text('67%')),
+          findsOneWidget);
+      expect(
+          find.descendant(of: growthRow, matching: find.text('가장 많은 색')),
+          findsOneWidget);
+      expect(
+          find.descendant(of: vitalityRow, matching: find.text('1개')),
+          findsOneWidget);
+      expect(
+          find.descendant(of: vitalityRow, matching: find.text('33%')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: vitalityRow, matching: find.text('가장 많은 색')),
+          findsNothing);
+      final bars = tester
+          .widgetList<LinearProgressIndicator>(
+              find.byType(LinearProgressIndicator))
+          .toList();
+      expect(bars.length, 2);
+      expect(bars.first.value, closeTo(2 / 3, 0.0001));
+      expect(bars.last.value, closeTo(1 / 3, 0.0001));
       ArchiveScreen.debugToday = null;
     });
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/theme/theme_assets.dart';
 import 'package:malssi/features/archive/domain/fruit.dart';
+import 'package:malssi/features/archive/domain/theme_stat.dart';
 import 'package:malssi/features/archive/presentation/fruit_rain.dart';
 import 'package:malssi/features/archive/presentation/fruit_review_sheet.dart';
 import 'package:malssi/features/archive/providers/archive_providers.dart';
@@ -179,10 +180,13 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                     fontSize: 12, color: colors.onSurfaceVariant),
               ),
             ),
-          if (state.plantedFruits.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            _ThemeStats(counts: state.themeCounts),
-          ],
+          const SizedBox(height: 20),
+          _ThemeStats(
+            stats: state.themeStats,
+            total: state.plantedFruits.length,
+            themedTotal: state.themeTotal,
+            topTheme: state.topTheme,
+          ),
         ],
       ),
     );
@@ -222,60 +226,178 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   }
 }
 
-/// 모은 색깔·색깔별 개수 통계 (#88). 심어진(리뷰 완료) 기준, 보유 테마만 내림차순.
+/// 모은 색깔 통계 (#88, #273).
+/// 심어진(리뷰 완료) 열매 기준으로 총 개수·색깔별 개수·비율·비율 막대를 보여준다.
+/// 보유한 테마만 내림차순으로 표시하고, 가장 많은 색깔을 강조한다.
 class _ThemeStats extends StatelessWidget {
-  const _ThemeStats({required this.counts});
+  const _ThemeStats({
+    required this.stats,
+    required this.total,
+    required this.themedTotal,
+    required this.topTheme,
+  });
 
-  final Map<String, int> counts;
+  final List<ThemeStat> stats;
+
+  /// 리뷰를 남긴 열매 총 개수.
+  final int total;
+
+  /// 색깔이 분류된 열매 개수. 비율의 분모.
+  final int themedTotal;
+
+  /// 가장 많이 모은 색깔. 없으면 `''`.
+  final String topTheme;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final brightness = Theme.of(context).brightness;
     final divider = Theme.of(context).dividerColor;
+    final unclassified = total - themedTotal;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '모은 색깔',
-          style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        Row(
           children: [
-            for (final entry in counts.entries)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  border: Border.all(color: divider),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: ThemeAssets.cellColor(
-                            entry.key, brightness),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${ThemeAssets.labelOf(entry.key)} ${entry.value}개',
-                      style: TextStyle(
-                          fontSize: 12, color: colors.onSurface),
-                    ),
-                  ],
+            Text(
+              '모은 색깔',
+              style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+            ),
+            const Spacer(),
+            if (stats.isNotEmpty)
+              Text(
+                '모은 열매 $total개',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colors.onSurface,
                 ),
               ),
           ],
+        ),
+        const SizedBox(height: 10),
+        if (stats.isEmpty)
+          Text(
+            '아직 모은 색깔이 없어요',
+            style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+          )
+        else ...[
+          for (final stat in stats) ...[
+            _ThemeStatRow(
+              key: ValueKey('theme-stat-${stat.theme}'),
+              stat: stat,
+              isTop: stat.theme == topTheme,
+              brightness: brightness,
+              divider: divider,
+            ),
+            if (stat != stats.last) const SizedBox(height: 10),
+          ],
+          if (unclassified > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                '색깔 정보가 없는 열매 $unclassified개는 비율에서 제외했어요',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+/// 색깔 통계 한 줄: 색 점 + 이름 + (최다 배지) + 개수 + 비율 + 막대 (#273).
+class _ThemeStatRow extends StatelessWidget {
+  const _ThemeStatRow({
+    super.key,
+    required this.stat,
+    required this.isTop,
+    required this.brightness,
+    required this.divider,
+  });
+
+  final ThemeStat stat;
+  final bool isTop;
+  final Brightness brightness;
+  final Color divider;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final color = ThemeAssets.cellColor(stat.theme, brightness);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                ThemeAssets.labelOf(stat.theme),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: colors.onSurface),
+              ),
+            ),
+            if (isTop) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '가장 많은 색',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: colors.onSurface,
+                  ),
+                ),
+              ),
+            ],
+            const Spacer(),
+            Text(
+              '${stat.count}개',
+              style: TextStyle(fontSize: 12, color: colors.onSurface),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 36,
+              child: Text(
+                '${stat.percent}%',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: stat.ratio,
+            minHeight: 6,
+            color: color,
+            backgroundColor: divider.withValues(alpha: 0.35),
+          ),
         ),
       ],
     );
