@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:record/record.dart';
 import 'package:malssi/core/services/debug_clock.dart';
 import 'package:malssi/core/services/debug_ui.dart';
 import 'package:malssi/core/services/store_review_service.dart';
@@ -850,8 +853,9 @@ class _GrowingSeed extends StatelessWidget {
   }
 }
 
-/// 비료 주기 확인 시트 (#264).
+/// 비료 주기 확인 시트 (#264, #271).
 /// 비료를 주기 전에 오늘의 명언을 한 번 더 읽고 마음에 새기도록 한다.
+/// `따라 타이핑` 또는 `음성 녹음` 중 하나를 완료해야 비료를 줄 수 있다.
 /// 단계마다 1회, 이번 단계 성장을 1시간 앞당긴다.
 class _FertilizerSheet extends StatefulWidget {
   const _FertilizerSheet({required this.quote, required this.onApply});
@@ -863,13 +867,172 @@ class _FertilizerSheet extends StatefulWidget {
   State<_FertilizerSheet> createState() => _FertilizerSheetState();
 }
 
+enum _FertilizerMethod { typing, voice }
+
+/// 타이핑 비교용 정규화 (#271).
+/// 공백·줄바꿈·따옴표·문장부호 차이는 무시하고 글자만 비교한다.
+String normalizeFertilizerText(String value) {
+  return value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[\s\u00A0]'), '')
+      .replaceAll(
+        RegExp(r'''["'“”‘’.,!?…·:;\-—–()\[\]{}<>《》「」『』]'''),
+        '',
+      );
+}
+
 class _FertilizerSheetState extends State<_FertilizerSheet> {
+  final _typingController = TextEditingController();
+  final _recorder = AudioRecorder();
+
+  _FertilizerMethod _method = _FertilizerMethod.typing;
   bool _saving = false;
+  bool _recording = false;
+  bool _recorded = false;
+  bool _recordBusy = false;
+  String? _recordPath;
+  String? _recordError;
+
+  bool get _typingMatches =>
+      normalizeFertilizerText(_typingController.text) ==
+      normalizeFertilizerText(widget.quote.text);
+
+  bool get _reflectionDone => switch (_method) {
+        _FertilizerMethod.typing => _typingMatches,
+        _FertilizerMethod.voice => _recorded,
+      };
+
+  bool get _canApply => _reflectionDone && !_saving && !_recordBusy;
+
+  @override
+  void initState() {
+    super.initState();
+    _typingController.addListener(_onTypingChanged);
+  }
+
+  void _onTypingChanged() {
+    if (_method == _FertilizerMethod.typing) setState(() {});
+  }
+
+  Future<void> _startRecording() async {
+    if (_recordBusy || _recording) return;
+    setState(() {
+      _recordBusy = true;
+      _recordError = null;
+    });
+    try {
+      final allowed = await _recorder.hasPermission();
+      if (!allowed) {
+        if (mounted) {
+          setState(() {
+            _recordError = '마이크 권한이 필요해요. 따라 타이핑으로 진행할 수 있어요.';
+          });
+        }
+        return;
+      }
+      await _deleteRecording();
+      final dir = await getTemporaryDirectory();
+      final path =
+          '${dir.path}/malssi-fertilizer-${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _recorder.start(const RecordConfig(), path: path);
+      if (!mounted) return;
+      setState(() {
+        _recording = true;
+        _recorded = false;
+        _recordPath = path;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _recordError = '녹음을 시작하지 못했어요. 따라 타이핑으로 진행할 수 있어요.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _recordBusy = false);
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    if (_recordBusy || !_recording) return;
+    setState(() {
+      _recordBusy = true;
+      _recordError = null;
+    });
+    try {
+      final path = await _recorder.stop();
+      if (!mounted) return;
+      setState(() {
+        _recording = false;
+        _recorded = path != null;
+        _recordPath = path ?? _recordPath;
+        if (!_recorded) {
+          _recordError = '녹음이 너무 짧았어요. 다시 시도해 주세요.';
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _recording = false;
+          _recordError = '녹음을 마치지 못했어요. 다시 시도해 주세요.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _recordBusy = false);
+    }
+  }
+
+  Future<void> _deleteRecording() async {
+    final path = _recordPath;
+    _recordPath = null;
+    _recorded = false;
+    if (path == null) return;
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } catch (_) {
+      // 임시 파일 삭제 실패는 기능을 막지 않는다.
+    }
+  }
+
+  Future<void> _discardRecording() async {
+    if (_recording) {
+      try {
+        await _recorder.cancel();
+      } catch (_) {}
+    }
+    await _deleteRecording();
+  }
+
+  @override
+  void dispose() {
+    _typingController
+      ..removeListener(_onTypingChanged)
+      ..dispose();
+    if (_recording) {
+      unawaited(_recorder.cancel().catchError((_) {}));
+    }
+    unawaited(_deleteRecording());
+    unawaited(_recorder.dispose());
+    super.dispose();
+  }
+
+  Future<void> _apply() async {
+    if (!_canApply) return;
+    setState(() => _saving = true);
+    try {
+      await widget.onApply();
+      await _discardRecording();
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final typing = _method == _FertilizerMethod.typing;
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -919,6 +1082,109 @@ class _FertilizerSheetState extends State<_FertilizerSheet> {
               ),
             ),
             const SizedBox(height: 20),
+            SegmentedButton<_FertilizerMethod>(
+              segments: const [
+                ButtonSegment(
+                  value: _FertilizerMethod.typing,
+                  label: Text('따라 타이핑'),
+                  icon: Icon(Icons.keyboard_alt_outlined, size: 18),
+                ),
+                ButtonSegment(
+                  value: _FertilizerMethod.voice,
+                  label: Text('음성 녹음'),
+                  icon: Icon(Icons.mic_none, size: 18),
+                ),
+              ],
+              selected: {_method},
+              onSelectionChanged: _saving
+                  ? null
+                  : (selected) {
+                      setState(() => _method = selected.first);
+                    },
+            ),
+            const SizedBox(height: 16),
+            if (typing) ...[
+              TextField(
+                key: const ValueKey('fertilizer-typing-field'),
+                controller: _typingController,
+                enabled: !_saving,
+                maxLines: 4,
+                minLines: 2,
+                textInputAction: TextInputAction.newline,
+                decoration: InputDecoration(
+                  hintText: '위 명언을 그대로 따라 적어보세요.',
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  helperText: '공백·문장부호는 달라도 괜찮아요.',
+                  errorText: _typingController.text.isNotEmpty && !_typingMatches
+                      ? '명언과 조금 달라요. 다시 확인해 주세요.'
+                      : null,
+                ),
+              ),
+              if (_typingMatches)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '명언을 잘 따라 적었어요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: colors.primary),
+                  ),
+                ),
+            ] else ...[
+              Text(
+                _recorded
+                    ? '녹음 완료! 비료를 줄 수 있어요.'
+                    : _recording
+                        ? '명언을 소리 내어 읽어보세요.'
+                        : '명언을 소리 내어 읽고 녹음해 주세요.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _recorded ? colors.primary : colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const ValueKey('fertilizer-record-button'),
+                onPressed: _saving || _recordBusy
+                    ? null
+                    : _recording
+                        ? _stopRecording
+                        : _startRecording,
+                icon: Icon(
+                  _recording ? Icons.stop_circle_outlined : Icons.mic_none,
+                  size: 18,
+                ),
+                label: Text(
+                  _recordBusy
+                      ? '처리 중...'
+                      : _recording
+                          ? '녹음 중지'
+                          : _recorded
+                              ? '다시 녹음'
+                              : '녹음 시작',
+                ),
+              ),
+              if (_recordError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _recordError!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: colors.error),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Text(
+                '녹음은 비료를 준 뒤 바로 삭제되고 저장되지 않아요.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
             Text(
               '이번 단계의 성장이 1시간 빨라져요.\n'
               '단계마다 한 번씩 비료를 줄 수 있어요.',
@@ -932,22 +1198,16 @@ class _FertilizerSheetState extends State<_FertilizerSheet> {
             const SizedBox(height: 20),
             ElevatedButton(
               key: const ValueKey('fertilizer-confirm'),
+              onPressed: _canApply ? _apply : null,
+              child: Text(_saving ? '비료 주는 중...' : '비료 주기 · 1시간 단축'),
+            ),
+            TextButton(
               onPressed: _saving
                   ? null
                   : () async {
-                      setState(() => _saving = true);
-                      try {
-                        await widget.onApply();
-                      } finally {
-                        if (mounted) setState(() => _saving = false);
-                      }
+                      await _discardRecording();
                       if (context.mounted) Navigator.of(context).pop();
                     },
-              child: const Text('비료 주기 · 1시간 단축'),
-            ),
-            TextButton(
-              onPressed:
-                  _saving ? null : () => Navigator.of(context).pop(),
               child: const Text('그만두기'),
             ),
           ],

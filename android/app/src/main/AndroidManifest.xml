@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 비료 주기 명언 읽기 녹음 (#271). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
         android:label="말씨"
         android:name="${applicationName}"

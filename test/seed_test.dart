@@ -112,6 +112,21 @@ void main() {
       expect(Seed.dateKeyFor(DateTime(2026, 1, 5)), '2026-01-05');
     });
 
+    test('fertilizer typing ignores spaces and punctuation (#271)', () {
+      expect(
+        normalizeFertilizerText('"오늘도  잘 살아보세!"'),
+        normalizeFertilizerText('오늘도잘살아보세'),
+      );
+      expect(
+        normalizeFertilizerText('Life is good.'),
+        normalizeFertilizerText('life is good'),
+      );
+      expect(
+        normalizeFertilizerText('오늘도 잘 살아보세'),
+        isNot(normalizeFertilizerText('내일도 잘 살아보세')),
+      );
+    });
+
     test('fromMap/toMap/copyWith round-trip', () {
       final seed = Seed(
         id: '2026-09-04',
@@ -1363,6 +1378,21 @@ void main() {
           findsNWidgets(2)); // 화면 뒤 명언 + 시트 명언
       expect(find.text('— ${quote.author}'), findsWidgets);
 
+      // 인증 전에는 비료를 줄 수 없다.
+      var confirm = tester.widget<ElevatedButton>(
+          find.byKey(const ValueKey('fertilizer-confirm')));
+      expect(confirm.onPressed, isNull);
+
+      // 공백을 달리 적어도 따라 타이핑으로 인증된다.
+      await tester.enterText(
+        find.byKey(const ValueKey('fertilizer-typing-field')),
+        '  ${quote.text.replaceAll(' ', '   ')}  ',
+      );
+      await tester.pumpAndSettle();
+      confirm = tester.widget<ElevatedButton>(
+          find.byKey(const ValueKey('fertilizer-confirm')));
+      expect(confirm.onPressed, isNotNull);
+
       // 확인을 누르면 이번 단계 성장이 1시간 당겨진다.
       await tester.tap(find.byKey(const ValueKey('fertilizer-confirm')));
       await tester.pumpAndSettle();
@@ -1372,6 +1402,50 @@ void main() {
           Seed.fertilizerReduction);
       expect(find.text('이번 단계 비료를 주었어요 · 1시간 단축'), findsOneWidget);
       expect(find.byKey(const ValueKey('fertilizer-button')), findsNothing);
+    });
+
+    testWidgets('fertilizer typing must match the quote (#271)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('fertilizer-button')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+          find.byKey(const ValueKey('fertilizer-typing-field')), '다른 문장');
+      await tester.pumpAndSettle();
+
+      expect(find.text('명언과 조금 달라요. 다시 확인해 주세요.'), findsOneWidget);
+      final confirm = tester.widget<ElevatedButton>(
+          find.byKey(const ValueKey('fertilizer-confirm')));
+      expect(confirm.onPressed, isNull);
+    });
+
+    testWidgets('fertilizer voice tab requires a recording (#271)',
+        (tester) async {
+      final provider = _buildProvider();
+      await provider.ensureTodaySeed();
+
+      await tester.pumpWidget(_wrap(provider));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('씨앗 심기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('fertilizer-button')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('음성 녹음'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('fertilizer-record-button')),
+          findsOneWidget);
+      final confirm = tester.widget<ElevatedButton>(
+          find.byKey(const ValueKey('fertilizer-confirm')));
+      expect(confirm.onPressed, isNull);
     });
 
     testWidgets('long quotes render smaller, short quotes keep 26 (#252)',

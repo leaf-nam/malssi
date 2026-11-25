@@ -79,5 +79,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>비료를 주기 전에 오늘의 명언을 소리 내어 읽은 녹음을 남기기 위해 마이크를 사용합니다. 녹음은 비료 적용 후 바로 삭제됩니다.</string>
 </dict>
 </plist>
